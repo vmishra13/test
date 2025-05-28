@@ -15,6 +15,7 @@ export class ApiResponse {
       message,
       data,
       timestamp: new Date().toISOString(),
+      apiVersion: 'v1', // Add version information
     };
   }
 
@@ -34,6 +35,7 @@ export class ApiResponse {
       statusCode,
       details,
       timestamp: new Date().toISOString(),
+      apiVersion: 'v1', // Add version information
     };
 
     // Add details if provided
