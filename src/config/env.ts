@@ -22,6 +22,15 @@ export const ENV = {
     accessTokenExpiresIn: (process.env.JWT_ACCESS_TOKEN_EXPIRES_IN ?? '15m') as StringValue,
     refreshTokenExpiresIn: (process.env.JWT_REFRESH_TOKEN_EXPIRES_IN ?? '7d') as StringValue,
   },
+  // Database configuration
+  database: {
+    postgres: {
+      url: process.env.POSTGRES_DATABASE_URL,
+    },
+    mongodb: {
+      url: process.env.MONGODB_DATABASE_URL,
+    },
+  },
   // Helper properties
   get isDevelopment(): boolean {
     return this.nodeEnv === 'development';

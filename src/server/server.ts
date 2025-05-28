@@ -22,7 +22,7 @@ export const startServerOnPort = (port: number): Server => {
       logger.info(generateStartupBanner(port));
     } else {
       // Simplified output for environments where banner isn't appropriate
-      logger.info(`ReliaCare API Server started on port ${port} (${ENV.nodeEnv})`);
+      logger.info(`Reliacare API Server started on port ${port} (${ENV.nodeEnv})`);
     }
   });
 

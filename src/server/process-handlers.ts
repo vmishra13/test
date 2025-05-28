@@ -1,22 +1,28 @@
 import logger from '../config/logger';
-import { stopAllCronJobs } from '../services/cron/cron.service';
-
-// Import your existing shutdown function
 import { shutdownServer } from './server';
+import { stopAllCronJobs } from '../services/cron/cron.service';
+import { db } from '../db';
 
 /**
  * Handle graceful shutdown
  */
-export function gracefulShutdown(signal: string, exitCode = 0): void {
+export const gracefulShutdown = (signal: string, exitCode = 0): void => {
   logger.info(`${signal} received, starting graceful shutdown`);
 
   // Stop all cron jobs
   stopAllCronJobs();
   logger.info('All scheduled tasks stopped');
 
-  // Continue with server shutdown
-  shutdownServer(exitCode);
-}
+  // Disconnect from databases
+  db.disconnect()
+    .catch(err => {
+      logger.error('Error disconnecting from databases', { error: err });
+    })
+    .finally(() => {
+      // Proceed with server shutdown
+      shutdownServer(exitCode);
+    });
+};
 
 /**
  * Register process handlers for signals and uncaught errors

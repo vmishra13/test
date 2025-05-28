@@ -41,3 +41,27 @@ coverage/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Prisma
+src/db/*/generated/
+
+# Temporary files
+*.tmp
+*~
+*.bak
+
+# Testing
+.nyc_output/
+
+# Cache directories
+.npm/
+.eslintcache
+.stylelintcache
+
+# TypeScript
+*.tsbuildinfo
+
+# Lock files (optional, depends on your team workflow)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

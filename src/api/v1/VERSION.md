@@ -1,6 +1,6 @@
 # API v1 Documentation
 
-This is the first version of the ReliaCare API.
+This is the first version of the Reliacare API.
 
 ## Endpoints
 

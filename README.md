@@ -1,4 +1,4 @@
-# ReliaCare Backend API
+# Reliacare Backend API
 
 A robust healthcare sector backend application built with **Express.js** and **TypeScript**.
 

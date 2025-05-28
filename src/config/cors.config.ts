@@ -6,7 +6,7 @@ import { ENV } from './env';
  */
 export const corsConfig: CorsOptions = {
   // Allow specific origins in production, any origin in development
-  origin: ENV.isProduction ? ['https://relicare.com', 'https://admin.relicare.com'] : '*',
+  origin: ENV.isProduction ? ['https://reliacare.com', 'https://admin.reliacare.com'] : '*',
 
   // Allowed HTTP methods
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
@@ -30,7 +30,7 @@ export const corsConfig: CorsOptions = {
 export const adminCorsConfig: CorsOptions = {
   ...corsConfig,
   // Only allow admin domain for admin routes
-  origin: ENV.isProduction ? 'https://admin.relicare.com' : '*',
+  origin: ENV.isProduction ? 'https://admin.reliacare.com' : '*',
 };
 
 /**
@@ -40,7 +40,7 @@ export const publicCorsConfig: CorsOptions = {
   ...corsConfig,
   // Public endpoints can be accessed from more origins if needed
   origin: ENV.isProduction
-    ? ['https://relicare.com', 'https://admin.relicare.com', 'https://public.relicare.com']
+    ? ['https://reliacare.com', 'https://admin.reliacare.com', 'https://public.reliacare.com']
     : '*',
   // Public endpoints don't need credentials
   credentials: false,

@@ -1,8 +1,9 @@
 import logger from '../config/logger';
 import { initializeServer } from './server';
 import { registerProcessHandlers } from './process-handlers';
-import { registerCronJobs } from '../services/cron/task-registry'; // Use consistent import
+import { registerCronJobs } from '../services/cron/task-registry';
 import { ENV } from '../config/env';
+import { db } from '../db';
 
 /**
  * Bootstrap application
@@ -12,12 +13,15 @@ export const bootstrap = async (): Promise<void> => {
     // Register all global handlers
     registerProcessHandlers();
 
+    // Connect to databases
+    await db.connect();
+
     // Initialize and start the server
     await initializeServer();
 
     // Start all scheduled cron jobs if not in test mode
     if (ENV.nodeEnv !== 'test') {
-      registerCronJobs(); // Use consistent function name
+      registerCronJobs();
       logger.info('Scheduled tasks initialized');
     }
   } catch (error) {

@@ -13,7 +13,7 @@ const logFormat = winston.format.combine(
 const logger = winston.createLogger({
   level: ENV.isProduction ? 'info' : 'debug',
   format: logFormat,
-  defaultMeta: { service: 'relicare-api' },
+  defaultMeta: { service: 'reliacare-api' },
   transports: [
     // Console transport
     new winston.transports.Console(),

@@ -14,7 +14,7 @@ export const generateStartupBanner = (port: number): string => {
 ██║  ██║███████╗███████╗██║██║  ██║╚██████╗██║  ██║██║  ██║███████╗
 ╚═╝  ╚═╝╚══════╝╚══════╝╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝
 ===================================
-🚀 ReliaCare API Server Started 🚀
+🚀 Reliacare API Server Started 🚀
 📡 Running on port: ${port}
 🔧 Environment: ${ENV.nodeEnv}
 ===================================
