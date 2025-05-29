@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { tokenService } from '../services/token.service';
 import { userRepository } from '../repositories/user.repository';
-import { ApiResponse } from '../../../shared/utils/api-response';
+import { ApiResponse } from '@shared/utils/api-response';
 
 export interface IAuthenticatedRequest extends Request {
   user?: {
@@ -21,13 +21,11 @@ export const authenticate = async (
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      res.status(StatusCodes.UNAUTHORIZED).json(
-        ApiResponse.error(
-          'Authentication required', 
-          'NO_AUTH_TOKEN', 
-          StatusCodes.UNAUTHORIZED
-        )
-      );
+      res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json(
+          ApiResponse.error('Authentication required', 'NO_AUTH_TOKEN', StatusCodes.UNAUTHORIZED),
+        );
       return;
     }
 
@@ -35,26 +33,18 @@ export const authenticate = async (
     const decoded = tokenService.verifyAccessToken(token);
 
     if (!decoded) {
-      res.status(StatusCodes.UNAUTHORIZED).json(
-        ApiResponse.error(
-          'Invalid token', 
-          'INVALID_TOKEN', 
-          StatusCodes.UNAUTHORIZED
-        )
-      );
+      res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json(ApiResponse.error('Invalid token', 'INVALID_TOKEN', StatusCodes.UNAUTHORIZED));
       return;
     }
 
     const user = await userRepository.findById(decoded.userId);
 
     if (!user) {
-      res.status(StatusCodes.UNAUTHORIZED).json(
-        ApiResponse.error(
-          'User not found', 
-          'USER_NOT_FOUND', 
-          StatusCodes.UNAUTHORIZED
-        )
-      );
+      res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json(ApiResponse.error('User not found', 'USER_NOT_FOUND', StatusCodes.UNAUTHORIZED));
       return;
     }
 
@@ -66,13 +56,9 @@ export const authenticate = async (
 
     next();
   } catch (error) {
-    res.status(StatusCodes.UNAUTHORIZED).json(
-      ApiResponse.error(
-        'Authentication failed', 
-        'AUTH_FAILED', 
-        StatusCodes.UNAUTHORIZED
-      )
-    );
+    res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json(ApiResponse.error('Authentication failed', 'AUTH_FAILED', StatusCodes.UNAUTHORIZED));
     return;
   }
 };

@@ -1,13 +1,17 @@
-// PostgreSQL Schema for Reliacare
-
-generator client {
+generator postgresClient {
   provider = "prisma-client-js"
   output   = "./generated/postgres-client"
 }
 
-datasource db {
+datasource postgresDb {
   provider = "postgresql"
   url      = env("POSTGRES_DATABASE_URL")
 }
 
-// Models will be defined here later
+model todo {
+  id           Int      @id @default(autoincrement())
+  title        String   @postgresDb.VarChar(255)
+  description  String?
+  is_completed Boolean  @default(false)
+  created_at   DateTime @default(now()) @postgresDb.Timestamp(6)
+}

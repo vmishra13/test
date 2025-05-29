@@ -8,7 +8,6 @@ import { httpLogger } from './shared/middlewares/logger.middleware';
 import { requestLogger } from './shared/middlewares/request-logger.middleware';
 import { ApiResponse } from './shared/utils/api-response';
 import { corsConfig } from './config/cors.config';
-import { ENV } from './config/env'; // Make sure to import ENV
 import { helmetConfig } from './config/helmet.config';
 
 const app = express();

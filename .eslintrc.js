@@ -5,10 +5,18 @@ module.exports = {
         sourceType: "module",
     },
     extends: [
-        "plugin:@typescript-eslint/recommended",
+        "@typescript-eslint/recommended",
         "prettier",
         "plugin:prettier/recommended",
     ],
+    settings: {
+        "import/resolver": {
+            typescript: {
+                alwaysTryTypes: true,
+                project: "./tsconfig.json",
+            },
+        },
+    },
     rules: {
         // Custom rules
         "@typescript-eslint/explicit-function-return-type": [

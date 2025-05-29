@@ -1,4 +1,4 @@
-import logger from '../../../config/logger';
+import logger from '@config/logger';
 
 /**
  * Test task that runs every 5 seconds

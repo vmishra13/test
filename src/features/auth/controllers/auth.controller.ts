@@ -3,7 +3,7 @@ import { StatusCodes } from 'http-status-codes';
 import { authService } from '../services/auth.service';
 import { LoginRequestDto, RefreshTokenRequestDto, RegisterRequestDto } from '../dto/auth.dto';
 import { authLogger } from '../utils/auth-logger';
-import { ApiResponse } from '../../../shared/utils/api-response';
+import { ApiResponse } from '@shared/utils/api-response';
 
 export const login: RequestHandler = async (req, res) => {
   try {
@@ -18,9 +18,9 @@ export const login: RequestHandler = async (req, res) => {
     // Log failed login
     authLogger.login('unknown', req.body?.username || 'unknown', false, req.ip);
 
-    res.status(StatusCodes.UNAUTHORIZED).json(
-      ApiResponse.error('Authentication failed', 'AUTH_FAILED', StatusCodes.UNAUTHORIZED)
-    );
+    res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json(ApiResponse.error('Authentication failed', 'AUTH_FAILED', StatusCodes.UNAUTHORIZED));
   }
 };
 
@@ -38,13 +38,19 @@ export const register: RequestHandler = async (req, res) => {
     authLogger.register('unknown', req.body?.username || 'unknown', false);
 
     if (error instanceof Error) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error(error.message, 'REGISTRATION_FAILED', StatusCodes.BAD_REQUEST)
-      );
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json(ApiResponse.error(error.message, 'REGISTRATION_FAILED', StatusCodes.BAD_REQUEST));
     } else {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-        ApiResponse.error('Registration failed', 'SERVER_ERROR', StatusCodes.INTERNAL_SERVER_ERROR)
-      );
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json(
+          ApiResponse.error(
+            'Registration failed',
+            'SERVER_ERROR',
+            StatusCodes.INTERNAL_SERVER_ERROR,
+          ),
+        );
     }
   }
 };
@@ -54,9 +60,11 @@ export const refreshToken: RequestHandler = async (req, res) => {
     const { refreshToken } = req.body as RefreshTokenRequestDto;
 
     if (!refreshToken) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Refresh token is required', 'MISSING_TOKEN', StatusCodes.BAD_REQUEST)
-      );
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json(
+          ApiResponse.error('Refresh token is required', 'MISSING_TOKEN', StatusCodes.BAD_REQUEST),
+        );
       return;
     }
 
@@ -73,9 +81,9 @@ export const refreshToken: RequestHandler = async (req, res) => {
     // Log failed token refresh
     authLogger.tokenRefresh('unknown', false);
 
-    res.status(StatusCodes.UNAUTHORIZED).json(
-      ApiResponse.error('Invalid refresh token', 'INVALID_TOKEN', StatusCodes.UNAUTHORIZED)
-    );
+    res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json(ApiResponse.error('Invalid refresh token', 'INVALID_TOKEN', StatusCodes.UNAUTHORIZED));
   }
 };
 
@@ -84,9 +92,11 @@ export const logout: RequestHandler = async (req, res) => {
     const { refreshToken } = req.body as RefreshTokenRequestDto;
 
     if (!refreshToken) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Refresh token is required', 'MISSING_TOKEN', StatusCodes.BAD_REQUEST)
-      );
+      res
+        .status(StatusCodes.BAD_REQUEST)
+        .json(
+          ApiResponse.error('Refresh token is required', 'MISSING_TOKEN', StatusCodes.BAD_REQUEST),
+        );
       return;
     }
 
@@ -101,9 +111,9 @@ export const logout: RequestHandler = async (req, res) => {
     // For logout, we can return a 200 success instead of 204 No Content to include a message
     res.status(StatusCodes.OK).json(ApiResponse.success(null, 'Logged out successfully'));
   } catch (error) {
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Logout failed', 'LOGOUT_FAILED', StatusCodes.INTERNAL_SERVER_ERROR)
-    );
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json(ApiResponse.error('Logout failed', 'LOGOUT_FAILED', StatusCodes.INTERNAL_SERVER_ERROR));
   }
 };
 
@@ -118,7 +128,7 @@ export const token: RequestHandler = async (req, res): Promise<void> => {
         if (!username || !password) {
           res.status(StatusCodes.BAD_REQUEST).json({
             error: 'invalid_request',
-            error_description: 'Missing username or password parameter'
+            error_description: 'Missing username or password parameter',
           });
           return;
         }
@@ -151,7 +161,7 @@ export const token: RequestHandler = async (req, res): Promise<void> => {
         if (!refresh_token) {
           res.status(StatusCodes.BAD_REQUEST).json({
             error: 'invalid_request',
-            error_description: 'Missing refresh_token parameter'
+            error_description: 'Missing refresh_token parameter',
           });
           return;
         }
@@ -172,7 +182,7 @@ export const token: RequestHandler = async (req, res): Promise<void> => {
       default:
         res.status(StatusCodes.BAD_REQUEST).json({
           error: 'unsupported_grant_type',
-          error_description: `Grant type '${grant_type}' is not supported`
+          error_description: `Grant type '${grant_type}' is not supported`,
         });
         return;
     }
@@ -181,12 +191,12 @@ export const token: RequestHandler = async (req, res): Promise<void> => {
     if (error instanceof Error) {
       res.status(StatusCodes.BAD_REQUEST).json({
         error: 'invalid_grant',
-        error_description: error.message
+        error_description: error.message,
       });
     } else {
       res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
         error: 'server_error',
-        error_description: 'An unexpected error occurred'
+        error_description: 'An unexpected error occurred',
       });
     }
   }
@@ -199,7 +209,7 @@ export const revoke: RequestHandler = async (req, res): Promise<void> => {
     if (!token) {
       res.status(StatusCodes.BAD_REQUEST).json({
         error: 'invalid_request',
-        error_description: 'Missing token parameter'
+        error_description: 'Missing token parameter',
       });
       return;
     }
@@ -212,7 +222,7 @@ export const revoke: RequestHandler = async (req, res): Promise<void> => {
   } catch (error) {
     res.status(StatusCodes.BAD_REQUEST).json({
       error: 'invalid_request',
-      error_description: error instanceof Error ? error.message : 'Token revocation failed'
+      error_description: error instanceof Error ? error.message : 'Token revocation failed',
     });
   }
 };

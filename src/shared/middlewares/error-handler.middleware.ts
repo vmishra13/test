@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { ApiResponse } from '../utils/api-response';
-import logger from '../../config/logger';
-import { ENV } from '../../config/env';
+import { ApiResponse } from '@utils/api-response';
+import logger from '@config/logger';
+import { ENV } from '@config/env';
 
 // Error type definitions
 type ErrorCode =

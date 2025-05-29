@@ -1,4 +1,4 @@
-import logger from '../../config/logger';
+import logger from '@config/logger';
 import { registerCronJob } from './cron.service';
 import { fiveSecondTask, oneMinuteTask } from './tasks/test-tasks';
 

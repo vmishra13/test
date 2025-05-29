@@ -1,13 +1,11 @@
 // MongoDB Schema for Reliacare
 
-generator client {
+generator mongodbClient {
   provider = "prisma-client-js"
   output   = "./generated/mongodb-client"
 }
 
-datasource db {
+datasource mongoDb {
   provider = "mongodb"
   url      = env("MONGODB_DATABASE_URL")
 }
-
-// Models will be defined here later

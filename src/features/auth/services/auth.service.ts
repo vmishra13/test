@@ -2,7 +2,7 @@ import { userRepository } from '../repositories/user.repository';
 import { tokenService } from './token.service';
 import { Role } from '../models/user.model';
 import { LoginRequestDto, RegisterRequestDto } from '../dto/auth.dto';
-import { ENV } from '../../../config/env';
+import { ENV } from '@config/env';
 
 /**
  * Handle user login

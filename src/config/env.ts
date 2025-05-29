@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import path from 'path';
-import { StringValue } from '../shared/types';
+import { StringValue } from '@shared/types';
 
 const environment = process.env.NODE_ENV || 'development';
 const envFile =

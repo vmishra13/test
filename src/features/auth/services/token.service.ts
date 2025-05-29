@@ -1,9 +1,9 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import { ENV } from '../../../config/env';
+import { ENV } from '@config/env';
 import { User } from '../models/user.model';
 import ms from 'ms';
-import { StringValue } from '../../../shared/types';
+import { StringValue } from '@shared/types';
 
 interface TokenPayload {
   userId: string;

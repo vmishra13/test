@@ -1,9 +1,9 @@
 import { createServer, Server } from 'http';
 import app from '../app';
-import { ENV } from '../config/env';
-import logger from '../config/logger';
-import { isPortAvailable, findAvailablePort } from '../shared/utils/port-utils';
-import { generateStartupBanner, shouldShowBanner } from '../shared/utils/banner-utils';
+import { ENV } from '@config/env';
+import logger from '@config/logger';
+import { isPortAvailable, findAvailablePort } from '@shared/utils/port-utils';
+import { generateStartupBanner, shouldShowBanner } from '@shared/utils/banner-utils';
 
 /**
  * Server instance to use for graceful shutdown

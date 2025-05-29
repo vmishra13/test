@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { Role } from '../models/user.model';
 import { IAuthenticatedRequest } from './auth.middleware';
-import { ApiResponse } from '../../../shared/utils/api-response';
+import { ApiResponse } from '@shared/utils/api-response';
 
 /**
  * Middleware to check if the authenticated user has one of the allowed roles
@@ -12,25 +12,19 @@ export const checkRole = (allowedRoles: Role[]) => {
   return (req: IAuthenticatedRequest, res: Response, next: NextFunction): void => {
     // First ensure user is authenticated
     if (!req.user) {
-      res.status(StatusCodes.UNAUTHORIZED).json(
-        ApiResponse.error(
-          'Authentication required', 
-          'UNAUTHORIZED', 
-          StatusCodes.UNAUTHORIZED
-        )
-      );
+      res
+        .status(StatusCodes.UNAUTHORIZED)
+        .json(
+          ApiResponse.error('Authentication required', 'UNAUTHORIZED', StatusCodes.UNAUTHORIZED),
+        );
       return;
     }
 
     // Check if user's role is in the allowed roles list
     if (!allowedRoles.includes(req.user.role as Role)) {
-      res.status(StatusCodes.FORBIDDEN).json(
-        ApiResponse.error(
-          'Access denied', 
-          'FORBIDDEN', 
-          StatusCodes.FORBIDDEN
-        )
-      );
+      res
+        .status(StatusCodes.FORBIDDEN)
+        .json(ApiResponse.error('Access denied', 'FORBIDDEN', StatusCodes.FORBIDDEN));
       return;
     }
 

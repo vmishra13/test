@@ -1,7 +1,7 @@
 import { Router, Response, Request } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import logger from '../../config/logger';
-import { ApiResponse } from '../../shared/utils/api-response';
+import logger from '@config/logger';
+import { ApiResponse } from '@shared/utils/api-response';
 
 const diagnosticsRouter = Router();
 

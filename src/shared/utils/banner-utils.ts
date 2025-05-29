@@ -1,4 +1,4 @@
-import { ENV } from '../../config/env';
+import { ENV } from '@config/env';
 
 /**
  * Generates an ASCII art banner for server startup

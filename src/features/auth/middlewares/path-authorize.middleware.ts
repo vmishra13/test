@@ -2,8 +2,8 @@ import { Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { Role } from '../models/user.model';
 import { IAuthenticatedRequest } from './auth.middleware';
-import logger from '../../../config/logger';
-import { ApiResponse } from '../../../shared/utils/api-response';
+import logger from '@config/logger';
+import { ApiResponse } from '@shared/utils/api-response';
 
 // Define the resource permission type with an index signature
 interface ResourcePermissionMap {
@@ -57,13 +57,9 @@ export const pathAuthorize = (
       ip: req.ip,
     });
 
-    res.status(StatusCodes.UNAUTHORIZED).json(
-      ApiResponse.error(
-        'Authentication required', 
-        'UNAUTHORIZED', 
-        StatusCodes.UNAUTHORIZED
-      )
-    );
+    res
+      .status(StatusCodes.UNAUTHORIZED)
+      .json(ApiResponse.error('Authentication required', 'UNAUTHORIZED', StatusCodes.UNAUTHORIZED));
     return;
   }
 
@@ -103,18 +99,13 @@ export const pathAuthorize = (
 
   // If we reached here, permission is denied
   res.status(StatusCodes.FORBIDDEN).json(
-    ApiResponse.error(
-      'Access denied',
-      'FORBIDDEN',
-      StatusCodes.FORBIDDEN,
-      {
-        path,
-        method,
-        userRole: role,
-        requiredPermission: resourcePermissions[path]
-          ? `One of: ${resourcePermissions[path][method] || 'Method not allowed'}`
-          : 'Resource not defined in permissions map',
-      }
-    )
+    ApiResponse.error('Access denied', 'FORBIDDEN', StatusCodes.FORBIDDEN, {
+      path,
+      method,
+      userRole: role,
+      requiredPermission: resourcePermissions[path]
+        ? `One of: ${resourcePermissions[path][method] || 'Method not allowed'}`
+        : 'Resource not defined in permissions map',
+    }),
   );
 };

@@ -1,7 +1,7 @@
-import logger from '../config/logger';
+import logger from '@config/logger';
 import { shutdownServer } from './server';
-import { stopAllCronJobs } from '../services/cron/cron.service';
-import { db } from '../db';
+import { stopAllCronJobs } from '@services/cron/cron.service';
+import { db } from '@db';
 
 /**
  * Handle graceful shutdown

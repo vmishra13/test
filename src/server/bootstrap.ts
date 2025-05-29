@@ -1,9 +1,9 @@
-import logger from '../config/logger';
+import logger from '@config/logger';
 import { initializeServer } from './server';
 import { registerProcessHandlers } from './process-handlers';
-import { registerCronJobs } from '../services/cron/task-registry';
-import { ENV } from '../config/env';
-import { db } from '../db';
+import { registerCronJobs } from '@services/cron/task-registry';
+import { ENV } from '@config/env';
+import { db } from '@db';
 
 /**
  * Bootstrap application

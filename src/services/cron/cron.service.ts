@@ -1,5 +1,5 @@
 import * as cron from 'node-cron';
-import logger from '../../config/logger';
+import logger from '@config/logger';
 
 // Store active tasks so we can manage them later
 const activeTasks: Map<string, cron.ScheduledTask> = new Map();

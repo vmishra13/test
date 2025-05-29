@@ -1,4 +1,4 @@
-import logger from '../config/logger';
+import logger from '@config/logger';
 import prismaPostgres from './postgres/client';
 import prismaMongo from './mongodb/client';
 

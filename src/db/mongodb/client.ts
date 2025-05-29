@@ -1,5 +1,5 @@
 import { PrismaClient } from './generated/mongodb-client';
-import logger from '../../config/logger';
+import logger from '@config/logger';
 
 // Create a singleton instance of PrismaClient for MongoDB
 const prismaMongo = new PrismaClient({

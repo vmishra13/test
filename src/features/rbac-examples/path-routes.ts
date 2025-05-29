@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { authenticate, IAuthenticatedRequest } from '../auth/middlewares/auth.middleware';
 import { pathAuthorize } from '../auth/middlewares/path-authorize.middleware';
-import { ApiResponse } from '../../shared/utils/api-response';
+import { ApiResponse } from '@shared/utils/api-response';
 
 const pathRbacRouter = Router();
 

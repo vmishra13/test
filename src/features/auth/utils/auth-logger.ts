@@ -1,5 +1,5 @@
 // src/features/auth/utils/auth-logger.ts
-import logger from '../../../config/logger';
+import logger from '@config/logger';
 
 export const authLogger = {
   login: (userId: string, username: string, success: boolean, ip?: string) => {
