@@ -20,7 +20,12 @@
     "generate": "pnpm generate:postgres && pnpm generate:mongodb",
     "studio:postgres": "prisma studio --schema=src/db/postgres/schema.prisma",
     "studio:mongodb": "prisma studio --schema=src/db/mongodb/schema.prisma",
-    "prisma:clean": "rimraf src/db/*/generated"
+    "pull:postgres": "prisma db pull --schema=src/db/postgres/schema.prisma",
+    "pull:mongodb": "prisma db pull --schema=src/db/mongodb/schema.prisma",
+    "pull": "pnpm pull:postgres && pnpm pull:mongodb",
+    "db:clean": "rimraf src/db/*/generated",
+    "db:sync": "pnpm pull && pnpm generate",
+    "db:fresh": "pnpm prisma:clean && pnpm pull && pnpm generate"
   },
   "keywords": [
     "healthcare",

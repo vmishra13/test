@@ -15,3 +15,204 @@ model todo {
   is_completed Boolean  @default(false)
   created_at   DateTime @default(now()) @postgresDb.Timestamp(6)
 }
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model client {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique(map: "client_name_unique") @postgresDb.VarChar(100)
+  description     String?
+  timeZone        String?           @postgresDb.VarChar(100)
+  status          Int?              @default(-1)
+  logo            String?           @postgresDb.VarChar(2000)
+  favIcon         String?           @postgresDb.VarChar(2000)
+  language        String?           @postgresDb.VarChar(50)
+  website         String?           @postgresDb.VarChar(2000)
+  extraInfo       Json?             @postgresDb.Json
+  crUser          String            @postgresDb.VarChar(50)
+  crDate          DateTime          @default(now()) @postgresDb.Timestamp(6)
+  modUser         String?           @postgresDb.VarChar(50)
+  modDate         DateTime?         @default(now()) @postgresDb.Timestamp(6)
+  client_location client_location[]
+  contact         contact[]
+  user            user[]
+  user_role       user_role[]
+
+  @@index([crDate], map: "idx_client_crDate")
+  @@index([name], map: "idx_client_name")
+  @@index([status], map: "idx_client_status")
+  @@index([timeZone], map: "idx_client_timeZone")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model client_location {
+  id          Int       @id @default(autoincrement())
+  clientId    Int
+  name        String    @postgresDb.VarChar(100)
+  description String?
+  status      Int?
+  logo        String?   @postgresDb.VarChar(2000)
+  extraInfo   Json?     @postgresDb.Json
+  crUser      String    @postgresDb.VarChar(50)
+  crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser     String?   @postgresDb.VarChar(50)
+  modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
+  client      client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_client_location_client")
+  contact     contact[]
+
+  @@index([clientId], map: "idx_client_location_clientId")
+  @@index([clientId, status], map: "idx_client_location_client_status")
+  @@index([crDate], map: "idx_client_location_crDate")
+  @@index([name], map: "idx_client_location_name")
+  @@index([status], map: "idx_client_location_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model contact {
+  id              Int              @id @default(autoincrement())
+  type            String           @postgresDb.VarChar(50)
+  value           Json             @postgresDb.Json
+  userId          Int?
+  clientId        Int?
+  locationId      Int?
+  default         Boolean?         @default(false)
+  status          String?          @postgresDb.VarChar(5)
+  crUser          String           @postgresDb.VarChar(50)
+  crDate          DateTime         @default(now()) @postgresDb.Timestamp(6)
+  modUser         String?          @postgresDb.VarChar(50)
+  modDate         DateTime?        @default(now()) @postgresDb.Timestamp(6)
+  client          client?          @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_contact_client")
+  client_location client_location? @relation(fields: [locationId], references: [id], onDelete: Cascade, map: "fk_contact_location")
+  user            user?            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_contact_user")
+
+  @@index([clientId], map: "idx_contact_clientId")
+  @@index([clientId, type], map: "idx_contact_client_type")
+  @@index([crDate], map: "idx_contact_crDate")
+  @@index([default], map: "idx_contact_default")
+  @@index([locationId], map: "idx_contact_locationId")
+  @@index([locationId, type], map: "idx_contact_location_type")
+  @@index([status], map: "idx_contact_status")
+  @@index([type], map: "idx_contact_type")
+  @@index([userId], map: "idx_contact_userId")
+  @@index([userId, default], map: "idx_contact_user_default")
+  @@index([userId, type], map: "idx_contact_user_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model password {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  password   String    @postgresDb.VarChar(60)
+  expiryDate DateTime? @postgresDb.Date
+  status     Int?
+  crUser     String    @postgresDb.VarChar(50)
+  crDate     DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser    String?   @postgresDb.VarChar(50)
+  modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
+  user       user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_password_user")
+
+  @@index([crDate], map: "idx_password_crDate")
+  @@index([expiryDate], map: "idx_password_expiryDate")
+  @@index([status], map: "idx_password_status")
+  @@index([userId], map: "idx_password_userId")
+  @@index([userId, expiryDate], map: "idx_password_user_expiry")
+  @@index([userId, status], map: "idx_password_user_status")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model role {
+  id          Int         @id @default(autoincrement())
+  name        String      @unique(map: "role_name_unique") @postgresDb.VarChar(100)
+  description String?     @postgresDb.VarChar(100)
+  crUser      String      @postgresDb.VarChar(50)
+  crDate      DateTime    @default(now()) @postgresDb.Timestamp(6)
+  modUser     String?     @postgresDb.VarChar(50)
+  modDate     DateTime?   @default(now()) @postgresDb.Timestamp(6)
+  user_role   user_role[]
+
+  @@index([crDate], map: "idx_role_crDate")
+  @@index([name], map: "idx_role_name")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user {
+  id               Int         @id @default(autoincrement())
+  clientId         Int
+  userTypeId       Int
+  loginName        String      @unique(map: "idx_user_loginName") @postgresDb.VarChar(50)
+  firstName        String?     @postgresDb.VarChar(50)
+  middleName       String?     @postgresDb.VarChar(50)
+  lastName         String?     @postgresDb.VarChar(50)
+  email            String?     @unique(map: "idx_user_email") @postgresDb.VarChar(100)
+  dob              DateTime?   @postgresDb.Date
+  mrn              String?     @postgresDb.VarChar(50)
+  gender           String?     @postgresDb.VarChar(50)
+  timeZone         String?     @postgresDb.VarChar(100)
+  profilePicture   String?     @postgresDb.VarChar(2000)
+  passExpireInDays Int?
+  extraInfo        Json?       @postgresDb.Json
+  status           Int?
+  crUser           String      @postgresDb.VarChar(50)
+  crDate           DateTime    @default(now()) @postgresDb.Timestamp(6)
+  modUser          String?     @postgresDb.VarChar(50)
+  modDate          DateTime?   @default(now()) @postgresDb.Timestamp(6)
+  contact          contact[]
+  password         password[]
+  client           client      @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_client")
+  user_type        user_type   @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
+  user_role        user_role[]
+
+  @@index([clientId], map: "idx_user_clientId")
+  @@index([clientId, status], map: "idx_user_client_status")
+  @@index([crDate], map: "idx_user_crDate")
+  @@index([firstName, lastName], map: "idx_user_firstName_lastName")
+  @@index([mrn], map: "idx_user_mrn")
+  @@index([status], map: "idx_user_status")
+  @@index([userTypeId, status], map: "idx_user_type_status")
+  @@index([userTypeId], map: "idx_user_userTypeId")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user_role {
+  id       Int       @id @default(autoincrement())
+  userId   Int
+  clientId Int
+  roleId   Int
+  crUser   String    @postgresDb.VarChar(50)
+  crDate   DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser  String?   @postgresDb.VarChar(50)
+  modDate  DateTime? @default(now()) @postgresDb.Timestamp(6)
+  client   client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_role_client")
+  role     role      @relation(fields: [roleId], references: [id], map: "fk_user_role_role")
+  user     user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_role_user")
+
+  @@unique([userId, clientId, roleId], map: "user_role_unique_assignment")
+  @@index([clientId], map: "idx_user_role_clientId")
+  @@index([clientId, roleId], map: "idx_user_role_client_role")
+  @@index([crDate], map: "idx_user_role_crDate")
+  @@index([roleId], map: "idx_user_role_roleId")
+  @@index([userId], map: "idx_user_role_userId")
+  @@index([userId, clientId], map: "idx_user_role_user_client")
+  @@index([userId, roleId], map: "idx_user_role_user_role")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model user_type {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique(map: "user_type_name_unique") @postgresDb.VarChar(100)
+  description String?   @postgresDb.VarChar(100)
+  crUser      String    @postgresDb.VarChar(50)
+  crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser     String?   @postgresDb.VarChar(50)
+  modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
+  user        user[]
+
+  @@index([crDate], map: "idx_user_type_crDate")
+  @@index([name], map: "idx_user_type_name")
+}
