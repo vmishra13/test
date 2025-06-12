@@ -2,8 +2,8 @@
 
 # Usage instructions
 if [ "$#" -lt 5 ]; then
-  echo "Usage: $0 <host> <port> <database> <username> <password> <comma-separated-schemas>"
-  echo "Example: $0 my-host 5439 mydb myuser mypass staging,prod,ccda"
+  echo "Usage: $0 <host> <port> <database> <username> <password>"
+  echo "Example: $0 my-host 5439 mydb myuser mypass"
   exit 1
 fi
 
