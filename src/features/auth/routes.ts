@@ -1,15 +1,28 @@
 import { Router } from 'express';
-import { authController } from './controllers/auth.controller';
+import {
+  login,
+  oauth2Token,
+  refreshToken,
+  logout,
+  // registerUserController
+} from './controllers';
+import { authenticate } from './middlewares';
 
 const router = Router();
 
-// OAuth 2.0 standard endpoints
-router.post('/token', authController.token); // For both login and refresh token flows
-router.post('/revoke', authController.revoke); // For logout (revoking tokens)
-router.post('/register', authController.register); // Not strictly OAuth but common extension
+// ===================================================================
+// 🔐 OAUTH 2.0 & AUTHENTICATION ROUTES
+// ===================================================================
 
-// Advanced OAuth features (optional)
-// router.get('/authorize', authController.authorize);   // Authorization code flow start
-// router.post('/introspect', authController.introspect); // Token validation/inspection
+// OAuth 2.0 compatible endpoints
+router.post('/login', login); // OAuth 2.0 password grant (legacy compatibility)
+router.post('/refresh', refreshToken);
+router.post('/logout', authenticate, logout);
+
+router.post('/token', oauth2Token); // Standard OAuth 2.0 token endpoint
+router.post('/revoke', authenticate, logout); // OAuth 2.0 revocation endpoint
+
+// Core registration endpoints
+// router.post('/register', authenticate, registerUserController);
 
 export default router;

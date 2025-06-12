@@ -35,7 +35,7 @@ model client {
   modDate        DateTime?         @default(now()) @postgresDb.Timestamp(6)
   clientLocation client_location[]
   contact        contact[]
-  refreshToken   refresh_token[]
+  refresh_token  refresh_token[]
   user           user[]
   userRole       user_role[]
 
@@ -164,7 +164,7 @@ model user {
   modDate          DateTime?       @default(now()) @postgresDb.Timestamp(6)
   contact          contact[]
   password         password[]
-  refreshToken     refresh_token[]
+  refresh_token    refresh_token[]
   client           client          @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_client")
   userType         user_type       @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
   userRole         user_role[]
@@ -219,8 +219,6 @@ model user_type {
   @@index([name], map: "idx_user_type_name")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 model refresh_token {
   id        Int       @id @default(autoincrement())
   userId    Int
@@ -232,18 +230,11 @@ model refresh_token {
   isRevoked Boolean?  @default(false)
   crUser    String    @postgresDb.VarChar(50)
   crDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
-  modUser   String?   @postgresDb.VarChar(50)
-  modDate   DateTime? @default(now()) @postgresDb.Timestamp(6)
   client    client    @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_refresh_token_client")
   user      user      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_refresh_token_user")
 
-  @@index([userId], map: "idx_refresh_token_userId")
-  @@index([clientId], map: "idx_refresh_token_clientId")
-  @@index([jti], map: "idx_refresh_token_jti")
   @@index([family], map: "idx_refresh_token_family")
-  @@index([expiresAt], map: "idx_refresh_token_expiresAt")
   @@index([isRevoked], map: "idx_refresh_token_isRevoked")
-  @@index([crDate], map: "idx_refresh_token_crDate")
-  @@index([userId, clientId], map: "idx_refresh_token_user_client")
-  @@index([userId, family], map: "idx_refresh_token_user_family")
+  @@index([jti], map: "idx_refresh_token_jti")
+  @@index([userId], map: "idx_refresh_token_userId")
 }

@@ -44,6 +44,28 @@ Thumbs.db
 
 # Prisma
 src/db/*/generated/
+prisma/generated/
+**/prisma-client/
+
+# Prisma debug and temporary files
+prisma/dev.db*
+prisma/*.db*
+.env.db
+
+# Database files (if using SQLite for dev)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Prisma Studio temporary files
+.prisma/
+
+# Database dumps and backups
+*.sql
+*.dump
+*.backup
+database-backup/
 
 # Temporary files
 *.tmp
@@ -65,3 +87,6 @@ src/db/*/generated/
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Ignore all content in .readme directory
+.readme/

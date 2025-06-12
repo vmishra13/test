@@ -9,6 +9,7 @@ import { requestLogger } from './shared/middlewares/request-logger.middleware';
 import { ApiResponse } from './shared/utils/api-response';
 import { corsConfig } from './config/cors.config';
 import { helmetConfig } from './config/helmet.config';
+import { errorHandler, notFoundHandler } from '@shared/middlewares/error-handler.middleware';
 
 const app = express();
 
@@ -33,31 +34,9 @@ app.use(cors(corsConfig));
 app.use('/api', routes);
 
 // 404 handler
-app.use((req, res) => {
-  res
-    .status(StatusCodes.NOT_FOUND)
-    .json(
-      ApiResponse.error(
-        `Route ${req.method} ${req.url} not found`,
-        'NOT_FOUND',
-        StatusCodes.NOT_FOUND,
-      ),
-    );
-});
+app.use(notFoundHandler);
 
 // Error handler
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  logger.error({
-    message: err.message,
-    stack: err.stack,
-    path: req.path,
-  });
-
-  res
-    .status(StatusCodes.INTERNAL_SERVER_ERROR)
-    .json(
-      ApiResponse.error('Internal server error', 'SERVER_ERROR', StatusCodes.INTERNAL_SERVER_ERROR),
-    );
-});
+app.use(errorHandler);
 
 export default app;

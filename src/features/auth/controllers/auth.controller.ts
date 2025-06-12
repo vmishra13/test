@@ -1,238 +1,386 @@
-import { RequestHandler } from 'express';
+import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { authService } from '../services/auth.service';
-import { LoginRequestDto, RefreshTokenRequestDto, RegisterRequestDto } from '../dto/auth.dto';
-import { authLogger } from '../utils/auth-logger';
-import { ApiResponse } from '@shared/utils/api-response';
+import { ZodError } from 'zod';
+import * as authService from '../services/auth.service';
+import { LoginResponse, RefreshTokenRequest } from '../dto/auth.dto';
+import { getCurrentUserId, getCurrentClientId } from '../middlewares';
 
-export const login: RequestHandler = async (req, res) => {
+import {
+  PasswordGrantRequestSchema as loginSchema,
+  RefreshTokenGrantRequestSchema as refreshTokenSchema,
+  TokenRequestSchema as oauth2TokenSchema,
+} from '../validators/auth.validators';
+
+/**
+ * User login endpoint
+ */
+export const login = async (req: Request, res: Response): Promise<void> => {
   try {
-    const loginDto = req.body as LoginRequestDto;
-    const result = await authService.login(loginDto);
+    // Validate request body with OAuth 2.0 schema
+    const requestData = loginSchema.parse(req.body);
 
-    // Log successful login
-    authLogger.login(result.user.id, result.user.username, true, req.ip);
+    // Extract OAuth 2.0 standard fields
+    const credentials = {
+      username: requestData.username,
+      password: requestData.password,
+      clientId: requestData.clientId || undefined,
+    };
 
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Login successful'));
+    // Device information
+    const deviceInfo = {
+      userAgent: req.get('User-Agent') || 'unknown',
+      ipAddress: req.ip || 'unknown',
+    };
+
+    // Authenticate user
+    const result: LoginResponse = await authService.authenticateUser(credentials, deviceInfo);
+
+    // Return OAuth 2.0 compatible response
+    res.status(StatusCodes.OK).json({
+      // OAuth 2.0 standard fields
+      access_token: result.data.tokens.accessToken,
+      token_type: 'Bearer',
+      expires_in: result.data.tokens.expiresIn,
+      refresh_token: result.data.tokens.refreshToken,
+      refresh_expires_in: result.data.tokens.refreshExpiresIn,
+      scope: requestData.scope || 'read write',
+
+      // Additional ReliaCare specific data
+      user: result.data.user,
+      permissions: result.data.permissions,
+
+      // Standard response fields
+      success: result.success,
+      message: result.message,
+      timestamp: result.timestamp,
+    });
   } catch (error) {
-    // Log failed login
-    authLogger.login('unknown', req.body?.username || 'unknown', false, req.ip);
-
-    res
-      .status(StatusCodes.UNAUTHORIZED)
-      .json(ApiResponse.error('Authentication failed', 'AUTH_FAILED', StatusCodes.UNAUTHORIZED));
-  }
-};
-
-export const register: RequestHandler = async (req, res) => {
-  try {
-    const registerDto = req.body as RegisterRequestDto;
-    const result = await authService.register(registerDto);
-
-    // Log successful registration
-    authLogger.register(result.user.id, result.user.username, true);
-
-    res.status(StatusCodes.CREATED).json(ApiResponse.success(result, 'Registration successful'));
-  } catch (error) {
-    // Log failed registration
-    authLogger.register('unknown', req.body?.username || 'unknown', false);
-
-    if (error instanceof Error) {
-      res
-        .status(StatusCodes.BAD_REQUEST)
-        .json(ApiResponse.error(error.message, 'REGISTRATION_FAILED', StatusCodes.BAD_REQUEST));
-    } else {
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json(
-          ApiResponse.error(
-            'Registration failed',
-            'SERVER_ERROR',
-            StatusCodes.INTERNAL_SERVER_ERROR,
-          ),
-        );
-    }
-  }
-};
-
-export const refreshToken: RequestHandler = async (req, res) => {
-  try {
-    const { refreshToken } = req.body as RefreshTokenRequestDto;
-
-    if (!refreshToken) {
-      res
-        .status(StatusCodes.BAD_REQUEST)
-        .json(
-          ApiResponse.error('Refresh token is required', 'MISSING_TOKEN', StatusCodes.BAD_REQUEST),
-        );
-      return;
-    }
-
-    const result = await authService.refreshToken(refreshToken);
-
-    // Get the user ID from the req object if available through middleware
-    const userId = (req as any).user?.id || 'unknown';
-
-    // Log successful token refresh
-    authLogger.tokenRefresh(userId, true);
-
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Token refreshed'));
-  } catch (error) {
-    // Log failed token refresh
-    authLogger.tokenRefresh('unknown', false);
-
-    res
-      .status(StatusCodes.UNAUTHORIZED)
-      .json(ApiResponse.error('Invalid refresh token', 'INVALID_TOKEN', StatusCodes.UNAUTHORIZED));
-  }
-};
-
-export const logout: RequestHandler = async (req, res) => {
-  try {
-    const { refreshToken } = req.body as RefreshTokenRequestDto;
-
-    if (!refreshToken) {
-      res
-        .status(StatusCodes.BAD_REQUEST)
-        .json(
-          ApiResponse.error('Refresh token is required', 'MISSING_TOKEN', StatusCodes.BAD_REQUEST),
-        );
-      return;
-    }
-
-    // Extract user ID from the authenticated request
-    const userId = (req as any).user?.id || 'unknown';
-
-    await authService.logout(refreshToken);
-
-    // Log logout
-    authLogger.logout(userId);
-
-    // For logout, we can return a 200 success instead of 204 No Content to include a message
-    res.status(StatusCodes.OK).json(ApiResponse.success(null, 'Logged out successfully'));
-  } catch (error) {
-    res
-      .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json(ApiResponse.error('Logout failed', 'LOGOUT_FAILED', StatusCodes.INTERNAL_SERVER_ERROR));
-  }
-};
-
-export const token: RequestHandler = async (req, res): Promise<void> => {
-  try {
-    const { grant_type, username, password, refresh_token } = req.body;
-
-    // Handle different grant types
-    switch (grant_type) {
-      case 'password': {
-        // Password grant type - traditional login
-        if (!username || !password) {
-          res.status(StatusCodes.BAD_REQUEST).json({
-            error: 'invalid_request',
-            error_description: 'Missing username or password parameter',
-          });
-          return;
-        }
-
-        const result = await authService.login({ username, password });
-
-        // Log successful login
-        authLogger.login(result.user.id, result.user.username, true, req.ip);
-
-        // Return standard OAuth response (not wrapped in ApiResponse)
-        res.status(StatusCodes.OK).json({
-          access_token: result.accessToken,
-          refresh_token: result.refreshToken,
-          token_type: result.tokenType,
-          expires_in: result.expiresIn,
-          refresh_expires_in: result.refreshTokenExpiresIn,
-          user: {
-            id: result.user.id,
-            username: result.user.username,
-            role: result.user.role,
-            firstName: result.user.firstName,
-            lastName: result.user.lastName,
-          },
-        });
-        return;
-      }
-
-      case 'refresh_token': {
-        // Refresh token grant type
-        if (!refresh_token) {
-          res.status(StatusCodes.BAD_REQUEST).json({
-            error: 'invalid_request',
-            error_description: 'Missing refresh_token parameter',
-          });
-          return;
-        }
-
-        const result = await authService.refreshToken(refresh_token);
-
-        // Return standard OAuth response (not wrapped in ApiResponse)
-        res.status(StatusCodes.OK).json({
-          access_token: result.accessToken,
-          refresh_token: result.refreshToken,
-          token_type: result.tokenType,
-          expires_in: result.expiresIn,
-          refresh_expires_in: result.refreshTokenExpiresIn,
-        });
-        return;
-      }
-
-      default:
-        res.status(StatusCodes.BAD_REQUEST).json({
-          error: 'unsupported_grant_type',
-          error_description: `Grant type '${grant_type}' is not supported`,
-        });
-        return;
-    }
-  } catch (error) {
-    // Handle login errors according to OAuth 2.0 spec
-    if (error instanceof Error) {
-      res.status(StatusCodes.BAD_REQUEST).json({
-        error: 'invalid_grant',
-        error_description: error.message,
-      });
-    } else {
-      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-        error: 'server_error',
-        error_description: 'An unexpected error occurred',
-      });
-    }
-  }
-};
-
-export const revoke: RequestHandler = async (req, res): Promise<void> => {
-  try {
-    const { token, token_type_hint } = req.body;
-
-    if (!token) {
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
       res.status(StatusCodes.BAD_REQUEST).json({
         error: 'invalid_request',
-        error_description: 'Missing token parameter',
+        error_description: 'Invalid request format or missing required parameters',
+        details: error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code,
+        })),
+        timestamp: new Date().toISOString(),
       });
       return;
     }
 
-    // Revoke the token based on type hint
-    await authService.logout(token);
+    if (error instanceof Error) {
+      if (error.message.includes('invalid_credentials')) {
+        res.status(StatusCodes.UNAUTHORIZED).json({
+          error: 'invalid_grant',
+          error_description:
+            'The provided authorization grant is invalid, expired, revoked, or does not match the redirection URI',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
 
-    // OAuth spec requires 200 OK with empty body on successful revocation
-    res.status(StatusCodes.OK).send();
-  } catch (error) {
-    res.status(StatusCodes.BAD_REQUEST).json({
-      error: 'invalid_request',
-      error_description: error instanceof Error ? error.message : 'Token revocation failed',
+      if (error.message.includes('account_locked')) {
+        res.status(StatusCodes.LOCKED).json({
+          error: 'account_locked',
+          error_description: 'User account is temporarily locked due to multiple failed attempts',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+
+      if (error.message.includes('account_disabled')) {
+        res.status(StatusCodes.FORBIDDEN).json({
+          error: 'access_denied',
+          error_description: 'User account is disabled',
+          timestamp: new Date().toISOString(),
+        });
+        return;
+      }
+    }
+
+    console.error('Login error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      error: 'server_error',
+      error_description: 'An unexpected error occurred during authentication',
+      timestamp: new Date().toISOString(),
     });
   }
 };
 
-// Export as a group for convenience
-export const authController = {
-  login,
-  register,
-  refreshToken,
-  logout,
-  token,
-  revoke,
+/**
+ * Token refresh endpoint
+ */
+export const refreshToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate request body with Zod
+    const { refresh_token }: RefreshTokenRequest = refreshTokenSchema.parse(req.body);
+
+    // Device information
+    const deviceInfo = {
+      userAgent: req.get('User-Agent') || 'unknown',
+      ipAddress: req.ip || 'unknown',
+    };
+
+    const result = await authService.refreshToken(
+      { refresh_token }, // ✅ Wrap in RefreshTokenRequest object
+      deviceInfo,
+    );
+
+    // Return the result directly (it already matches RefreshTokenResponse)
+    res.status(StatusCodes.OK).json(result);
+  } catch (error) {
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'validation_failed',
+        message: 'Invalid refresh token format',
+        details: error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+          code: err.code,
+        })),
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (error instanceof Error && error.message.includes('Token refresh failed')) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'invalid_refresh_token',
+        message: 'Invalid or expired refresh token',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    console.error('Token refresh error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: 'internal_server_error',
+      message: 'Failed to refresh token',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * User logout endpoint
+ */
+export const logout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getCurrentUserId(req);
+    const clientId = getCurrentClientId(req);
+
+    if (!userId || !clientId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'unauthorized',
+        message: 'Authentication required',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // Extract refresh token from body (optional)
+    const { refreshToken } = req.body || {};
+
+    // ✅ Use correct service function
+    const result = await authService.logoutUser(userId, clientId, refreshToken, false);
+
+    res.status(StatusCodes.OK).json({
+      success: result.success,
+      message: result.message,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: 'internal_server_error',
+      message: 'Failed to logout',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * Logout from all devices
+ */
+export const logoutAll = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getCurrentUserId(req);
+    const clientId = getCurrentClientId(req);
+
+    if (!userId || !clientId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'unauthorized',
+        message: 'Authentication required',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    const result = await authService.logoutUser(userId, clientId, undefined, true);
+
+    res.status(StatusCodes.OK).json({
+      success: result.success,
+      message: result.message,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Logout all error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: 'internal_server_error',
+      message: 'Failed to logout from all devices',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * Get current user session info
+ */
+export const getSession = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = getCurrentUserId(req);
+    const clientId = getCurrentClientId(req);
+
+    if (!userId || !clientId) {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'unauthorized',
+        message: 'Authentication required',
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    // ✅ Use correct service function
+    const sessionInfo = await authService.getUserTokenSummary(userId, clientId);
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: sessionInfo,
+      message: 'Session information retrieved successfully',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Get session error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: 'internal_server_error',
+      message: 'Failed to retrieve session information',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * Validate current token
+ */
+export const validateToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // If we reach here, the token is valid (checked by authenticate middleware)
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        valid: true,
+        user: req.user,
+        permissions: req.permissions,
+        clientId: req.clientId,
+      },
+      message: 'Token is valid',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Token validation error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: 'internal_server_error',
+      message: 'Failed to validate token',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * Check authentication status (works with optional auth)
+ */
+export const checkAuth = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const isAuthenticated = !!req.user;
+
+    res.status(StatusCodes.OK).json({
+      success: true,
+      data: {
+        authenticated: isAuthenticated,
+        user: req.user || null,
+        permissions: req.permissions || [],
+        clientId: req.clientId || null,
+      },
+      message: isAuthenticated ? 'User is authenticated' : 'User is not authenticated',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Check auth error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: 'internal_server_error',
+      message: 'Failed to check authentication status',
+      timestamp: new Date().toISOString(),
+    });
+  }
+};
+
+/**
+ * Dedicated OAuth 2.0 token endpoint
+ */
+export const oauth2Token = async (req: Request, res: Response): Promise<void> => {
+  try {
+    // Validate OAuth 2.0 token request
+    const tokenRequest = oauth2TokenSchema.parse(req.body);
+
+    // Device information
+    const deviceInfo = {
+      userAgent: req.get('User-Agent') || 'unknown',
+      ipAddress: req.ip || 'unknown',
+    };
+
+    // Process OAuth 2.0 request using service
+    const result = await authService.processOAuth2TokenRequest(tokenRequest, deviceInfo);
+
+    // Check if it's an error response
+    if ('error' in result) {
+      res.status(StatusCodes.BAD_REQUEST).json(result);
+      return;
+    }
+
+    // Success response - already OAuth 2.0 compatible
+    res.status(StatusCodes.OK).json(result);
+  } catch (error) {
+    // Handle Zod validation errors
+    if (error instanceof ZodError) {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        error: 'invalid_request',
+        error_description: 'Invalid request format or missing required parameters',
+        details: error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message,
+        })),
+      });
+      return;
+    }
+
+    // Generic OAuth 2.0 error response
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      error: 'server_error',
+      error_description: 'An unexpected error occurred',
+    });
+  }
 };

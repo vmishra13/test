@@ -21,6 +21,8 @@ export const ENV = {
     refreshTokenSecret: process.env.JWT_REFRESH_TOKEN_SECRET ?? 'refresh-token-secret-dev',
     accessTokenExpiresIn: (process.env.JWT_ACCESS_TOKEN_EXPIRES_IN ?? '15m') as StringValue,
     refreshTokenExpiresIn: (process.env.JWT_REFRESH_TOKEN_EXPIRES_IN ?? '7d') as StringValue,
+    issuer: process.env.JWT_ISS || 'reliacare-backend',
+    audience: process.env.JWT_AUDIENCE || 'reliacare-frontend',
   },
   // Database configuration
   database: {
