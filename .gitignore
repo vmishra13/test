@@ -88,5 +88,5 @@ database-backup/
 # yarn.lock
 # pnpm-lock.yaml
 
-# Ignore all content in .readme directory
-.readme/
+# Ignore all content in .do-not-push directory
+.do-not-push/
