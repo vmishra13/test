@@ -14,28 +14,61 @@ import {
 } from '../validators/registration.validators';
 import * as userRepository from '../repositories/user.repository';
 import { Request } from 'express';
-import { ExtendedRequest, UserRegistrationAction } from '../types/extended-request';
+import {
+  ExtendedRequest,
+  RequestUserAction,
+  // UserRegistrationAction,
+  type AuthRequest,
+} from '../types/extended-request';
 import {
   createAuthError,
   createAuthorizationError,
   createValidationError,
 } from '@/shared/errors/application-error';
+import {
+  createAuthRequest,
+  getCurrentUser,
+  getCurrentUserPrimaryRole,
+  performAuthorization,
+} from '@shared/authorization';
+import logger from '@/config/logger';
 
 /**
  * Enhanced registerUser function that handles authentication, authorization, and validation
  */
-export async function registerUser(req: Request): Promise<RegisterUserResponse> {
+export async function registerUser(
+  req: ExtendedRequest<any, RegisterUserRequest>,
+): Promise<RegisterUserResponse> {
   // 1. Check authentication
-  const currentUser = checkAuthentication(req);
+  const currentUser = getCurrentUser(req);
 
+  const actionUserId = null; // No specific user ID for registration action
+  const actionClientId = req.body.clientId; // Target client from request body
+  const actionUserTypeId = req.body.userTypeId; // Target user type from request body
+  const actionPermission = RequestUserAction.userAdd; // Specific permission for user registration
+
+  const oAuthReq: AuthRequest = createAuthRequest(
+    currentUser,
+    actionUserId,
+    actionClientId,
+    actionUserTypeId,
+    actionPermission,
+  );
   // 2. Determine registration action
-  const extendedReq = retrieveAction(req as unknown as ExtendedRequest, currentUser);
+  // const extendedReq = retrieveAction(req as unknown as ExtendedRequest, currentUser);
 
   // 3. Check authorization for the specific action
-  performAuthorization(extendedReq);
+  const hasPermission = performAuthorization(oAuthReq);
+
+  if (!hasPermission) {
+    logger.error(
+      `User ${currentUser.userId} does not have permission to register users in client ${actionClientId}`,
+    );
+    throw createAuthorizationError('You do not have permission to perform this action');
+  }
 
   // 4. Validate request body
-  const requestData = validateRequestBody(extendedReq.body);
+  const requestData = validateRequestBody(req.body);
 
   // 5. Perform registration
   return await performUserRegistration(requestData, currentUser);
@@ -44,132 +77,115 @@ export async function registerUser(req: Request): Promise<RegisterUserResponse> 
 /**
  * Check authentication - moved from controller
  */
-function checkAuthentication(req: Request): AuthenticatedUser {
-  const currentUser = req.user as AuthenticatedUser;
-  if (!currentUser) {
-    throw createAuthError('Authentication required');
-  }
-  return currentUser;
-}
+// function checkAuthentication(req: Request): AuthenticatedUser {
+//   const currentUser = req.user as AuthenticatedUser;
+//   if (!currentUser) {
+//     throw createAuthError('Authentication required');
+//   }
+//   return currentUser;
+// }
 
 /**
  * Determine what type of user is being registered and set action
  */
-function retrieveAction(req: ExtendedRequest, currentUser: AuthenticatedUser): ExtendedRequest {
-  // Parse request body to get roles (basic parsing for action determination)
-  let targetRoles: CoreRole[] = [];
+// function retrieveAction(req: ExtendedRequest, currentUser: AuthenticatedUser): ExtendedRequest {
+//   // Parse request body to get roles (basic parsing for action determination)
+//   let targetRoles: CoreRole[] = [];
 
-  try {
-    // Ensure req.body is treated as an object with proper type checking
-    const body = req.body as Record<string, any>;
-    if (body && body.roles && Array.isArray(body.roles)) {
-      targetRoles = body.roles;
-    }
-  } catch (error) {
-    // Will be handled in validation step
-    targetRoles = [];
-  }
+//   try {
+//     // Ensure req.body is treated as an object with proper type checking
+//     const body = req.body as Record<string, any>;
+//     if (body && body.roles && Array.isArray(body.roles)) {
+//       targetRoles = body.roles;
+//     }
+//   } catch (error) {
+//     // Will be handled in validation step
+//     targetRoles = [];
+//   }
 
-  // Determine primary action based on highest privilege role being assigned
-  if (targetRoles.includes(CoreRole.CLIENT_ADMIN)) {
-    req.action = UserRegistrationAction.ADD_CLIENT_ADMIN;
-  } else if (targetRoles.includes(CoreRole.CLINICAL_STAFF)) {
-    req.action = UserRegistrationAction.ADD_CLINICAL_STAFF;
-  } else if (targetRoles.includes(CoreRole.OFFICE_STAFF)) {
-    req.action = UserRegistrationAction.ADD_OFFICE_STAFF;
-  } else if (targetRoles.includes(CoreRole.PATIENT)) {
-    req.action = UserRegistrationAction.ADD_PATIENT;
-  } else {
-    throw createAuthorizationError('No valid role specified for user registration');
-  }
+//   // Determine primary action based on highest privilege role being assigned
+//   if (targetRoles.includes(CoreRole.CLIENT_ADMIN)) {
+//     req.action = UserRegistrationAction.ADD_CLIENT_ADMIN;
+//   } else if (targetRoles.includes(CoreRole.CLINICAL_STAFF)) {
+//     req.action = UserRegistrationAction.ADD_CLINICAL_STAFF;
+//   } else if (targetRoles.includes(CoreRole.OFFICE_STAFF)) {
+//     req.action = UserRegistrationAction.ADD_OFFICE_STAFF;
+//   } else if (targetRoles.includes(CoreRole.PATIENT)) {
+//     req.action = UserRegistrationAction.ADD_PATIENT;
+//   } else {
+//     throw createAuthorizationError('No valid role specified for user registration');
+//   }
 
-  return req;
-}
+//   return req;
+// }
 
 /**
  * Check authorization based on the registration action
  */
-function performAuthorization(req: ExtendedRequest): void {
-  const currentUser = req.user;
-  const targetClientId = (req.body as any)?.clientId;
+// function performAuthorization2(req: ExtendedRequest): void {
+//   const currentUser = req.user;
+//   const targetClientId = (req.body as any)?.clientId;
 
-  // Get current user's primary role (highest privilege)
-  const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
+//   // Get current user's primary role (highest privilege)
+//   const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
 
-  switch (req.action) {
-    case UserRegistrationAction.ADD_CLIENT_ADMIN:
-      if (currentUserRole !== CoreRole.SUPER_ADMIN) {
-        throw createAuthorizationError('Only SUPER_ADMIN can create CLIENT_ADMIN accounts');
-      }
-      break;
+//   switch (req.action) {
+//     case UserRegistrationAction.ADD_CLIENT_ADMIN:
+//       if (currentUserRole !== CoreRole.SUPER_ADMIN) {
+//         throw createAuthorizationError('Only SUPER_ADMIN can create CLIENT_ADMIN accounts');
+//       }
+//       break;
 
-    case UserRegistrationAction.ADD_CLINICAL_STAFF:
-      if (currentUserRole !== CoreRole.CLIENT_ADMIN) {
-        throw createAuthorizationError('Only CLIENT_ADMIN can create CLINICAL_STAFF accounts');
-      }
+//     case UserRegistrationAction.ADD_CLINICAL_STAFF:
+//       if (currentUserRole !== CoreRole.CLIENT_ADMIN) {
+//         throw createAuthorizationError('Only CLIENT_ADMIN can create CLINICAL_STAFF accounts');
+//       }
 
-      // Check same client restriction
-      if (currentUser.clientId !== targetClientId) {
-        throw createAuthorizationError(
-          'CLIENT_ADMIN can only create CLINICAL_STAFF in their own organization',
-        );
-      }
-      break;
+//       // Check same client restriction
+//       if (currentUser.clientId !== targetClientId) {
+//         throw createAuthorizationError(
+//           'CLIENT_ADMIN can only create CLINICAL_STAFF in their own organization',
+//         );
+//       }
+//       break;
 
-    case UserRegistrationAction.ADD_OFFICE_STAFF:
-      // Rule 4: OFFICE_STAFF can be created by only CLIENT_ADMIN of the same Client
-      if (currentUserRole !== CoreRole.CLIENT_ADMIN) {
-        throw createAuthorizationError('Only CLIENT_ADMIN can create OFFICE_STAFF accounts');
-      }
+//     case UserRegistrationAction.ADD_OFFICE_STAFF:
+//       // Rule 4: OFFICE_STAFF can be created by only CLIENT_ADMIN of the same Client
+//       if (currentUserRole !== CoreRole.CLIENT_ADMIN) {
+//         throw createAuthorizationError('Only CLIENT_ADMIN can create OFFICE_STAFF accounts');
+//       }
 
-      // Check same client restriction
-      if (currentUser.clientId !== targetClientId) {
-        throw createAuthorizationError(
-          'CLIENT_ADMIN can only create OFFICE_STAFF in their own organization',
-        );
-      }
-      break;
+//       // Check same client restriction
+//       if (currentUser.clientId !== targetClientId) {
+//         throw createAuthorizationError(
+//           'CLIENT_ADMIN can only create OFFICE_STAFF in their own organization',
+//         );
+//       }
+//       break;
 
-    case UserRegistrationAction.ADD_PATIENT:
-      // Rule 5: PATIENT can be created by CLIENT_ADMIN and CLINICAL_STAFF of the same Client
-      if (
-        currentUserRole !== CoreRole.CLIENT_ADMIN &&
-        currentUserRole !== CoreRole.CLINICAL_STAFF
-      ) {
-        throw createAuthorizationError(
-          'Only CLIENT_ADMIN and CLINICAL_STAFF can create PATIENT accounts',
-        );
-      }
+//     case UserRegistrationAction.ADD_PATIENT:
+//       // Rule 5: PATIENT can be created by CLIENT_ADMIN and CLINICAL_STAFF of the same Client
+//       if (
+//         currentUserRole !== CoreRole.CLIENT_ADMIN &&
+//         currentUserRole !== CoreRole.CLINICAL_STAFF
+//       ) {
+//         throw createAuthorizationError(
+//           'Only CLIENT_ADMIN and CLINICAL_STAFF can create PATIENT accounts',
+//         );
+//       }
 
-      // Check same client restriction
-      if (currentUser.clientId !== targetClientId) {
-        throw createAuthorizationError(
-          `${currentUserRole} can only create PATIENT accounts in their own organization`,
-        );
-      }
-      break;
+//       // Check same client restriction
+//       if (currentUser.clientId !== targetClientId) {
+//         throw createAuthorizationError(
+//           `${currentUserRole} can only create PATIENT accounts in their own organization`,
+//         );
+//       }
+//       break;
 
-    default:
-      throw createAuthorizationError('Invalid registration action specified');
-  }
-}
-
-/**
- * Get the primary (highest privilege) role of the current user
- */
-function getCurrentUserPrimaryRole(userRoles: string[]): CoreRole {
-  // Convert to CoreRole array and sort by hierarchy level (highest first)
-  const coreRoles = userRoles
-    .filter(role => Object.values(CoreRole).includes(role as CoreRole))
-    .map(role => role as CoreRole)
-    .sort((a, b) => RoleUtils.getRoleLevel(b) - RoleUtils.getRoleLevel(a));
-
-  if (coreRoles.length === 0) {
-    throw createAuthorizationError('No valid roles found for current user');
-  }
-
-  return coreRoles[0]; // Return highest privilege role
-}
+//     default:
+//       throw createAuthorizationError('Invalid registration action specified');
+//   }
+// }
 
 /**
  * Validate request body - moved from controller

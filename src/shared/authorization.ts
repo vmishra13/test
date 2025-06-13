@@ -1,101 +1,91 @@
 import {
   RequestUserAction,
-  type AuthorizationContext,
+  type AuthRequest,
   type ExtendedRequest,
-  type UserAction,
+  //   type UserAction,
 } from '@features/users/types/extended-request';
 import { CoreRole, RoleUtils } from './constants';
 import type { AuthenticatedUser } from '@/features/auth/middlewares';
 import { createAuthError, createAuthorizationError } from '@/shared/errors/application-error';
 
-export function performAuthorization(oAuthReq: AuthorizationContext): boolean {
-  const currentUserRole = getCurrentUserPrimaryRole(oAuthReq.reqUserRoles);
+export function performAuthorization(oAuthReq: AuthRequest): boolean {
+  //   const currentUserRole = getCurrentUserPrimaryRole(oAuthReq.reqUserRoles);
+  const currentUserRoles = oAuthReq.reqUserRoles || [];
   const currentUserTypeId = oAuthReq.reqUserTypeId;
+
+  if (currentUserRoles.length === 0) {
+    throw createAuthorizationError('No roles found for current user');
+  }
 
   switch (oAuthReq.actionPermission) {
     case RequestUserAction.userAdd:
-      // SUPER_ADMIN can add users anywhere
-      //   if (oAuthReq.reqUserRoles.includes(CoreRole.SUPER_ADMIN)) {
-      if (currentUserRole === CoreRole.SUPER_ADMIN) {
-        return true;
-      }
+      return validateUserRegistrationAccess(oAuthReq, currentUserRoles);
+    //   // SUPER_ADMIN can add users anywhere
+    //   //   if (oAuthReq.reqUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    //   if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    //     return true;
+    //   }
 
-      // CLIENT_ADMIN can add users within their own client
-      if (currentUserRole === CoreRole.CLIENT_ADMIN) {
-        // If actionClientID is specified, it must match the requester's client
-        if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-          return false;
-        }
-        return true;
-      }
+    //   // CLIENT_ADMIN can add users within their own client
+    //   if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    //     // If actionClientID is specified, it must match the requester's client
+    //     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+    //       return false;
+    //     }
+    //     return true;
+    //   }
 
-      // Other roles cannot add users
-      return false;
+    //   // Other roles cannot add users
+    //   return false;
 
     case RequestUserAction.userView:
-      // SUPER_ADMIN can view any user
-      if (currentUserRole === CoreRole.SUPER_ADMIN) {
-        return true;
-      }
+      return validateUserViewAccess(oAuthReq, currentUserRoles);
 
-      // CLIENT_ADMIN can view users in their client
-      if (currentUserRole === CoreRole.CLIENT_ADMIN) {
-        if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-          return false;
-        }
-        return true;
-      }
+    // case RequestUserAction.userEdit:
+    // case RequestUserAction.userDelete:
+    //   // SUPER_ADMIN can edit/delete any user
+    //   if (currentUserRole === CoreRole.SUPER_ADMIN) {
+    //     return true;
+    //   }
 
-      // CLINICAL_STAFF and OFFICE_STAFF can view patients in their client
-      if (
-        currentUserRole === CoreRole.CLINICAL_STAFF ||
-        currentUserRole === CoreRole.OFFICE_STAFF
-      ) {
-        if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-          return false;
-        }
-        // Additional check: they can only view patients (if userTypeId corresponds to patient role)
-        return true;
-      }
+    //   // CLIENT_ADMIN can edit/delete users in their client (except SUPER_ADMIN users)
+    //   if (currentUserRole === CoreRole.CLIENT_ADMIN) {
+    //     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+    //       return false;
+    //     }
+    //     return true;
+    //   }
 
-      return false;
-
-    case RequestUserAction.userEdit:
-    case RequestUserAction.userDelete:
-      // SUPER_ADMIN can edit/delete any user
-      if (currentUserRole === CoreRole.SUPER_ADMIN) {
-        return true;
-      }
-
-      // CLIENT_ADMIN can edit/delete users in their client (except SUPER_ADMIN users)
-      if (currentUserRole === CoreRole.CLIENT_ADMIN) {
-        if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-          return false;
-        }
-        return true;
-      }
-
-      // Other roles cannot edit/delete users
-      return false;
+    //   // Other roles cannot edit/delete users
+    //   return false;
 
     default:
       return false;
   }
 }
 
-export function configureAuthRequest(
-  currentUser: AuthenticatedUser,
-  action: UserAction,
-): AuthorizationContext {
+// createAuthRequest(currentUser, actionUserId, actionClientId, actionUserTypeId, actionPermission);
+export function createAuthRequest(
+  currentUser: AuthenticatedUser | null | undefined,
+  actionUserId: number | null,
+  actionClientId: number | null,
+  actionUserTypeId: number | null,
+  actionPermission: RequestUserAction,
+): AuthRequest {
+  // Validate currentUser first
+  if (!currentUser) {
+    throw createAuthError('Authentication required: currentUser is null or undefined');
+  }
+
   return {
     reqUserId: currentUser.userId,
     reqClientId: currentUser.clientId,
     reqUserTypeId: currentUser.userTypeId,
     reqUserRoles: currentUser.roles,
-    actionUserId: action.actionUserId || null,
-    actionClientId: action.actionClientId || null,
-    actionPermission: action.actionPermission,
-    actionUserTypeId: action.actionUserTypeId || null,
+    actionUserId,
+    actionClientId,
+    actionUserTypeId,
+    actionPermission,
   };
 }
 
@@ -111,9 +101,10 @@ export function getCurrentUser(req: ExtendedRequest): AuthenticatedUser {
 }
 
 /**
- * Get primary role (reuse from registration service)
+ * Get the primary (highest privilege) role of the current user
  */
-function getCurrentUserPrimaryRole(userRoles: string[]): CoreRole {
+export function getCurrentUserPrimaryRole(userRoles: string[]): CoreRole {
+  // Convert to CoreRole array and sort by hierarchy level (highest first)
   const coreRoles = userRoles
     .filter(role => Object.values(CoreRole).includes(role as CoreRole))
     .map(role => role as CoreRole)
@@ -123,5 +114,74 @@ function getCurrentUserPrimaryRole(userRoles: string[]): CoreRole {
     throw createAuthorizationError('No valid roles found for current user');
   }
 
-  return coreRoles[0];
+  return coreRoles[0]; // Return highest privilege role
+}
+
+/**
+ * Validate if the current user can view the specified user based on their roles
+ * @param oAuthReq The OAuth request containing action and client information
+ * @param currentUserRoles The roles of the current user
+ * @returns true if the user can view the specified user, false otherwise
+ */
+function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRole[]): boolean {
+  // SUPER_ADMIN can view any user
+  if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    return true;
+  }
+
+  // CLIENT_ADMIN can view users in their client
+  if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      return false;
+    }
+    return true;
+  }
+
+  // CLINICAL_STAFF and OFFICE_STAFF can view patients in their client
+  if (
+    currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
+    currentUserRoles.includes(CoreRole.OFFICE_STAFF)
+  ) {
+    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      return false;
+    }
+    // Additional check: they can only view patients (if userTypeId corresponds to patient role)
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Validate if the current user can register/add new users based on their roles
+ * @param oAuthReq The OAuth request containing action and client information
+ * @param currentUserRoles The roles of the current user
+ * @returns true if the user can register/add users, false otherwise
+ */
+function validateUserRegistrationAccess(
+  oAuthReq: AuthRequest,
+  currentUserRoles: CoreRole[],
+): boolean {
+  //   const targetRoles: CoreRole[] = oAuthReq.actionUserRoles || [];
+
+  //   if (targetRoles.length === 0) {
+  //     throw createAuthorizationError('No roles specified for user registration');
+  //   }
+
+  // SUPER_ADMIN can add users anywhere
+  if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    return true;
+  }
+
+  // CLIENT_ADMIN can add users within their own client
+  if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    // If actionClientID is specified, it must match the requester's client
+    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      return false;
+    }
+    return true;
+  }
+
+  // Other roles (CLINICAL_STAFF, OFFICE_STAFF) cannot add users
+  return false;
 }

@@ -1,6 +1,6 @@
-import type { AuthenticatedUser } from '@/features/auth/middlewares';
+import type { AuthenticatedUser } from '@features/auth/middlewares';
+import type { CoreRole } from '@shared/constants';
 
-//TODO: RENAME USERRETRIVALACTION TO USERMANAGEMENTACTION
 // Define possible user registration actions
 
 export enum RequestUserAction {
@@ -14,12 +14,12 @@ export enum RequestUserAction {
   userDelete = 'userDelete', // Delete a user
 }
 
-export enum UserRegistrationAction {
-  ADD_CLIENT_ADMIN = 'addClientAdmin',
-  ADD_CLINICAL_STAFF = 'addClinicalStaff',
-  ADD_OFFICE_STAFF = 'addOfficeStaff',
-  ADD_PATIENT = 'addPatient',
-}
+// export enum UserRegistrationAction {
+//   ADD_CLIENT_ADMIN = 'addClientAdmin',
+//   ADD_CLINICAL_STAFF = 'addClinicalStaff',
+//   ADD_OFFICE_STAFF = 'addOfficeStaff',
+//   ADD_PATIENT = 'addPatient',
+// }
 
 // Extend Express Request interface for user registration
 // export interface ExtendedRequest extends Request {
@@ -35,11 +35,11 @@ export interface ExtendedRequest<TQuery = any, TBody = any>
 }
 
 // Define possible user retrieval actions
-export enum UserRetrievalAction {
-  VIEW_ALL_USERS = 'viewAllUsers', // SUPER_ADMIN
-  VIEW_CLIENT_USERS = 'viewClientUsers', // CLIENT_ADMIN
-  VIEW_CLIENT_PATIENTS = 'viewClientPatients', // CLINICAL_STAFF, OFFICE_STAFF
-}
+// export enum UserRetrievalAction {
+//   VIEW_ALL_USERS = 'viewAllUsers', // SUPER_ADMIN
+//   VIEW_CLIENT_USERS = 'viewClientUsers', // CLIENT_ADMIN
+//   VIEW_CLIENT_PATIENTS = 'viewClientPatients', // CLINICAL_STAFF, OFFICE_STAFF
+// }
 
 // Extend Express Request interface for user retrieval
 // export interface ExtendedGetUsersRequest extends Request {
@@ -55,27 +55,27 @@ export enum UserRetrievalAction {
 //   };
 // }
 
-export interface AuthorizationContext {
+export interface AuthRequest {
   reqUserId: number;
   reqClientId: number;
   reqUserTypeId: number;
-  reqUserRoles: string[];
+  reqUserRoles: CoreRole[];
   actionUserId: number | null;
   actionClientId: number | null;
   actionPermission: RequestUserAction;
   actionUserTypeId: number | null;
 }
 
-export interface ExtendedGetUsersRequest extends Request {
-  reqUserId: number;
-  reqClietID: number;
-  reqUserTypeId: number;
-  reqUserRoles: string[];
-  actionUserId: number;
-  actionClientID: number;
-  actionPermission: RequestUserAction;
-  actionUserTypeId: number;
-}
+// export interface ExtendedGetUsersRequest extends Request {
+//   reqUserId: number;
+//   reqClietID: number;
+//   reqUserTypeId: number;
+//   reqUserRoles: CoreRole[];
+//   actionUserId: number;
+//   actionClientID: number;
+//   actionPermission: RequestUserAction;
+//   actionUserTypeId: number;
+// }
 
 export interface UserQuery {
   clientId?: string;
@@ -86,12 +86,12 @@ export interface UserQuery {
   search?: string;
 }
 
-export interface UserAction {
-  actionUserId: number | null;
-  actionClientId: number | null;
-  actionUserTypeId: number | null;
-  actionPermission: RequestUserAction;
-}
+// export interface UserAction {
+//   actionUserId: number | null;
+//   actionClientId: number | null;
+//   actionUserTypeId: number | null;
+//   actionPermission: RequestUserAction;
+// }
 
 // reqUserId = req.user.userId;
 // actionClientID = req.body.clientId;

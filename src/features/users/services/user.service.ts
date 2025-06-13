@@ -9,12 +9,12 @@ import {
 } from '../validators/user.validators';
 import * as userRepository from '../repositories/user.repository';
 import {
-  ExtendedGetUsersRequest,
+  // ExtendedGetUsersRequest,
   RequestUserAction,
-  UserRetrievalAction,
-  type AuthorizationContext,
+  // UserRetrievalAction,
+  type AuthRequest,
   type ExtendedRequest,
-  type UserAction,
+  // type UserAction,
   type UserQuery,
 } from '../types/extended-request';
 import {
@@ -23,22 +23,40 @@ import {
   createValidationError,
 } from '@/shared/errors/application-error';
 import logger from '@/config/logger';
-import { getCurrentUser, configureAuthRequest, performAuthorization } from '@shared/authorization';
+import {
+  getCurrentUser,
+  createAuthRequest,
+  performAuthorization,
+  getCurrentUserPrimaryRole,
+} from '@shared/authorization';
+import { get } from 'http';
 
 export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {
   try {
     const currentUser = getCurrentUser(req);
+    // const currentUser = req.user as AuthenticatedUser;
 
-    const action: UserAction = {
-      actionUserId: null, // Not targeting a specific user
-      actionClientId: req.query?.clientId
-        ? parseInt(req.query.clientId as string)
-        : currentUser.clientId, // Query param OR current user's client
-      actionUserTypeId: null, // Not filtering by user type at action level
-      actionPermission: RequestUserAction.userView, // Specific permission
-    };
+    // const action: UserAction = {
+    //   actionUserId: null,
+    // actionClientId: req?.query?.clientId
+    //   ? parseInt(req?.query.clientId as string)
+    //   : currentUser.clientId,
+    //   actionUserTypeId: null,
+    // actionPermission: RequestUserAction.userView, // Specific permission
+    // };
 
-    const oAuthReq: AuthorizationContext = configureAuthRequest(currentUser, action);
+    const actionUserId = null; // No specific user ID for view action
+    const actionClientId = req.query.clientId ? parseInt(req.query.clientId) : currentUser.clientId;
+    const actionUserTypeId = null; // No specific user type ID for view action
+    const actionPermission = RequestUserAction.userView; // Specific permission for viewing users
+
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      actionUserId,
+      actionClientId,
+      actionUserTypeId,
+      actionPermission,
+    );
 
     const hasPermission = performAuthorization(oAuthReq);
 
@@ -46,14 +64,16 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 
     // 3. Check authorization for the specific action
     if (!hasPermission) {
-      logger.error(`User does not have permission to perform this action`);
+      logger.error(
+        `User ${currentUser.userId} does not have permission to view users in client ${actionClientId}`,
+      );
       throw createAuthorizationError('You do not have permission to perform this action');
     }
 
     // 4. Validate query parameters using Zod
     const queryParams = validateQueryParameters(req.query);
 
-    return await getUsersList(queryParams, currentUser, extendedReq.action!);
+    return await getUsersList(queryParams, currentUser.roles, currentUser.clientId);
   } catch (error: any) {
     logger.error('Error in getUsers service:', error);
     throw error;
@@ -63,34 +83,34 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 /**
  * Determine what type of user retrieval is being requested
  */
-function retrieveAction(
-  req: ExtendedGetUsersRequest,
-  currentUser: AuthenticatedUser,
-): ExtendedGetUsersRequest {
-  // Get current user's primary role (highest privilege)
-  const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
+// function retrieveAction(
+//   req: ExtendedGetUsersRequest,
+//   currentUser: AuthenticatedUser,
+// ): ExtendedGetUsersRequest {
+//   // Get current user's primary role (highest privilege)
+//   const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
 
-  // Determine action based on user role
-  switch (currentUserRole) {
-    case CoreRole.SUPER_ADMIN:
-      req.action = UserRetrievalAction.VIEW_ALL_USERS;
-      break;
+//   // Determine action based on user role
+//   switch (currentUserRole) {
+//     case CoreRole.SUPER_ADMIN:
+//       req.action = UserRetrievalAction.VIEW_ALL_USERS;
+//       break;
 
-    case CoreRole.CLIENT_ADMIN:
-      req.action = UserRetrievalAction.VIEW_CLIENT_USERS;
-      break;
+//     case CoreRole.CLIENT_ADMIN:
+//       req.action = UserRetrievalAction.VIEW_CLIENT_USERS;
+//       break;
 
-    case CoreRole.CLINICAL_STAFF:
-    case CoreRole.OFFICE_STAFF:
-      req.action = UserRetrievalAction.VIEW_CLIENT_PATIENTS;
-      break;
+//     case CoreRole.CLINICAL_STAFF:
+//     case CoreRole.OFFICE_STAFF:
+//       req.action = UserRetrievalAction.VIEW_CLIENT_PATIENTS;
+//       break;
 
-    default:
-      throw createAuthorizationError('No valid permission for viewing users');
-  }
+//     default:
+//       throw createAuthorizationError('No valid permission for viewing users');
+//   }
 
-  return req;
-}
+//   return req;
+// }
 
 /**
  * Check authorization based on the retrieval action
@@ -170,7 +190,7 @@ function retrieveAction(
 /**
  * Validate query parameters using Zod - replaces manual validation
  */
-function validateQueryParameters(query: ExtendedGetUsersRequest['query']): GetUsersQueryRequest {
+function validateQueryParameters(query: UserQuery) {
   try {
     // Use Zod schema for validation
     const validatedQuery = getUsersQuerySchema.parse(query);
@@ -197,51 +217,97 @@ function validateQueryParameters(query: ExtendedGetUsersRequest['query']): GetUs
 
 async function getUsersList(
   queryParams: GetUsersQueryRequest,
-  currentUser: AuthenticatedUser,
-  action: UserRetrievalAction,
+  currentUserRoles: CoreRole[],
+  currentUserClientId: number,
 ): Promise<GetUsersResponse> {
+  // Validate clientId if provided
+  let requestedClientId: number | undefined;
+  if (queryParams.clientId) {
+    requestedClientId = queryParams.clientId;
+    if (isNaN(requestedClientId) || requestedClientId <= 0) {
+      throw createValidationError('Invalid client ID format', [
+        { field: 'clientId', message: 'Client ID must be a positive integer' },
+      ]);
+    }
+  }
+
+  const currentUserRole = getCurrentUserPrimaryRole(currentUserRoles);
+
+  const statusFilter = queryParams.status?.toString();
+  const roleFilter = queryParams.role;
+
   let filters: userRepository.GetUsersFilters = {
     page: queryParams.page || 1,
     limit: queryParams.limit || 20,
     search: queryParams.search,
+    sort: queryParams.sort || 'asc',
   };
 
-  // Apply role-based filters
-  switch (action) {
-    case UserRetrievalAction.VIEW_ALL_USERS:
-      // SUPER_ADMIN: Can view all users, optionally filter by client
-      if (queryParams.clientId) {
-        filters.clientId = queryParams.clientId;
+  switch (currentUserRole) {
+    case CoreRole.SUPER_ADMIN:
+      // Rule 1: SUPER_ADMIN can view all users irrespective of client
+      if (requestedClientId) {
+        filters.clientId = requestedClientId;
       }
-      if (queryParams.role) {
-        filters.role = queryParams.role;
+      // Apply optional filters
+      if (roleFilter) {
+        filters.role = roleFilter;
       }
-      if (queryParams.status) {
-        filters.status = queryParams.status.toString();
+      if (statusFilter) {
+        filters.status = statusFilter;
       }
       break;
 
-    case UserRetrievalAction.VIEW_CLIENT_USERS:
-      // CLIENT_ADMIN: View users in their client only
-      filters.clientId = currentUser.clientId;
-      // Exclude SUPER_ADMIN from results
+    case CoreRole.CLIENT_ADMIN:
+      // Rule 2: CLIENT_ADMIN can only view users in their own client
+      if (requestedClientId && requestedClientId !== currentUserClientId) {
+        throw createAuthorizationError(
+          'CLIENT_ADMIN can only view users in their own organization',
+        );
+      }
+
+      // Force filter to current user's client
+      filters.clientId = currentUserClientId;
+
+      // Exclude SUPER_ADMIN from results (business rule)
       filters.excludeRoles = [CoreRole.SUPER_ADMIN];
-      if (queryParams.role) {
-        filters.role = queryParams.role;
+
+      // Apply optional filters
+      if (roleFilter) {
+        filters.role = roleFilter;
       }
-      if (queryParams.status) {
-        filters.status = queryParams.status.toString();
+      if (statusFilter) {
+        filters.status = statusFilter;
       }
       break;
 
-    case UserRetrievalAction.VIEW_CLIENT_PATIENTS:
-      // CLINICAL_STAFF & OFFICE_STAFF: View patients in their client only
-      filters.clientId = currentUser.clientId;
-      filters.role = CoreRole.PATIENT; // Only patients
-      if (queryParams.status) {
-        filters.status = queryParams.status.toString();
+    case CoreRole.CLINICAL_STAFF:
+    case CoreRole.OFFICE_STAFF:
+      // Rule 3: CLINICAL_STAFF/OFFICE_STAFF can only view patients in their own client
+      if (requestedClientId && requestedClientId !== currentUserClientId) {
+        throw createAuthorizationError(
+          `${currentUserRole} can only view patients in their own organization`,
+        );
       }
+
+      // Force filter to current user's client and patients only
+      filters.clientId = currentUserClientId;
+      filters.role = CoreRole.PATIENT;
+
+      // Apply optional status filter
+      if (statusFilter) {
+        filters.status = statusFilter;
+      }
+
+      // Ignore role filter from query since they can only see patients
       break;
+
+    case CoreRole.PATIENT:
+      // PATIENT role cannot view user lists
+      throw createAuthorizationError('PATIENT role is not authorized to view user lists');
+
+    default:
+      throw createAuthorizationError('Invalid or unsupported user role');
   }
 
   try {

@@ -6,9 +6,9 @@ import { getUsersController } from './controllers/user.controller';
 const router = Router();
 
 // Core registration endpoints
-router.post('/register', authenticate, registerUserController);
+router.post('/register', authenticate, registerUserController as any);
 
 // Core user management endpoints
-router.get('/', authenticate, getUsersController);
+router.get('/', authenticate, getUsersController as any);
 
 export default router;

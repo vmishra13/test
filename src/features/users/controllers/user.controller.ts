@@ -1,12 +1,16 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { getUsers } from '../services/user.service';
+import type { ExtendedRequest, UserQuery } from '../types/extended-request';
 
 /**
  * Get all users based on role permissions
  * GET /api/users
  */
-export async function getUsersController(req: Request, res: Response): Promise<void> {
+export async function getUsersController(
+  req: ExtendedRequest<UserQuery>,
+  res: Response,
+): Promise<void> {
   try {
     // Service layer handles all authentication, authorization, validation, and business logic
     const result = await getUsers(req);

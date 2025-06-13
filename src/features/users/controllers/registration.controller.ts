@@ -1,12 +1,17 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { registerUser } from '../services/registration.service';
+import type { ExtendedRequest } from '../types/extended-request';
+import type { RegisterUserRequest } from '../dto/registration.dto';
 
 /**
  * Register a new user
  * POST /api/users/register
  */
-export async function registerUserController(req: Request, res: Response): Promise<void> {
+export async function registerUserController(
+  req: ExtendedRequest<any, RegisterUserRequest>,
+  res: Response,
+): Promise<void> {
   try {
     // Service layer handles all authentication, authorization, validation, and business logic
     const result = await registerUser(req);

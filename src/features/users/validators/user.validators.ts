@@ -556,6 +556,15 @@ export const getUsersQuerySchema = z.object({
     .refine(val => val === undefined || val.length <= 50, {
       message: 'Search term cannot exceed 50 characters',
     }),
+
+  sort: z
+    .string()
+    .optional()
+    .transform(val => val || 'asc') // Default to 'asc' if not provided
+    .refine(val => ['asc', 'desc'].includes(val.toLowerCase()), {
+      message: 'Sort must be either "asc" or "desc"',
+    })
+    .transform(val => val.toLowerCase() as 'asc' | 'desc'), // Ensure lowercase
 });
 
 export type GetUsersQueryRequest = z.infer<typeof getUsersQuerySchema>;

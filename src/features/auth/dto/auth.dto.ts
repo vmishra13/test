@@ -2,6 +2,8 @@
 // 🎯 AUTHENTICATION DTOs (Pure authentication types only)
 // ===================================================================
 
+import type { CoreRole } from '@/shared/constants';
+
 // Token-related DTOs
 export interface TokenPair {
   accessToken: string;
@@ -15,7 +17,7 @@ export interface AccessTokenClaims {
   clientId: number;
   userTypeId: number;
   loginName: string;
-  roles: string[];
+  roles: CoreRole[];
   permissions?: string[];
   type: 'access';
 }
@@ -70,7 +72,7 @@ export interface PublicUserData {
     name: string;
     description?: string;
   };
-  roles: string[];
+  roles: CoreRole[];
 }
 
 // Token Refresh DTOs
@@ -117,7 +119,7 @@ export interface AuthenticatedUser {
   clientId: number;
   userTypeId: number;
   loginName: string;
-  roles: string[];
+  roles: CoreRole[];
   permissions?: string[];
   tokenType: 'access' | 'refresh';
   tokenExp: number;

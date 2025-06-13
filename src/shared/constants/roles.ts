@@ -8,6 +8,7 @@ export enum CoreRole {
   CLINICAL_STAFF = 'CLINICAL_STAFF',
   OFFICE_STAFF = 'OFFICE_STAFF',
   PATIENT = 'PATIENT',
+  NA = 'NA', // Special role for generic access checks
 }
 
 /**
@@ -63,6 +64,13 @@ export const ROLE_HIERARCHY: Record<CoreRole, RoleConfig> = {
     canCreate: [],
     canManage: 'self_only',
     permissions: ['patient_portal', 'view_own_records', 'appointments'],
+  },
+  [CoreRole.NA]: {
+    level: -1,
+    description: 'Healthcare service recipient with no access',
+    canCreate: [],
+    canManage: 'self_only',
+    permissions: [],
   },
 };
 

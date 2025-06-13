@@ -1106,6 +1106,7 @@ export interface GetUsersFilters {
   excludeRoles?: string[];
   status?: string;
   search?: string;
+  sort?: 'asc' | 'desc';
 }
 
 export interface GetUsersResult {
@@ -1142,7 +1143,7 @@ export interface GetUsersResult {
  */
 export async function getUsersWithFilters(filters: GetUsersFilters): Promise<GetUsersResult> {
   try {
-    const { page, limit, clientId, role, excludeRoles, status, search } = filters;
+    const { page, limit, clientId, role, excludeRoles, status, search, sort } = filters;
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -1198,7 +1199,7 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
       where,
       skip,
       take: limit,
-      orderBy: [{ crDate: 'desc' }, { loginName: 'asc' }],
+      orderBy: [{ crDate: sort }, { loginName: 'asc' }],
       include: {
         client: {
           select: {
