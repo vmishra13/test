@@ -28,6 +28,7 @@ import {
   type LoginCredentials,
 } from '../validators/auth.validators';
 import type { UserUpdateInput } from '@features/users/validators/user.validators';
+import type { CoreRole } from '@/shared/constants';
 
 // ===================================================================
 // 🎯 AUTHENTICATION FLOWS
@@ -109,7 +110,7 @@ export async function authenticateUser(
         name: user.userType.name,
         description: user.userType.description || undefined,
       },
-      roles: user.userRole?.map(ur => ur.role.name) || [],
+      roles: user.userRole?.map(ur => ur.role.name as CoreRole) || [],
     };
 
     // Extract permissions (if available)
@@ -165,7 +166,7 @@ export async function refreshToken(
             name: user.userType.name,
             description: user.userType.description || undefined,
           },
-          roles: user.userRole?.map(ur => ur.role.name) || [],
+          roles: user.userRole?.map(ur => ur.role.name as CoreRole) || [],
         };
       }
     }

@@ -20,6 +20,7 @@ import {
 } from '@features/users/validators/user.validators';
 import * as tokenRepository from '../repositories/token.repository';
 import * as userRepository from '@features/users/repositories/user.repository';
+import type { CoreRole } from '@/shared/constants';
 
 // ===================================================================
 // 🎯 JWT CONFIGURATION AND CONSTANTS
@@ -75,7 +76,7 @@ export async function generateTokenPair(
     const jti = tokenRepository.generateJti();
 
     // Extract user roles
-    const roles = user.userRole?.map(ur => ur.role.name) || [];
+    const roles = user.userRole?.map(ur => ur.role.name as CoreRole) || [];
 
     // Generate Access Token
     const accessTokenPayload: AccessTokenClaims = {
@@ -232,7 +233,7 @@ export async function refreshAccessToken(
     const refreshTokenExpirySeconds = getRefreshTokenExpirySeconds();
 
     // Extract user roles
-    const roles = user.userRole?.map(ur => ur.role.name) || [];
+    const roles = user.userRole?.map(ur => ur.role.name as CoreRole) || [];
 
     // Generate new Access Token
     const accessTokenPayload: AccessTokenClaims = {
