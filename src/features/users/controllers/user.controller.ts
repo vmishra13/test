@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { getUsers } from '../services/user.service';
 import type { ExtendedRequest, UserQuery } from '../types/extended-request';

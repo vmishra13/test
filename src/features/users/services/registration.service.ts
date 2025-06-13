@@ -13,24 +13,9 @@ import {
   registerUserSchema,
 } from '../validators/registration.validators';
 import * as userRepository from '../repositories/user.repository';
-import { Request } from 'express';
-import {
-  ExtendedRequest,
-  RequestUserAction,
-  // UserRegistrationAction,
-  type AuthRequest,
-} from '../types/extended-request';
-import {
-  createAuthError,
-  createAuthorizationError,
-  createValidationError,
-} from '@/shared/errors/application-error';
-import {
-  createAuthRequest,
-  getCurrentUser,
-  getCurrentUserPrimaryRole,
-  performAuthorization,
-} from '@shared/authorization';
+import { ExtendedRequest, RequestUserAction, type AuthRequest } from '../types/extended-request';
+import { createAuthorizationError, createValidationError } from '@/shared/errors/application-error';
+import { createAuthRequest, getCurrentUser, performAuthorization } from '@shared/authorization';
 import logger from '@/config/logger';
 
 /**

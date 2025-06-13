@@ -22,7 +22,4 @@ router.post('/logout', authenticate, logout);
 router.post('/token', oauth2Token); // Standard OAuth 2.0 token endpoint
 router.post('/revoke', authenticate, logout); // OAuth 2.0 revocation endpoint
 
-// Core registration endpoints
-// router.post('/register', authenticate, registerUserController);
-
 export default router;

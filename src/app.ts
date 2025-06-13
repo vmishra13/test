@@ -1,12 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet'; // Import Helmet
-import { StatusCodes } from 'http-status-codes';
+import helmet from 'helmet';
 import routes from './routes';
-import logger from './config/logger';
 import { httpLogger } from './shared/middlewares/logger.middleware';
 import { requestLogger } from './shared/middlewares/request-logger.middleware';
-import { ApiResponse } from './shared/utils/api-response';
 import { corsConfig } from './config/cors.config';
 import { helmetConfig } from './config/helmet.config';
 import { errorHandler, notFoundHandler } from '@shared/middlewares/error-handler.middleware';
