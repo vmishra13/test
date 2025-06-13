@@ -6,7 +6,6 @@ interface ApiResponseStructure<T = any> {
   message: string;
   data?: T;
   code?: string;
-  statusCode?: number;
   details?: any;
   timestamp: string;
   apiVersion: string;
