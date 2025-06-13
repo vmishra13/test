@@ -17,13 +17,7 @@ export const getAllTodos = async (req: Request, res: Response): Promise<void> =>
 
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json(
-        ApiResponse.error(
-          'Failed to retrieve todos',
-          'INTERNAL_SERVER_ERROR',
-          StatusCodes.INTERNAL_SERVER_ERROR,
-        ),
-      );
+      .json(ApiResponse.error('Failed to retrieve todos', 'INTERNAL_SERVER_ERROR'));
   }
 };
 
@@ -34,16 +28,14 @@ export const getTodoById = async (req: Request, res: Response): Promise<void> =>
     if (isNaN(todoId)) {
       res
         .status(StatusCodes.BAD_REQUEST)
-        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID', StatusCodes.BAD_REQUEST));
+        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID'));
       return;
     }
 
     const todo = await todoService.getTodoById(todoId);
 
     if (!todo) {
-      res
-        .status(StatusCodes.NOT_FOUND)
-        .json(ApiResponse.error('Todo not found', 'NOT_FOUND', StatusCodes.NOT_FOUND));
+      res.status(StatusCodes.NOT_FOUND).json(ApiResponse.error('Todo not found', 'NOT_FOUND'));
       return;
     }
 
@@ -76,7 +68,7 @@ export const createTodo = async (
     if (!title) {
       res
         .status(StatusCodes.BAD_REQUEST)
-        .json(ApiResponse.error('Title is required', 'VALIDATION_ERROR', StatusCodes.BAD_REQUEST));
+        .json(ApiResponse.error('Title is required', 'VALIDATION_ERROR'));
       return;
     }
 
@@ -91,13 +83,7 @@ export const createTodo = async (
 
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json(
-        ApiResponse.error(
-          'Failed to create todo',
-          'INTERNAL_SERVER_ERROR',
-          StatusCodes.INTERNAL_SERVER_ERROR,
-        ),
-      );
+      .json(ApiResponse.error('Failed to create todo', 'INTERNAL_SERVER_ERROR'));
   }
 };
 
@@ -111,7 +97,7 @@ export const updateTodo = async (
     if (isNaN(todoId)) {
       res
         .status(StatusCodes.BAD_REQUEST)
-        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID', StatusCodes.BAD_REQUEST));
+        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID'));
       return;
     }
 
@@ -133,13 +119,7 @@ export const updateTodo = async (
 
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json(
-        ApiResponse.error(
-          'Failed to update todo',
-          'INTERNAL_SERVER_ERROR',
-          StatusCodes.INTERNAL_SERVER_ERROR,
-        ),
-      );
+      .json(ApiResponse.error('Failed to update todo', 'INTERNAL_SERVER_ERROR'));
   }
 };
 
@@ -150,7 +130,7 @@ export const deleteTodo = async (req: Request, res: Response): Promise<void> => 
     if (isNaN(todoId)) {
       res
         .status(StatusCodes.BAD_REQUEST)
-        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID', StatusCodes.BAD_REQUEST));
+        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID'));
     }
 
     // Check if todo exists
@@ -172,13 +152,7 @@ export const deleteTodo = async (req: Request, res: Response): Promise<void> => 
 
     res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
-      .json(
-        ApiResponse.error(
-          'Failed to delete todo',
-          'INTERNAL_SERVER_ERROR',
-          StatusCodes.INTERNAL_SERVER_ERROR,
-        ),
-      );
+      .json(ApiResponse.error('Failed to delete todo', 'INTERNAL_SERVER_ERROR'));
   }
 };
 
@@ -189,7 +163,7 @@ export const markTodoCompleted = async (req: Request, res: Response): Promise<vo
     if (isNaN(todoId)) {
       res
         .status(StatusCodes.BAD_REQUEST)
-        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID', StatusCodes.BAD_REQUEST));
+        .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID'));
     }
 
     // Check if todo exists

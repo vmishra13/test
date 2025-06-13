@@ -10,6 +10,7 @@ import {
   RefreshTokenGrantRequestSchema as refreshTokenSchema,
   TokenRequestSchema as oauth2TokenSchema,
 } from '../validators/auth.validators';
+import { ApiResponse } from '@shared/utils/api-response';
 
 /**
  * User login endpoint
@@ -36,24 +37,22 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const result: LoginResponse = await authService.authenticateUser(credentials, deviceInfo);
 
     // Return OAuth 2.0 compatible response
-    res.status(StatusCodes.OK).json({
-      // OAuth 2.0 standard fields
-      access_token: result.data.tokens.accessToken,
-      token_type: 'Bearer',
-      expires_in: result.data.tokens.expiresIn,
-      refresh_token: result.data.tokens.refreshToken,
-      refresh_expires_in: result.data.tokens.refreshExpiresIn,
-      scope: requestData.scope || 'read write',
-
-      // Additional ReliaCare specific data
-      user: result.data.user,
-      permissions: result.data.permissions,
-
-      // Standard response fields
-      success: result.success,
-      message: result.message,
-      timestamp: result.timestamp,
-    });
+    res.status(StatusCodes.OK).json(
+      ApiResponse.success(
+        {
+          // OAuth 2.0 standard fields
+          access_token: result.data.tokens.accessToken,
+          token_type: 'Bearer',
+          expires_in: result.data.tokens.expiresIn,
+          refresh_token: result.data.tokens.refreshToken,
+          refresh_expires_in: result.data.tokens.refreshExpiresIn,
+          scope: requestData.scope || 'read write',
+          user: result.data.user,
+          permissions: result.data.permissions,
+        },
+        result.message,
+      ),
+    );
   } catch (error) {
     // Handle Zod validation errors
     if (error instanceof ZodError) {
@@ -191,11 +190,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
     // ✅ Use correct service function
     const result = await authService.logoutUser(userId, clientId, refreshToken, false);
 
-    res.status(StatusCodes.OK).json({
-      success: result.success,
-      message: result.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(StatusCodes.OK).json(ApiResponse.success(null, result.message));
   } catch (error) {
     console.error('Logout error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -227,11 +222,7 @@ export const logoutAll = async (req: Request, res: Response): Promise<void> => {
 
     const result = await authService.logoutUser(userId, clientId, undefined, true);
 
-    res.status(StatusCodes.OK).json({
-      success: result.success,
-      message: result.message,
-      timestamp: new Date().toISOString(),
-    });
+    res.status(StatusCodes.OK).json(ApiResponse.success(null, result.message));
   } catch (error) {
     console.error('Logout all error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -264,12 +255,9 @@ export const getSession = async (req: Request, res: Response): Promise<void> => 
     // ✅ Use correct service function
     const sessionInfo = await authService.getUserTokenSummary(userId, clientId);
 
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: sessionInfo,
-      message: 'Session information retrieved successfully',
-      timestamp: new Date().toISOString(),
-    });
+    res
+      .status(StatusCodes.OK)
+      .json(ApiResponse.success(sessionInfo, 'Session information retrieved successfully'));
   } catch (error) {
     console.error('Get session error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -287,17 +275,17 @@ export const getSession = async (req: Request, res: Response): Promise<void> => 
 export const validateToken = async (req: Request, res: Response): Promise<void> => {
   try {
     // If we reach here, the token is valid (checked by authenticate middleware)
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: {
-        valid: true,
-        user: req.user,
-        permissions: req.permissions,
-        clientId: req.clientId,
-      },
-      message: 'Token is valid',
-      timestamp: new Date().toISOString(),
-    });
+    res.status(StatusCodes.OK).json(
+      ApiResponse.success(
+        {
+          valid: true,
+          user: req.user,
+          permissions: req.permissions,
+          clientId: req.clientId,
+        },
+        'Token is valid',
+      ),
+    );
   } catch (error) {
     console.error('Token validation error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -316,17 +304,17 @@ export const checkAuth = async (req: Request, res: Response): Promise<void> => {
   try {
     const isAuthenticated = !!req.user;
 
-    res.status(StatusCodes.OK).json({
-      success: true,
-      data: {
-        authenticated: isAuthenticated,
-        user: req.user || null,
-        permissions: req.permissions || [],
-        clientId: req.clientId || null,
-      },
-      message: isAuthenticated ? 'User is authenticated' : 'User is not authenticated',
-      timestamp: new Date().toISOString(),
-    });
+    res.status(StatusCodes.OK).json(
+      ApiResponse.success(
+        {
+          authenticated: isAuthenticated,
+          user: req.user || null,
+          permissions: req.permissions || [],
+          clientId: req.clientId || null,
+        },
+        isAuthenticated ? 'User is authenticated' : 'User is not authenticated',
+      ),
+    );
   } catch (error) {
     console.error('Check auth error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({

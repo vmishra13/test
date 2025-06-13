@@ -65,7 +65,6 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
       ApiResponse.error(
         'Request validation failed',
         'VALIDATION_ERROR',
-        StatusCodes.BAD_REQUEST,
         err.errors.map(e => ({
           field: e.path.join('.'),
           message: e.message,
@@ -81,7 +80,7 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
     const appErr = err as AppError;
     res
       .status(appErr.statusCode!)
-      .json(ApiResponse.error(appErr.message, appErr.code!, appErr.statusCode!, appErr.details));
+      .json(ApiResponse.error(appErr.message, appErr.code!, appErr.details));
     return;
   }
 
@@ -94,7 +93,6 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
           ApiResponse.error(
             'Validation failed',
             'VALIDATION_ERROR',
-            StatusCodes.BAD_REQUEST,
             ENV.isDevelopment ? err.message : undefined,
           ),
         );

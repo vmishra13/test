@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { authRoutes } from '@features/auth';
 import { useroutes } from '@/features/users';
+import { healthRoute } from './routes';
+// import { todoRouter } from '@/features/todo';
 // import diagnosticsRouter from '@features/diagnostics/routes';
 // import rbacRouter from '@features/rbac-examples/routes';
 // import pathRbacRouter from '@features/rbac-examples/path-routes';
@@ -11,6 +13,11 @@ const v1Router = Router();
 // Mount v1 feature modules
 v1Router.use('/auth', authRoutes);
 v1Router.use('/users', useroutes);
+v1Router.use('/', healthRoute);
+// Define routes
+// v1Router.use('/todos', todoRouter);
+// Add other route groups as needed
+
 // v1Router.use('/', diagnosticsRouter);
 // v1Router.use('/rbac', rbacRouter);
 // v1Router.use('/rbac-path', pathRbacRouter);
