@@ -35,8 +35,7 @@ BEGIN
     "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT user_email_check CHECK (((email IS NULL) OR ((email)::text ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'::text))),
     CONSTRAINT user_gender_check CHECK (((gender IS NULL) OR ((gender)::text = ANY ((ARRAY['Male'::character varying, 'Female'::character varying, 'Other'::character varying, 'Prefer not to say'::character varying])::text[])))),
-    CONSTRAINT user_loginname_check CHECK ((length(TRIM(BOTH FROM "loginName")) > 0)),
-    CONSTRAINT user_pass_expire_check CHECK ((("passExpireInDays" IS NULL) OR ("passExpireInDays" > 0)))
+    CONSTRAINT user_loginname_check CHECK ((length(TRIM(BOTH FROM "loginName")) > 0))
 );
 
 END IF;
