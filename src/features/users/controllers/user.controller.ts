@@ -13,7 +13,7 @@ export async function getUsersController(
 ): Promise<void> {
   try {
     // Service layer handles all authentication, authorization, validation, and business logic
-    const result = await getUsers(req);
+    const result = await getUsers(req as any);
 
     // Controller only handles successful HTTP response
     res.status(StatusCodes.OK).json(result);

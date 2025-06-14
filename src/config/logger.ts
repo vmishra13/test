@@ -11,7 +11,7 @@ const logFormat = winston.format.combine(
 
 // Create the logger
 const logger = winston.createLogger({
-  level: ENV.isProduction ? 'info' : 'debug',
+  level: ENV.isProduction ? 'error' : 'info',
   format: logFormat,
   defaultMeta: { service: 'reliacare-api' },
   transports: [
@@ -24,7 +24,11 @@ const logger = winston.createLogger({
           new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
           new winston.transports.File({ filename: 'logs/combined.log' }),
         ]
-      : []),
+      : [
+          new winston.transports.File({ filename: 'logs/info.log', level: 'info' }),
+          new winston.transports.File({ filename: 'logs/combined.log' }),
+        ]
+      ),
   ],
 });
 

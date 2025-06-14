@@ -60,7 +60,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 
     const hasPermission = performAuthorization(oAuthReq);
 
-    // const extendedReq = retrieveAction(req as unknown as ExtendedGetUsersRequest, currentUser);
+    const extendedReq = retrieveAction(req as unknown as ExtendedGetUsersRequest, currentUser);
 
     // 3. Check authorization for the specific action
     if (!hasPermission) {
@@ -73,7 +73,15 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
     // 4. Validate query parameters using Zod
     const queryParams = validateQueryParameters(req.query);
 
+<<<<<<< Updated upstream
     return await getUsersList(queryParams, currentUser.roles, currentUser.clientId);
+=======
+    // 5. Get the action from the extended request
+    const retrievalAction = (extendedReq as any).action as UserRetrievalAction;
+    
+    // 6. Get users list based on validated params and action
+    return await getUsersList(queryParams, currentUser, retrievalAction);
+>>>>>>> Stashed changes
   } catch (error: any) {
     logger.error('Error in getUsers service:', error);
     throw error;
@@ -90,6 +98,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 //   // Get current user's primary role (highest privilege)
 //   const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
 
+<<<<<<< Updated upstream
 //   // Determine action based on user role
 //   switch (currentUserRole) {
 //     case CoreRole.SUPER_ADMIN:
@@ -104,6 +113,22 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 //     case CoreRole.OFFICE_STAFF:
 //       req.action = UserRetrievalAction.VIEW_CLIENT_PATIENTS;
 //       break;
+=======
+  // Determine action based on user role
+  switch (currentUserRole) {
+    case CoreRole.SUPER_ADMIN:
+      (req as any).action = UserRetrievalAction.VIEW_ALL_USERS;
+      break;
+
+    case CoreRole.CLIENT_ADMIN:
+      (req as any).action = UserRetrievalAction.VIEW_CLIENT_USERS;
+      break;
+
+    case CoreRole.CLINICAL_STAFF:
+    case CoreRole.OFFICE_STAFF:
+      (req as any).action = UserRetrievalAction.VIEW_CLIENT_PATIENTS;
+      break;
+>>>>>>> Stashed changes
 
 //     default:
 //       throw createAuthorizationError('No valid permission for viewing users');
@@ -190,7 +215,11 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 /**
  * Validate query parameters using Zod - replaces manual validation
  */
+<<<<<<< Updated upstream
 function validateQueryParameters(query: UserQuery) {
+=======
+function validateQueryParameters(query: any): GetUsersQueryRequest {
+>>>>>>> Stashed changes
   try {
     // Use Zod schema for validation
     const validatedQuery = getUsersQuerySchema.parse(query);
@@ -354,3 +383,25 @@ async function getUsersList(
     throw new Error(`Failed to retrieve users: ${error.message}`);
   }
 }
+
+function getCurrentUserPrimaryRole(roles: string[]): string {
+  // Define role hierarchy (highest to lowest priority)
+  const roleHierarchy = [
+    CoreRole.SUPER_ADMIN,
+    CoreRole.CLIENT_ADMIN,
+    CoreRole.CLINICAL_STAFF,
+    CoreRole.OFFICE_STAFF,
+    CoreRole.PATIENT,
+  ];
+
+  // Find the highest priority role that the user has
+  for (const role of roleHierarchy) {
+    if (roles.includes(role)) {
+      return role;
+    }
+  }
+
+  // If no known role is found, throw an error
+  throw createAuthError('User has no valid roles assigned');
+}
+
