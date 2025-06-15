@@ -9,12 +9,9 @@ import {
 } from '../validators/user.validators';
 import * as userRepository from '../repositories/user.repository';
 import {
-  // ExtendedGetUsersRequest,
   RequestUserAction,
-  // UserRetrievalAction,
   type AuthRequest,
   type ExtendedRequest,
-  // type UserAction,
   type UserQuery,
 } from '../types/extended-request';
 import {
@@ -27,23 +24,11 @@ import {
   getCurrentUser,
   createAuthRequest,
   performAuthorization,
-  getCurrentUserPrimaryRole,
 } from '@shared/authorization';
-import { get } from 'http';
 
 export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {
   try {
     const currentUser = getCurrentUser(req);
-    // const currentUser = req.user as AuthenticatedUser;
-
-    // const action: UserAction = {
-    //   actionUserId: null,
-    // actionClientId: req?.query?.clientId
-    //   ? parseInt(req?.query.clientId as string)
-    //   : currentUser.clientId,
-    //   actionUserTypeId: null,
-    // actionPermission: RequestUserAction.userView, // Specific permission
-    // };
 
     const actionUserId = null; // No specific user ID for view action
     const actionClientId = req.query.clientId ? parseInt(req.query.clientId) : currentUser.clientId;
@@ -60,9 +45,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 
     const hasPermission = performAuthorization(oAuthReq);
 
-    const extendedReq = retrieveAction(req as unknown as ExtendedGetUsersRequest, currentUser);
-
-    // 3. Check authorization for the specific action
+    // Check authorization for the specific action
     if (!hasPermission) {
       logger.error(
         `User ${currentUser.userId} does not have permission to view users in client ${actionClientId}`,
@@ -70,18 +53,11 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
       throw createAuthorizationError('You do not have permission to perform this action');
     }
 
-    // 4. Validate query parameters using Zod
+    // Validate query parameters using Zod
     const queryParams = validateQueryParameters(req.query);
 
-<<<<<<< Updated upstream
+    // Get users list based on validated params and current user context
     return await getUsersList(queryParams, currentUser.roles, currentUser.clientId);
-=======
-    // 5. Get the action from the extended request
-    const retrievalAction = (extendedReq as any).action as UserRetrievalAction;
-    
-    // 6. Get users list based on validated params and action
-    return await getUsersList(queryParams, currentUser, retrievalAction);
->>>>>>> Stashed changes
   } catch (error: any) {
     logger.error('Error in getUsers service:', error);
     throw error;
@@ -89,141 +65,12 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 }
 
 /**
- * Determine what type of user retrieval is being requested
- */
-// function retrieveAction(
-//   req: ExtendedGetUsersRequest,
-//   currentUser: AuthenticatedUser,
-// ): ExtendedGetUsersRequest {
-//   // Get current user's primary role (highest privilege)
-//   const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
-
-<<<<<<< Updated upstream
-//   // Determine action based on user role
-//   switch (currentUserRole) {
-//     case CoreRole.SUPER_ADMIN:
-//       req.action = UserRetrievalAction.VIEW_ALL_USERS;
-//       break;
-
-//     case CoreRole.CLIENT_ADMIN:
-//       req.action = UserRetrievalAction.VIEW_CLIENT_USERS;
-//       break;
-
-//     case CoreRole.CLINICAL_STAFF:
-//     case CoreRole.OFFICE_STAFF:
-//       req.action = UserRetrievalAction.VIEW_CLIENT_PATIENTS;
-//       break;
-=======
-  // Determine action based on user role
-  switch (currentUserRole) {
-    case CoreRole.SUPER_ADMIN:
-      (req as any).action = UserRetrievalAction.VIEW_ALL_USERS;
-      break;
-
-    case CoreRole.CLIENT_ADMIN:
-      (req as any).action = UserRetrievalAction.VIEW_CLIENT_USERS;
-      break;
-
-    case CoreRole.CLINICAL_STAFF:
-    case CoreRole.OFFICE_STAFF:
-      (req as any).action = UserRetrievalAction.VIEW_CLIENT_PATIENTS;
-      break;
->>>>>>> Stashed changes
-
-//     default:
-//       throw createAuthorizationError('No valid permission for viewing users');
-//   }
-
-//   return req;
-// }
-
-/**
- * Check authorization based on the retrieval action
- */
-// function performAuthorization(req: ExtendedGetUsersRequest): void {
-//   const currentUser = req.user;
-//   const requestedClientId = currentUser.clientId;
-//   const requestedRole = req.query.role;
-
-//   // Get current user's primary role
-//   const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
-
-//   switch (req.action) {
-//     case "userAdd":
-//       if (){
-
-//       } else {
-
-//       }
-//       return true;
-//     case UserRetrievalAction.VIEW_ALL_USERS:
-//       // Rule 1: SUPER_ADMIN can view all users
-//       if (currentUserRole !== CoreRole.SUPER_ADMIN) {
-//         throw createAuthorizationError('Only SUPER_ADMIN can view all users');
-//       }
-//       break;
-
-//     case UserRetrievalAction.VIEW_CLIENT_USERS:
-//       // Rule 2: CLIENT_ADMIN can view all users inside their client
-//       if (currentUserRole !== CoreRole.CLIENT_ADMIN) {
-//         throw createAuthorizationError('Only CLIENT_ADMIN can view client users');
-//       }
-
-//       // If clientId specified in query, it must match user's client
-//       if (requestedClientId && currentUser.clientId !== requestedClientId) {
-//         throw createAuthorizationError(
-//           'CLIENT_ADMIN can only view users in their own organization',
-//         );
-//       }
-//       break;
-
-//     case UserRetrievalAction.VIEW_CLIENT_PATIENTS:
-//       // Rule 3 & 4: CLINICAL_STAFF and OFFICE_STAFF can view all PATIENT inside their client
-//       if (
-//         currentUserRole !== CoreRole.CLINICAL_STAFF &&
-//         currentUserRole !== CoreRole.OFFICE_STAFF
-//       ) {
-//         throw createAuthorizationError('Only CLINICAL_STAFF and OFFICE_STAFF can view patients');
-//       }
-
-//       // If clientId specified in query, it must match user's client
-//       if (requestedClientId && currentUser.clientId !== requestedClientId) {
-//         throw createAuthorizationError(
-//           `${currentUserRole} can only view patients in their own organization`,
-//         );
-//       }
-
-//       // ✅ CLINICAL_STAFF/OFFICE_STAFF can only view patients
-//       if (requestedRole && requestedRole !== CoreRole.PATIENT) {
-//         throw createAuthorizationError(`${currentUserRole} can only view PATIENT accounts`);
-//       }
-//       break;
-
-//     default:
-//       throw createAuthorizationError('Invalid user retrieval action specified');
-//   }
-
-//   // ✅ MOVED: Additional business rule validation (now part of authorization)
-//   validateUserViewPermissions(
-//     currentUserRole,
-//     requestedRole,
-//     requestedClientId,
-//     currentUser.clientId,
-//   );
-// }
-
-/**
  * Validate query parameters using Zod - replaces manual validation
  */
-<<<<<<< Updated upstream
-function validateQueryParameters(query: UserQuery) {
-=======
 function validateQueryParameters(query: any): GetUsersQueryRequest {
->>>>>>> Stashed changes
   try {
     // Use Zod schema for validation
     const validatedQuery = getUsersQuerySchema.parse(query);
-
     return validatedQuery;
   } catch (error: any) {
     if (error.errors) {
