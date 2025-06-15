@@ -86,4 +86,20 @@ v1Router.use('/users', userRoutes);
 // v1Router.use('/rbac-path', pathRbacRouter);
 // v1Router.use('/todos', todoRouter);
 
+try {
+  const { msgGroupRoutes } = require('@/features/messaging/routes/msg-group.routes');
+  console.log('✅ msgGroupRoutes:', typeof msgGroupRoutes, msgGroupRoutes ? 'exists' : 'undefined');
+  v1Router.use('/msg-groups', msgGroupRoutes);
+} catch (error) {
+  console.log('❌ msgGroupRoutes import failed:', error instanceof Error ? error.message : String(error));
+}
+
+try {
+  const { messageRoutes } = require('@/features/messaging/routes/message.routes');
+  console.log('✅ messageRoutes:', typeof messageRoutes, messageRoutes ? 'exists' : 'undefined');
+  v1Router.use('/messages', messageRoutes);
+} catch (error) {
+  console.log('❌ messageRoutes import failed:', error instanceof Error ? error.message : String(error));
+}
+
 export default v1Router;
