@@ -163,10 +163,10 @@ export async function createUser(
           clientId: userData.clientId,
           userTypeId: userData.userTypeId,
           loginName: userData.loginName,
-          firstName: userData.firstName || null,
-          middleName: userData.middleName || null,
-          lastName: userData.lastName || null,
-          email: userData.email || null,
+          firstName: userData.firstName || '',
+          middleName: userData.middleName || '',
+          lastName: userData.lastName || '',
+          email: userData.email || '',
           dob: userData.dob ? new Date(userData.dob) : null,
           mrn: userData.mrn || null,
           gender: userData.gender || null,
@@ -763,7 +763,12 @@ export async function createUserWithRoles(
     return await prismaPostgres.$transaction(async tx => {
       // 1. Create user
       const user = await tx.user.create({
-        data: data.userData,
+        data: {
+          ...data.userData,
+          firstName: data.userData.firstName || '',
+          lastName: data.userData.lastName || '',
+          email: data.userData.email || '',
+        },
         include: {
           client: {
             select: {

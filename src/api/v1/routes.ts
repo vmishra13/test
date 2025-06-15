@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ApiResponse } from '@shared/utils/api-response';
 import { todoRouter } from '@features/todo';
+import mediaRoutes from '@/features/media/routes/media.routes';
 // Import other feature routes as needed
 
 const healthRoute = Router();
@@ -31,4 +32,9 @@ healthRoute.get('/health', (req, res) => {
   }
 });
 
-export { healthRoute };
+const v1Router = Router();
+
+v1Router.use('/todo', todoRouter);
+v1Router.use('/media', mediaRoutes);
+
+export { healthRoute, v1Router };

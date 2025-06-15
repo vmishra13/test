@@ -1,44 +1,60 @@
 import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { authenticate } from '@features/auth/middlewares';
-import { ApiResponse } from '@shared/utils/api-response';
+import { ApiResponse } from '@/shared/utils/api-response';
+import { authenticate } from '@/features/auth/middlewares/auth.middleware';
+import { prismaPostgres } from '@/db/postgres/client';
 
 const router = Router();
 
 /**
  * GET /clients
- * List all clients
+ * Get all clients (Super Admin only)
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    // TODO: Implement actual database query
-    const clients = [
-      {
-        id: '1',
-        name: 'Clinic ABC',
-        address: '123 Main St, City, State 12345',
-        phone: '+1-555-0123',
-        email: 'contact@clinicabc.com',
-        timezone: 'America/New_York',
-        website: 'https://clinicabc.com',
-        language: 'en',
-        isActive: true
+    const user = (req as any).user;
+    
+    // Only super admin can view all clients
+    if (!user.roles.includes('SUPER_ADMIN')) {
+      res.status(StatusCodes.FORBIDDEN).json(
+        ApiResponse.error('Access denied. Super Admin role required.')
+      );
+      return;
+    }
+
+    const clients = await prismaPostgres.client.findMany({
+      include: {
+        clientLocation: {
+          select: {
+            id: true,
+            name: true,
+            status: true
+          }
+        },
+        _count: {
+          select: {
+            user: true
+          }
+        }
       },
-      {
-        id: '2',
-        name: 'Clinic XYZ',
-        address: '456 Oak Ave, City, State 67890',
-        phone: '+1-555-0456',
-        email: 'info@clinicxyz.com',
-        timezone: 'America/Los_Angeles',
-        website: 'https://clinicxyz.com',
-        language: 'en',
-        isActive: true
-      }
-    ];
+      orderBy: { name: 'asc' }
+    });
 
     res.status(StatusCodes.OK).json(
-      ApiResponse.success(clients, 'Clients retrieved successfully')
+      ApiResponse.success({
+        clients: clients.map(client => ({
+          id: client.id,
+          name: client.name,
+          description: client.description,
+          timeZone: client.timeZone,
+          status: client.status,
+          logo: client.logo,
+          website: client.website,
+          userCount: client._count.user,
+          locations: client.clientLocation,
+          createdAt: client.crDate
+        }))
+      }, 'Clients retrieved successfully')
     );
   } catch (error) {
     console.error('Get clients error:', error);
@@ -49,62 +65,62 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 /**
- * POST /clients
- * Add a new client
+ * GET /clients/:id
+ * Get client by ID
  */
-router.post('/', authenticate, async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
-    const { name, address, phone, email, timezone, website, language } = req.body;
+    const { id } = req.params;
+    const user = (req as any).user;
+    
+    // Users can only view their own client or super admin can view any
+    if (user.clientId !== Number(id) && !user.roles.includes('SUPER_ADMIN')) {
+      res.status(StatusCodes.FORBIDDEN).json(
+        ApiResponse.error('Access denied to this client')
+      );
+      return;
+    }
 
-    // TODO: Implement client creation with validation
-    const newClient = {
-      id: Date.now().toString(),
-      name,
-      address,
-      phone,
-      email,
-      timezone,
-      website,
-      language,
-      isActive: true,
-      createdAt: new Date().toISOString()
-    };
+    const client = await prismaPostgres.client.findUnique({
+      where: { id: Number(id) },
+      include: {
+        clientLocation: true,
+        contact: true,
+        _count: {
+          select: {
+            user: true,
+            msgGroup: true
+          }
+        }
+      }
+    });
 
-    res.status(StatusCodes.CREATED).json(
-      ApiResponse.success(newClient, 'Client created successfully')
-    );
-  } catch (error) {
-    console.error('Create client error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to create client')
-    );
-  }
-});
-
-/**
- * GET /clients/:clientId
- * View a specific client
- */
-router.get('/:clientId', authenticate, async (req, res) => {
-  try {
-    const { clientId } = req.params;
-
-    // TODO: Implement actual database query
-    const client = {
-      id: clientId,
-      name: 'Sample Client',
-      address: '123 Main St, City, State 12345',
-      phone: '+1-555-0123',
-      email: 'contact@sampleclient.com',
-      timezone: 'America/New_York',
-      website: 'https://sampleclient.com',
-      language: 'en',
-      isActive: true,
-      createdAt: new Date().toISOString()
-    };
+    if (!client) {
+      res.status(StatusCodes.NOT_FOUND).json(
+        ApiResponse.error('Client not found')
+      );
+      return;
+    }
 
     res.status(StatusCodes.OK).json(
-      ApiResponse.success(client, 'Client retrieved successfully')
+      ApiResponse.success({
+        id: client.id,
+        name: client.name,
+        description: client.description,
+        timeZone: client.timeZone,
+        status: client.status,
+        logo: client.logo,
+        favIcon: client.favIcon,
+        language: client.language,
+        website: client.website,
+        extraInfo: client.extraInfo,
+        userCount: client._count.user,
+        messageGroupCount: client._count.msgGroup,
+        locations: client.clientLocation,
+        contacts: client.contact,
+        createdAt: client.crDate,
+        modifiedAt: client.modDate
+      }, 'Client retrieved successfully')
     );
   } catch (error) {
     console.error('Get client error:', error);
@@ -115,112 +131,49 @@ router.get('/:clientId', authenticate, async (req, res) => {
 });
 
 /**
- * PUT /clients/:clientId
- * Edit a client
+ * POST /clients
+ * Create new client (Super Admin only)
  */
-router.put('/:clientId', authenticate, async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   try {
-    const { clientId } = req.params;
-    const { name, address, phone, email, timezone, website, language } = req.body;
+    const user = (req as any).user;
+    
+    if (!user.roles.includes('SUPER_ADMIN')) {
+      res.status(StatusCodes.FORBIDDEN).json(
+        ApiResponse.error('Access denied. Super Admin role required.')
+      );
+      return;
+    }
 
-    // TODO: Implement client update
-    const updatedClient = {
-      id: clientId,
-      name,
-      address,
-      phone,
-      email,
-      timezone,
-      website,
-      language,
-      isActive: true,
-      updatedAt: new Date().toISOString()
-    };
+    const { name, description, timeZone, language, website } = req.body;
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(updatedClient, 'Client updated successfully')
+    if (!name) {
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error('Client name is required')
+      );
+      return;
+    }
+
+    const client = await prismaPostgres.client.create({
+      data: {
+        name,
+        description,
+        timeZone: timeZone || 'UTC',
+        language: language || 'en',
+        website,
+        status: 1, // Active
+        crUser: user.id.toString(),
+        modUser: user.id.toString()
+      }
+    });
+
+    res.status(StatusCodes.CREATED).json(
+      ApiResponse.success(client, 'Client created successfully')
     );
   } catch (error) {
-    console.error('Update client error:', error);
+    console.error('Create client error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to update client')
-    );
-  }
-});
-
-/**
- * PATCH /clients/:clientId
- * Inactivate/Activate a client
- */
-router.patch('/:clientId', authenticate, async (req, res) => {
-  try {
-    const { clientId } = req.params;
-    const { isActive } = req.body;
-
-    // TODO: Implement client status update
-    const updatedClient = {
-      id: clientId,
-      isActive,
-      updatedAt: new Date().toISOString()
-    };
-
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(updatedClient, 'Client status updated successfully')
-    );
-  } catch (error) {
-    console.error('Update client status error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to update client status')
-    );
-  }
-});
-
-/**
- * DELETE /clients/:clientId
- * Delete a client
- */
-router.delete('/:clientId', authenticate, async (req, res) => {
-  try {
-    const { clientId } = req.params;
-
-    // TODO: Implement client deletion
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(null, 'Client deleted successfully')
-    );
-  } catch (error) {
-    console.error('Delete client error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to delete client')
-    );
-  }
-});
-
-/**
- * GET /clients/:clientId/fhir-config
- * Get FHIR configuration for a client
- */
-router.get('/:clientId/fhir-config', authenticate, async (req, res) => {
-  try {
-    const { clientId } = req.params;
-
-    // TODO: Implement FHIR configuration retrieval
-    const fhirConfig = {
-      clientId,
-      fhirServerUrl: 'https://fhir.example.com/R4',
-      clientId_fhir: 'sample_client_id',
-      clientSecret: '***hidden***',
-      scopes: ['patient/*.read', 'observation/*.read'],
-      isEnabled: true,
-      lastSync: new Date().toISOString()
-    };
-
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(fhirConfig, 'FHIR configuration retrieved successfully')
-    );
-  } catch (error) {
-    console.error('Get FHIR config error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to retrieve FHIR configuration')
+      ApiResponse.error('Failed to create client')
     );
   }
 });

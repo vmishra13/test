@@ -40,10 +40,10 @@ model client {
   refresh_token  refresh_token[]
   user           user[]
   userRole       user_role[]
-  msgGroup       msg_group[]       // ADDED
-  msgGroupUser   msg_group_user[]  // ADDED
-  message        message[]         // ADDED
-  userMsgBox     user_msg_box[]    // ADDED
+  msgGroup       msg_group[]
+  msgGroupUser   msg_group_user[]
+  message        message[]
+  userMsgBox     user_msg_box[]
 
   @@index([crDate], map: "idx_client_crDate")
   @@index([name], map: "idx_client_name")
@@ -116,7 +116,7 @@ model contact {
 model password {
   id         Int       @id @default(autoincrement())
   userId     Int
-  password   String    @postgresDb.VarChar(60)  // FIXED: Match SQL varchar(60)
+  password   String    @postgresDb.VarChar(60)
   expiryDate DateTime? @postgresDb.Date
   status     Int?
   crUser     String    @postgresDb.VarChar(50)
@@ -140,7 +140,7 @@ model password {
 model role {
   id          Int         @id @default(autoincrement())
   name        String      @unique(map: "role_name_unique") @postgresDb.VarChar(100)
-  description String?     @postgresDb.VarChar(100)  // FIXED: Match SQL varchar(100)
+  description String?     @postgresDb.VarChar(100)
   crUser      String      @postgresDb.VarChar(50)
   crDate      DateTime    @default(now()) @postgresDb.Timestamp(6)
   modUser     String?     @postgresDb.VarChar(50)
@@ -184,9 +184,9 @@ model user {
   client           client          @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_client")
   userType         user_type       @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
   userRole         user_role[]
-  msgGroupUser     msg_group_user[] // ADDED
-  message          message[]        // ADDED
-  userMsgBox       user_msg_box[]   // ADDED
+  msgGroupUser     msg_group_user[]
+  message          message[]
+  userMsgBox       user_msg_box[]
 
   @@index([clientId], map: "idx_user_clientId")
   @@index([clientId, status], map: "idx_user_client_status")
@@ -199,7 +199,7 @@ model user {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// User role model - ADDED FROM SQL SCRIPTS
 model user_role {
   id       Int       @id @default(autoincrement())
   userId   Int
@@ -230,7 +230,7 @@ model user_role {
 model user_type {
   id          Int       @id @default(autoincrement())
   name        String    @unique(map: "user_type_name_unique") @postgresDb.VarChar(100)
-  description String?   @postgresDb.VarChar(100)  // FIXED: Match SQL varchar(100)
+  description String?   @postgresDb.VarChar(100)
   crUser      String    @postgresDb.VarChar(50)
   crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser     String?   @postgresDb.VarChar(50)
@@ -242,8 +242,6 @@ model user_type {
   @@index([crDate], map: "idx_user_type_crDate")
   @@index([name], map: "idx_user_type_name")
 }
-
-// ========== MISSING MODELS - NEED TO BE ADDED ==========
 
 /// Message group model - ADDED FROM SQL SCRIPTS
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -271,7 +269,7 @@ model msg_group_user {
   id         Int       @id @default(autoincrement())
   userId     Int
   clientId   Int
-  msgGroupId Int       // ADDED: Missing from your original design
+  msgGroupId Int
   validFrom  DateTime  @postgresDb.Timestamp(6)
   validTo    DateTime? @postgresDb.Timestamp(6)
   perView    Boolean   @default(false)
@@ -326,7 +324,7 @@ model message {
 }
 
 /// User message box model - ADDED FROM SQL SCRIPTS
-///  This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model user_msg_box {
   id         Int       @id @default(autoincrement())
   userId     Int
@@ -336,7 +334,7 @@ model user_msg_box {
   sentFlag   Boolean   @default(false)
   deleteFlag Boolean   @default(false)
   draftFlag  Boolean   @default(false)
-  readFlag   Boolean   @default(false)  // ADDED: Useful for UX
+  readFlag   Boolean   @default(false)
   validFrom  DateTime  @postgresDb.Timestamp(6)
   validTo    DateTime? @postgresDb.Timestamp(6)
   perView    Boolean   @default(false)
@@ -375,11 +373,11 @@ model refresh_token {
   crUser    String    @postgresDb.VarChar(50)
   crDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
 
-  // ADD MISSING RELATIONS:
+  // Relations
   client    client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_refresh_token_client")
   user      user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_refresh_token_user")
 
-  // ADD MISSING INDEXES:
+  // Indexes
   @@index([family], map: "idx_refresh_token_family")
   @@index([isRevoked], map: "idx_refresh_token_isRevoked")
   @@index([jti], map: "idx_refresh_token_jti")

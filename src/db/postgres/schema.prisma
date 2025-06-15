@@ -21,7 +21,7 @@ model todo {
 model client {
   id             Int               @id @default(autoincrement())
   name           String            @unique(map: "client_name_unique") @postgresDb.VarChar(100)
-  description    String?
+  description    String?           @postgresDb.Text
   timeZone       String?           @postgresDb.VarChar(100)
   status         Int?              @default(-1)
   logo           String?           @postgresDb.VarChar(2000)
@@ -33,11 +33,17 @@ model client {
   crDate         DateTime          @default(now()) @postgresDb.Timestamp(6)
   modUser        String?           @postgresDb.VarChar(50)
   modDate        DateTime?         @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
   clientLocation client_location[]
   contact        contact[]
-  refreshToken   refresh_token[]
+  refresh_token  refresh_token[]
   user           user[]
   userRole       user_role[]
+  msgGroup       msg_group[]
+  msgGroupUser   msg_group_user[]
+  message        message[]
+  userMsgBox     user_msg_box[]
 
   @@index([crDate], map: "idx_client_crDate")
   @@index([name], map: "idx_client_name")
@@ -51,7 +57,7 @@ model client_location {
   id          Int       @id @default(autoincrement())
   clientId    Int
   name        String    @postgresDb.VarChar(100)
-  description String?
+  description String?   @postgresDb.Text
   status      Int?
   logo        String?   @postgresDb.VarChar(2000)
   extraInfo   Json?     @postgresDb.Json
@@ -59,6 +65,8 @@ model client_location {
   crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser     String?   @postgresDb.VarChar(50)
   modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
   client      client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_client_location_client")
   contact     contact[]
 
@@ -84,6 +92,8 @@ model contact {
   crDate         DateTime         @default(now()) @postgresDb.Timestamp(6)
   modUser        String?          @postgresDb.VarChar(50)
   modDate        DateTime?        @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
   client         client?          @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_contact_client")
   clientLocation client_location? @relation(fields: [locationId], references: [id], onDelete: Cascade, map: "fk_contact_location")
   user           user?            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_contact_user")
@@ -113,6 +123,8 @@ model password {
   crDate     DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser    String?   @postgresDb.VarChar(50)
   modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
   user       user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_password_user")
 
   @@index([crDate], map: "idx_password_crDate")
@@ -133,6 +145,8 @@ model role {
   crDate      DateTime    @default(now()) @postgresDb.Timestamp(6)
   modUser     String?     @postgresDb.VarChar(50)
   modDate     DateTime?   @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
   userRole    user_role[]
 
   @@index([crDate], map: "idx_role_crDate")
@@ -146,28 +160,33 @@ model user {
   clientId         Int
   userTypeId       Int
   loginName        String          @unique(map: "idx_user_loginName") @postgresDb.VarChar(50)
-  firstName        String?         @postgresDb.VarChar(50)
+  firstName        String          @postgresDb.VarChar(50)
   middleName       String?         @postgresDb.VarChar(50)
-  lastName         String?         @postgresDb.VarChar(50)
-  email            String?         @unique(map: "idx_user_email") @postgresDb.VarChar(100)
+  lastName         String          @postgresDb.VarChar(50)
+  email            String          @unique(map: "idx_user_email") @postgresDb.VarChar(255)
   dob              DateTime?       @postgresDb.Date
   mrn              String?         @postgresDb.VarChar(50)
   gender           String?         @postgresDb.VarChar(50)
   timeZone         String?         @postgresDb.VarChar(100)
   profilePicture   String?         @postgresDb.VarChar(2000)
-  passExpireInDays Int?
+  passExpireInDays Int?            @default(0)
   extraInfo        Json?           @postgresDb.Json
   status           Int?
   crUser           String          @postgresDb.VarChar(50)
   crDate           DateTime        @default(now()) @postgresDb.Timestamp(6)
   modUser          String?         @postgresDb.VarChar(50)
   modDate          DateTime?       @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
   contact          contact[]
   password         password[]
-  refreshToken     refresh_token[]
+  refresh_token    refresh_token[]
   client           client          @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_client")
   userType         user_type       @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
   userRole         user_role[]
+  msgGroupUser     msg_group_user[]
+  message          message[]
+  userMsgBox       user_msg_box[]
 
   @@index([clientId], map: "idx_user_clientId")
   @@index([clientId, status], map: "idx_user_client_status")
@@ -180,6 +199,7 @@ model user {
 }
 
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// User role model - ADDED FROM SQL SCRIPTS
 model user_role {
   id       Int       @id @default(autoincrement())
   userId   Int
@@ -189,6 +209,8 @@ model user_role {
   crDate   DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser  String?   @postgresDb.VarChar(50)
   modDate  DateTime? @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
   client   client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_role_client")
   role     role      @relation(fields: [roleId], references: [id], map: "fk_user_role_role")
   user     user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_role_user")
@@ -213,14 +235,132 @@ model user_type {
   crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser     String?   @postgresDb.VarChar(50)
   modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
+
+  // Relations
   user        user[]
 
   @@index([crDate], map: "idx_user_type_crDate")
   @@index([name], map: "idx_user_type_name")
 }
 
+/// Message group model - ADDED FROM SQL SCRIPTS
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model msg_group {
+  id           Int              @id @default(autoincrement())
+  name         String           @postgresDb.VarChar(100)
+  clientId     Int
+  crUser       String           @postgresDb.VarChar(50)
+  crDate       DateTime         @default(now()) @postgresDb.Timestamp(6)
+  modUser      String?          @postgresDb.VarChar(50)
+  modDate      DateTime?        @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
+  client       client           @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_msg_group_client")
+  msgGroupUser msg_group_user[]
+
+  @@index([clientId], map: "idx_msg_group_clientId")
+  @@index([crDate], map: "idx_msg_group_crDate")
+  @@index([name], map: "idx_msg_group_name")
+}
+
+/// Message group user model - ADDED FROM SQL SCRIPTS
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model msg_group_user {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  clientId   Int
+  msgGroupId Int
+  validFrom  DateTime  @postgresDb.Timestamp(6)
+  validTo    DateTime? @postgresDb.Timestamp(6)
+  perView    Boolean   @default(false)
+  perWrite   Boolean   @default(false)
+  perReply   Boolean   @default(false)
+  crUser     String    @postgresDb.VarChar(50)
+  crDate     DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser    String?   @postgresDb.VarChar(50)
+  modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
+  user       user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_msg_group_user_user")
+  client     client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_msg_group_user_client")
+  msgGroup   msg_group @relation(fields: [msgGroupId], references: [id], onDelete: Cascade, map: "fk_msg_group_user_group")
+
+  @@unique([userId, msgGroupId], map: "msg_group_user_unique")
+  @@index([userId], map: "idx_msg_group_user_userId")
+  @@index([clientId], map: "idx_msg_group_user_clientId")
+  @@index([msgGroupId], map: "idx_msg_group_user_groupId")
+  @@index([validFrom], map: "idx_msg_group_user_validFrom")
+  @@index([validTo], map: "idx_msg_group_user_validTo")
+}
+
+/// Message model - ADDED FROM SQL SCRIPTS
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model message {
+  id         Int           @id @default(autoincrement())
+  userId     Int
+  clientId   Int
+  subject    String?       @postgresDb.VarChar(255)
+  content    String        @postgresDb.Text
+  validFrom  DateTime      @postgresDb.Timestamp(6)
+  validTo    DateTime?     @postgresDb.Timestamp(6)
+  perView    Boolean       @default(false)
+  perWrite   Boolean       @default(false)
+  perReply   Boolean       @default(false)
+  crUser     String        @postgresDb.VarChar(50)
+  crDate     DateTime      @default(now()) @postgresDb.Timestamp(6)
+  modUser    String?       @postgresDb.VarChar(50)
+  modDate    DateTime?     @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
+  user       user          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_message_user")
+  client     client        @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_message_client")
+  userMsgBox user_msg_box[]
+
+  @@index([userId], map: "idx_message_userId")
+  @@index([clientId], map: "idx_message_clientId")
+  @@index([crDate], map: "idx_message_crDate")
+  @@index([validFrom], map: "idx_message_validFrom")
+  @@index([validTo], map: "idx_message_validTo")
+}
+
+/// User message box model - ADDED FROM SQL SCRIPTS
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_msg_box {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  clientId   Int
+  msgId      Int
+  inboxFlag  Boolean   @default(false)
+  sentFlag   Boolean   @default(false)
+  deleteFlag Boolean   @default(false)
+  draftFlag  Boolean   @default(false)
+  readFlag   Boolean   @default(false)
+  validFrom  DateTime  @postgresDb.Timestamp(6)
+  validTo    DateTime? @postgresDb.Timestamp(6)
+  perView    Boolean   @default(false)
+  perWrite   Boolean   @default(false)
+  perReply   Boolean   @default(false)
+  crUser     String    @postgresDb.VarChar(50)
+  crDate     DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser    String?   @postgresDb.VarChar(50)
+  modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
+  
+  // Relations
+  user       user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_msg_box_user")
+  client     client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_msg_box_client")
+  message    message   @relation(fields: [msgId], references: [id], onDelete: Cascade, map: "fk_user_msg_box_message")
+
+  @@unique([userId, msgId], map: "user_msg_box_unique")
+  @@index([userId], map: "idx_user_msg_box_userId")
+  @@index([clientId], map: "idx_user_msg_box_clientId")
+  @@index([msgId], map: "idx_user_msg_box_msgId")
+  @@index([inboxFlag], map: "idx_user_msg_box_inbox")
+  @@index([sentFlag], map: "idx_user_msg_box_sent")
+  @@index([deleteFlag], map: "idx_user_msg_box_delete")
+  @@index([draftFlag], map: "idx_user_msg_box_draft")
+  @@index([readFlag], map: "idx_user_msg_box_read")
+}
+
 model refresh_token {
   id        Int       @id @default(autoincrement())
   userId    Int
@@ -232,18 +372,15 @@ model refresh_token {
   isRevoked Boolean?  @default(false)
   crUser    String    @postgresDb.VarChar(50)
   crDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
-  modUser   String?   @postgresDb.VarChar(50)
-  modDate   DateTime? @default(now()) @postgresDb.Timestamp(6)
-  client    client    @relation(fields: [clientId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_refresh_token_client")
-  user      user      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_refresh_token_user")
 
+  // Relations
+  client    client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_refresh_token_client")
+  user      user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_refresh_token_user")
+
+  // Indexes
+  @@index([family], map: "idx_refresh_token_family")
+  @@index([isRevoked], map: "idx_refresh_token_isRevoked")
+  @@index([jti], map: "idx_refresh_token_jti")
   @@index([userId], map: "idx_refresh_token_userId")
   @@index([clientId], map: "idx_refresh_token_clientId")
-  @@index([jti], map: "idx_refresh_token_jti")
-  @@index([family], map: "idx_refresh_token_family")
-  @@index([expiresAt], map: "idx_refresh_token_expiresAt")
-  @@index([isRevoked], map: "idx_refresh_token_isRevoked")
-  @@index([crDate], map: "idx_refresh_token_crDate")
-  @@index([userId, clientId], map: "idx_refresh_token_user_client")
-  @@index([userId, family], map: "idx_refresh_token_user_family")
 }

@@ -25,6 +25,9 @@ import {
   createAuthRequest,
   performAuthorization,
 } from '@shared/authorization';
+import { validateJsonField, userExtraInfoSchema, mergeJsonFields } from '@/shared/schemas/json-schemas';
+import type { UserExtraInfo } from '@/shared/schemas/json-schemas';
+import { prismaPostgres } from '@/db/postgres/client';
 
 export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {
   try {
@@ -250,5 +253,88 @@ function getCurrentUserPrimaryRole(roles: string[]): string {
 
   // If no known role is found, throw an error
   throw createAuthError('User has no valid roles assigned');
+}
+
+export async function updateUser(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<{ data: any; message: string }> {
+  try {
+    const { userId } = req.params;
+    const { extraInfo, ...otherFields } = req.body;
+    const currentUser = (req as any).user;
+
+    // ✅ Validate JSON field with Zod
+    let sanitizedExtraInfo: UserExtraInfo | undefined = undefined;
+    if (extraInfo !== undefined) {
+      const validation = validateJsonField(extraInfo, userExtraInfoSchema, 'extraInfo');
+      
+      if (!validation.success) {
+        throw createValidationError('Invalid extraInfo format', 
+          validation.errors.map(error => ({ field: 'extraInfo', message: error }))
+        );
+      }
+
+      // For updates, merge with existing data
+      if (validation.data) {
+        const existingUser = await prismaPostgres.user.findUnique({
+          where: { id: Number(userId) },
+          select: { extraInfo: true }
+        });
+        
+        const mergedResult = mergeJsonFields(
+          existingUser?.extraInfo as UserExtraInfo, 
+          validation.data
+        );
+        sanitizedExtraInfo = mergedResult || undefined;
+      } else {
+        sanitizedExtraInfo = null as any;
+      }
+    }
+
+    const updatedUser = await prismaPostgres.user.update({
+      where: { id: Number(userId) },
+      data: {
+        ...otherFields,
+        ...(extraInfo !== undefined && { extraInfo: sanitizedExtraInfo }),
+        modUser: currentUser.id.toString(),
+        modDate: new Date()
+      },
+      include: {
+        client: { select: { id: true, name: true } },
+        userType: { select: { id: true, name: true } },
+        userRole: {
+          include: {
+            role: { select: { id: true, name: true } }
+          }
+        }
+      }
+    });
+
+    return {
+      data: {
+        id: updatedUser.id,
+        clientId: updatedUser.clientId,
+        userTypeId: updatedUser.userTypeId,
+        loginName: updatedUser.loginName,
+        firstName: updatedUser.firstName,
+        middleName: updatedUser.middleName,
+        lastName: updatedUser.lastName,
+        email: updatedUser.email,
+        dob: updatedUser.dob,
+        mrn: updatedUser.mrn,
+        gender: updatedUser.gender,
+        timeZone: updatedUser.timeZone,
+        profilePicture: updatedUser.profilePicture,
+        extraInfo: updatedUser.extraInfo as UserExtraInfo, // ✅ Type-safe JSON
+        status: updatedUser.status,
+        client: updatedUser.client,
+        userType: updatedUser.userType,
+        roles: updatedUser.userRole.map(ur => ur.role),
+        modDate: updatedUser.modDate
+      },
+      message: 'User updated successfully'
+    };
+  } catch (error) {
+    logger.error('Error updating user:', error);
+    throw error;
+  }
 }
 

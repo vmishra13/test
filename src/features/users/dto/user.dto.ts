@@ -1,3 +1,6 @@
+import { z } from 'zod';
+import { userExtraInfoSchema } from '@/shared/schemas/json-schemas';
+
 // ===================================================================
 // 🎯 USER MANAGEMENT DTOs (User CRUD and registration types)
 // ===================================================================
@@ -373,3 +376,28 @@ export interface GetUsersResponse {
   message: string;
   timestamp: string;
 }
+
+// Validation schemas
+export const updateUserSchema = z.object({
+  firstName: z.string().min(1).max(50).optional(),
+  lastName: z.string().min(1).max(50).optional(),
+  email: z.string().email().optional(),
+  timeZone: z.string().optional(),
+  profilePicture: z.string().url().optional(),
+  extraInfo: userExtraInfoSchema // ✅ Reuse the JSON schema
+});
+
+export const createUserSchema = z.object({
+  clientId: z.number().int().positive(),
+  userTypeId: z.number().int().positive(),
+  loginName: z.string().min(3).max(50),
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().min(1).max(50),
+  email: z.string().email(),
+  password: z.string().min(8),
+  extraInfo: userExtraInfoSchema.optional()
+});
+
+// ✅ Infer types from schemas
+export type UpdateUserRequest = z.infer<typeof updateUserSchema>;
+export type CreateUserRequest = z.infer<typeof createUserSchema>;

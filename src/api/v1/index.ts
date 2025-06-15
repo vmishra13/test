@@ -53,7 +53,7 @@ try {
 }
 
 try {
-  const mediaRoutes = require('@/features/media/routes').default;
+  const mediaRoutes = require('@/features/media/routes/media.routes').default;
   console.log('✅ mediaRoutes:', typeof mediaRoutes, mediaRoutes ? 'exists' : 'undefined');
 } catch (error) {
   console.log('❌ mediaRoutes import failed:', error instanceof Error ? error.message : String(error));
@@ -86,17 +86,18 @@ v1Router.use('/users', userRoutes);
 // v1Router.use('/rbac-path', pathRbacRouter);
 // v1Router.use('/todos', todoRouter);
 
+// Import messaging routes with error handling
 try {
-  const { msgGroupRoutes } = require('@/features/messaging/routes/msg-group.routes');
-  console.log('✅ msgGroupRoutes:', typeof msgGroupRoutes, msgGroupRoutes ? 'exists' : 'undefined');
+  const msgGroupRoutes = require('@/features/messaging/routes/msg-group.routes').default;
+  console.log('✅ msgGroupRoutes loaded successfully');
   v1Router.use('/msg-groups', msgGroupRoutes);
 } catch (error) {
   console.log('❌ msgGroupRoutes import failed:', error instanceof Error ? error.message : String(error));
 }
 
 try {
-  const { messageRoutes } = require('@/features/messaging/routes/message.routes');
-  console.log('✅ messageRoutes:', typeof messageRoutes, messageRoutes ? 'exists' : 'undefined');
+  const messageRoutes = require('@/features/messaging/routes/message.routes').default;
+  console.log('✅ messageRoutes loaded successfully');
   v1Router.use('/messages', messageRoutes);
 } catch (error) {
   console.log('❌ messageRoutes import failed:', error instanceof Error ? error.message : String(error));

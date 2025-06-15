@@ -123,13 +123,11 @@ export type {
   contact,
   client_location,
   refresh_token,
-  // Only uncomment these if they exist in your generated client after running prisma generate
-  // msg_group,
-  // msg_group_user,
-  // message,
-  // user_msg_box,
+  msg_group,
+  msg_group_user,
+  message,
+  user_msg_box,
 } from './generated/postgres-client';
-
 // Export useful Prisma types
 export type {
   Prisma,
