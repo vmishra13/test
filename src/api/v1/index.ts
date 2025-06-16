@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { StatusCodes } from 'http-status-codes';
+import { ApiResponse } from '@shared/utils/api-response';
 
 // Import all feature routes
 import { authRoutes } from '@features/auth';
@@ -17,6 +19,30 @@ import msgGroupRoutes from '@/features/messaging/routes/msg-group.routes';
 import messageRoutes from '@/features/messaging/routes/message.routes';
 
 const v1Router = Router();
+
+// Health check endpoint
+v1Router.get('/health', (req, res) => {
+  try {
+    const healthData = {
+      status: 'ok',
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      environment: process.env.NODE_ENV || 'development',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+    };
+
+    const response = ApiResponse.success(healthData, 'API v1 is running successfully');
+    res.status(StatusCodes.OK).json(response);
+  } catch (error) {
+    const errorResponse = ApiResponse.error(
+      'Health check failed',
+      'HEALTH_CHECK_ERROR',
+      error instanceof Error ? error.message : 'Unknown error',
+    );
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(errorResponse);
+  }
+});
 
 // Mount all feature routes
 v1Router.use('/auth', authRoutes);

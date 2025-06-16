@@ -1,45 +1,58 @@
 {
 	"info": {
 		"_postman_id": "10baf4a2-ffb0-401f-9ac1-7186fc58a6e1",
-		"name": "ReliaCare APIs",
-		"description": "API for managing clients, users, plans, exercise library, and system configurations for Super Admin.",
+		"name": "ReliaCare APIs - Complete",
+		"description": "Complete API collection for ReliaCare backend with all endpoints and proper request bodies",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2237202"
 	},
 	"item": [
 		{
-			"name": "OAuth 2.0 Endpoints",
+			"name": "🔐 Authentication",
 			"item": [
 				{
-					"name": "1. Login (Password Grant)",
+					"name": "1. OAuth Token (Password Grant)",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test('Login successful', function () {",
+									"try {",
+									"    const responseJson = pm.response.json();",
+									"    ",
+									"    if (pm.response.code === 200 && responseJson.access_token) {",
+									"        pm.collectionVariables.set(\"RELIACARE_X_AUTH_TOKEN\", responseJson.access_token);",
+									"        console.log(\"✅ Access token stored in collection variable:\", responseJson.access_token);",
+									"        ",
+									"        if (responseJson.token_type) {",
+									"            pm.collectionVariables.set(\"RELIACARE_TOKEN_TYPE\", responseJson.token_type);",
+									"        }",
+									"        ",
+									"        if (responseJson.expires_in) {",
+									"            pm.collectionVariables.set(\"RELIACARE_TOKEN_EXPIRES_IN\", responseJson.expires_in);",
+									"            const expirationTime = new Date(Date.now() + (responseJson.expires_in * 1000));",
+									"            pm.collectionVariables.set(\"RELIACARE_TOKEN_EXPIRES_AT\", expirationTime.toISOString());",
+									"        }",
+									"        ",
+									"        if (responseJson.refresh_token) {",
+									"            pm.collectionVariables.set(\"RELIACARE_REFRESH_TOKEN\", responseJson.refresh_token);",
+									"        }",
+									"        ",
+									"        if (responseJson.user) {",
+									"            pm.collectionVariables.set(\"CURRENT_USER_ID\", responseJson.user.id);",
+									"            pm.collectionVariables.set(\"CURRENT_CLIENT_ID\", responseJson.user.clientId);",
+									"        }",
+									"    } else {",
+									"        console.error(\"❌ Failed to extract access token from response\");",
+									"    }",
+									"} catch (error) {",
+									"    console.error(\"❌ Error processing response:\", error.message);",
+									"}",
+									"",
+									"pm.test(\"Authentication successful\", function () {",
 									"    pm.response.to.have.status(200);",
-									"    ",
-									"    const response = pm.response.json();",
-									"    ",
-									"    // OAuth 2.0 compliance",
-									"    pm.expect(response).to.have.property('access_token');",
-									"    pm.expect(response).to.have.property('refresh_token');",
-									"    pm.expect(response).to.have.property('expires_in');",
-									"    pm.expect(response).to.have.property('refresh_expires_in');",
-									"    pm.expect(response.token_type).to.eql('Bearer');",
-									"    ",
-									"    // ReliaCare specific",
-									"    pm.expect(response).to.have.property('user');",
-									"    pm.expect(response).to.have.property('success');",
-									"    pm.expect(response.success).to.eql(true);",
-									"    ",
-									"    // Store tokens",
-									"    pm.environment.set('accessToken', response.access_token);",
-									"    pm.environment.set('refreshToken', response.refresh_token);",
-									"    pm.environment.set('userId', response.user.id);",
-									"    ",
-									"    console.log('✅ Login successful, tokens stored');",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('access_token');",
 									"});"
 								],
 								"type": "text/javascript"
@@ -56,37 +69,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"grant_type\": \"password\",\n    \"username\": \"superadmin\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": 1,\n    \"scope\": \"read write\"\n}"
+							"raw": "{\n    \"grant_type\": \"password\",\n    \"username\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"client_id\": \"reliacare-client\",\n    \"scope\": \"read write\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/v1/auth/login",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"v1",
-								"auth",
-								"login"
-							]
+							"raw": "{{baseUrl}}/api/v1/auth/token",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "token"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
-					"name": "2. OAuth 2.0 Token (Password Grant)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"var jsonData = JSON.parse(responseBody);",
-									"postman.setEnvironmentVariable(\"RELIACARE_X-AUTH-TOKEN\", jsonData.data.accessToken);"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
+					"name": "2. Login (Legacy)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -97,49 +90,17 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"grant_type\": \"password\",\n  \"username\": \"superadmin\",\n  \"password\": \"TempPass123!\",\n  \"clientId\": 1\n}"
+							"raw": "{\n    \"username\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"clientId\": 1\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/auth/token",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"auth",
-								"token"
-							]
+							"raw": "{{baseUrl}}/api/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "login"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
 					"name": "3. Refresh Token",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('Token Refresh', function () {",
-									"    pm.response.to.have.status(200);",
-									"    ",
-									"    const response = pm.response.json();",
-									"    ",
-									"    pm.expect(response.success).to.eql(true);",
-									"    pm.expect(response.data).to.have.property('tokens');",
-									"    pm.expect(response.data.tokens).to.have.property('accessToken');",
-									"    pm.expect(response.data.tokens).to.have.property('refreshToken');",
-									"    ",
-									"    // Update tokens",
-									"    pm.environment.set('accessToken', response.data.tokens.accessToken);",
-									"    pm.environment.set('refreshToken', response.data.tokens.refreshToken);",
-									"    ",
-									"    console.log('✅ Token refreshed successfully');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -150,52 +111,41 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"refreshToken\": \"{{refreshToken}}\"\n}"
+							"raw": "{\n    \"refresh_token\": \"{{RELIACARE_REFRESH_TOKEN}}\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/v1/auth/refresh",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"v1",
-								"auth",
-								"refresh"
-							]
+							"raw": "{{baseUrl}}/api/v1/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "refresh"]
 						}
-					},
-					"response": []
+					}
 				},
 				{
-					"name": "4. OAuth 2.0 Token (Refresh Grant)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test('OAuth2 Refresh Grant', function () {",
-									"    pm.response.to.have.status(200);",
-									"    ",
-									"    const response = pm.response.json();",
-									"    ",
-									"    pm.expect(response).to.have.property('access_token');",
-									"    pm.expect(response).to.have.property('refresh_token');",
-									"    pm.expect(response.token_type).to.eql('Bearer');",
-									"    ",
-									"    // Update tokens",
-									"    pm.environment.set('accessToken', response.access_token);",
-									"    pm.environment.set('refreshToken', response.refresh_token);",
-									"    ",
-									"    console.log('✅ OAuth2 refresh grant working');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
+					"name": "4. Logout",
 					"request": {
 						"method": "POST",
 						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						}
+					}
+				},
+				{
+					"name": "5. Revoke Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
 							{
 								"key": "Content-Type",
 								"value": "application/json"
@@ -203,605 +153,29 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"grant_type\": \"refresh_token\",\n    \"refresh_token\": \"{{refreshToken}}\",\n    \"client_id\": \"1\"\n}"
+							"raw": "{\n    \"token\": \"{{RELIACARE_X_AUTH_TOKEN}}\",\n    \"tokenTypeHint\": \"access_token\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/v1/auth/token",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"v1",
-								"auth",
-								"token"
-							]
+							"raw": "{{baseUrl}}/api/v1/auth/revoke",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "revoke"]
 						}
-					},
-					"response": []
+					}
 				}
 			]
 		},
 		{
-			"name": "clients",
+			"name": "👥 Users",
 			"item": [
 				{
-					"name": "{clientId}",
-					"item": [
-						{
-							"name": "fhir-configuration",
-							"item": [
-								{
-									"name": "Configure FHIR settings for a client",
-									"request": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"fhirServerUrl\": \"<string>\",\n  \"authDetails\": {}\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId/fhir-configuration",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId",
-												"fhir-configuration"
-											],
-											"variable": [
-												{
-													"key": "clientId",
-													"value": "<string>",
-													"description": "(Required) "
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "FHIR configuration updated",
-											"originalRequest": {
-												"method": "PUT",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"fhirServerUrl\": \"<string>\",\n  \"authDetails\": {}\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/clients/:clientId/fhir-configuration",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"clients",
-														":clientId",
-														"fhir-configuration"
-													],
-													"variable": [
-														{
-															"key": "clientId"
-														}
-													]
-												}
-											},
-											"status": "OK",
-											"code": 200,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										},
-										{
-											"name": "Client not found",
-											"originalRequest": {
-												"method": "PUT",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"fhirServerUrl\": \"<string>\",\n  \"authDetails\": {}\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/clients/:clientId/fhir-configuration",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"clients",
-														":clientId",
-														"fhir-configuration"
-													],
-													"variable": [
-														{
-															"key": "clientId"
-														}
-													]
-												}
-											},
-											"status": "Not Found",
-											"code": 404,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										}
-									]
-								}
-							]
-						},
-						{
-							"name": "View a specific client",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/clients/:clientId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"clients",
-										":clientId"
-									],
-									"variable": [
-										{
-											"key": "clientId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Client details",
-									"originalRequest": {
-										"method": "GET",
-										"header": [
-											{
-												"key": "Accept",
-												"value": "application/json"
-											}
-										],
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										}
-									],
-									"cookie": [],
-									"body": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}"
-								},
-								{
-									"name": "Client not found",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Edit a client",
-							"request": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/clients/:clientId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"clients",
-										":clientId"
-									],
-									"variable": [
-										{
-											"key": "clientId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Client updated successfully",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Client not found",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Delete a client",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/clients/:clientId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"clients",
-										":clientId"
-									],
-									"variable": [
-										{
-											"key": "clientId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Client deleted successfully",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "No Content",
-									"code": 204,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Client not found",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Inactivate/Activate a client",
-							"request": {
-								"method": "PATCH",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/clients/:clientId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"clients",
-										":clientId"
-									],
-									"variable": [
-										{
-											"key": "clientId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Client status updated",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Client not found",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/clients/:clientId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"clients",
-												":clientId"
-											],
-											"variable": [
-												{
-													"key": "clientId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "Add a new client",
+					"name": "1. Register User",
 					"request": {
 						"method": "POST",
 						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
 							{
 								"key": "Content-Type",
 								"value": "application/json"
@@ -809,1586 +183,92 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
-							"options": {
-								"raw": {
-									"headerFamily": "json",
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"loginName\": \"john.doe\",\n    \"password\": \"password123\",\n    \"clientId\": 1,\n    \"userTypeId\": 1,\n    \"roles\": [\"PATIENT\"],\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"sendWelcomeEmail\": true,\n    \"temporaryPassword\": false,\n    \"timeZone\": \"America/New_York\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/clients",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"clients"
-							]
+							"raw": "{{baseUrl}}/api/v1/users/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "register"]
 						}
-					},
-					"response": [
-						{
-							"name": "Client created successfully",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/clients",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"clients"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						},
-						{
-							"name": "Invalid input",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/clients",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"clients"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						}
-					]
+					}
 				},
 				{
-					"name": "View all clients",
+					"name": "2. Get All Users",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
-								"key": "Accept",
-								"value": "application/json"
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/clients",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"clients"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "List of clients",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/clients",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"clients"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
+							"raw": "{{baseUrl}}/api/v1/users?page=1&limit=20&sort=asc",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users"],
+							"query": [
 								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"cookie": [],
-							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"address\": \"<string>\",\n    \"phone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"timezone\": \"<string>\",\n    \"website\": \"<string>\",\n    \"language\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"address\": \"<string>\",\n    \"phone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"timezone\": \"<string>\",\n    \"website\": \"<string>\",\n    \"language\": \"<string>\"\n  }\n]"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "users",
-			"item": [
-				{
-					"name": "{userId}",
-					"item": [
-						{
-							"name": "link-client",
-							"item": [
-								{
-									"name": "Link user to a client",
-									"request": {
-										"method": "POST",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"clientId\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId/link-client",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId",
-												"link-client"
-											],
-											"variable": [
-												{
-													"key": "userId",
-													"value": "<string>",
-													"description": "(Required) "
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "User linked to client",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"clientId\": \"<string>\"\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/users/:userId/link-client",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"users",
-														":userId",
-														"link-client"
-													],
-													"variable": [
-														{
-															"key": "userId"
-														}
-													]
-												}
-											},
-											"status": "OK",
-											"code": 200,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										},
-										{
-											"name": "User or client not found",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"clientId\": \"<string>\"\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/users/:userId/link-client",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"users",
-														":userId",
-														"link-client"
-													],
-													"variable": [
-														{
-															"key": "userId"
-														}
-													]
-												}
-											},
-											"status": "Not Found",
-											"code": 404,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										}
-									]
-								}
-							]
-						},
-						{
-							"name": "password",
-							"item": [
-								{
-									"name": "Manage user password",
-									"request": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"password\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId/password",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId",
-												"password"
-											],
-											"variable": [
-												{
-													"key": "userId",
-													"value": "<string>",
-													"description": "(Required) "
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "Password updated successfully",
-											"originalRequest": {
-												"method": "PUT",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"password\": \"<string>\"\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/users/:userId/password",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"users",
-														":userId",
-														"password"
-													],
-													"variable": [
-														{
-															"key": "userId"
-														}
-													]
-												}
-											},
-											"status": "OK",
-											"code": 200,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										},
-										{
-											"name": "User not found",
-											"originalRequest": {
-												"method": "PUT",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"password\": \"<string>\"\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/users/:userId/password",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"users",
-														":userId",
-														"password"
-													],
-													"variable": [
-														{
-															"key": "userId"
-														}
-													]
-												}
-											},
-											"status": "Not Found",
-											"code": 404,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										}
-									]
-								}
-							]
-						},
-						{
-							"name": "View a specific user",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/users/:userId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"users",
-										":userId"
-									],
-									"variable": [
-										{
-											"key": "userId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "User details",
-									"originalRequest": {
-										"method": "GET",
-										"header": [
-											{
-												"key": "Accept",
-												"value": "application/json"
-											}
-										],
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										}
-									],
-									"cookie": [],
-									"body": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}"
+									"key": "page",
+									"value": "1"
 								},
 								{
-									"name": "User not found",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Edit a user",
-							"request": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/users/:userId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"users",
-										":userId"
-									],
-									"variable": [
-										{
-											"key": "userId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "User updated successfully",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
+									"key": "limit",
+									"value": "20"
 								},
 								{
-									"name": "User not found",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Delete a user",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/users/:userId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"users",
-										":userId"
-									],
-									"variable": [
-										{
-											"key": "userId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "User deleted successfully",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "No Content",
-									"code": 204,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
+									"key": "sort",
+									"value": "asc"
 								},
 								{
-									"name": "User not found",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Inactivate/Activate a user",
-							"request": {
-								"method": "PATCH",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/users/:userId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"users",
-										":userId"
-									],
-									"variable": [
-										{
-											"key": "userId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "User status updated",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
+									"key": "clientId",
+									"value": "1",
+									"disabled": true
 								},
 								{
-									"name": "User not found",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/users/:userId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"users",
-												":userId"
-											],
-											"variable": [
-												{
-													"key": "userId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
+									"key": "role",
+									"value": "PATIENT",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "john",
+									"disabled": true
 								}
 							]
 						}
-					]
+					}
 				},
 				{
-					"name": "Add a new user",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
-							"options": {
-								"raw": {
-									"headerFamily": "json",
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/users",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"users"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "User created successfully",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/users",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"users"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						},
-						{
-							"name": "Invalid input",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/users",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"users"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						}
-					]
-				},
-				{
-					"name": "View all users",
+					"name": "3. Get User by ID",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
-								"key": "Accept",
-								"value": "application/json"
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/users",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"users"
-							]
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
 						}
-					},
-					"response": [
-						{
-							"name": "List of users",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/users",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"users"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"cookie": [],
-							"body": "[\n  {\n    \"username\": \"<string>\",\n    \"name\": \"<string>\",\n    \"gender\": \"<string>\",\n    \"dob\": \"<date>\",\n    \"mrn\": \"<string>\",\n    \"mobile\": \"<string>\",\n    \"homePhone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"userType\": \"Clinical Staff\",\n    \"userRoles\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"clientId\": \"<string>\"\n  },\n  {\n    \"username\": \"<string>\",\n    \"name\": \"<string>\",\n    \"gender\": \"<string>\",\n    \"dob\": \"<date>\",\n    \"mrn\": \"<string>\",\n    \"mobile\": \"<string>\",\n    \"homePhone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"userType\": \"Surgeon/Doctors\",\n    \"userRoles\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"clientId\": \"<string>\"\n  }\n]"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "plans",
-			"item": [
-				{
-					"name": "{planId}",
-					"item": [
-						{
-							"name": "pre-op-learning",
-							"item": [
-								{
-									"name": "Setup pre-op learning center",
-									"request": {
-										"method": "POST",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"generalInfo\": {\n    \"whatToBring\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToPrepare\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToReschedule\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"antisepticProcess\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"fastingGuidelines\": {\n    \"adults\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"children\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"diabetic\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/plans/:planId/pre-op-learning",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"plans",
-												":planId",
-												"pre-op-learning"
-											],
-											"variable": [
-												{
-													"key": "planId",
-													"value": "<string>",
-													"description": "(Required) "
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "Pre-op learning center created",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"generalInfo\": {\n    \"whatToBring\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToPrepare\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToReschedule\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"antisepticProcess\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"fastingGuidelines\": {\n    \"adults\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"children\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"diabetic\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/pre-op-learning",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"pre-op-learning"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Created",
-											"code": 201,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										},
-										{
-											"name": "Plan not found",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"generalInfo\": {\n    \"whatToBring\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToPrepare\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToReschedule\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"antisepticProcess\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"fastingGuidelines\": {\n    \"adults\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"children\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"diabetic\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/pre-op-learning",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"pre-op-learning"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Not Found",
-											"code": 404,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										}
-									]
-								}
-							]
-						},
-						{
-							"name": "pre-op-instructions",
-							"item": [
-								{
-									"name": "Setup pre-op instructions with timeline phases",
-									"request": {
-										"method": "POST",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"timelinePhases\": [\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/plans/:planId/pre-op-instructions",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"plans",
-												":planId",
-												"pre-op-instructions"
-											],
-											"variable": [
-												{
-													"key": "planId",
-													"value": "<string>",
-													"description": "(Required) "
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "Pre-op instructions created",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"timelinePhases\": [\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/pre-op-instructions",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"pre-op-instructions"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Created",
-											"code": 201,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										},
-										{
-											"name": "Plan not found",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"timelinePhases\": [\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/pre-op-instructions",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"pre-op-instructions"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Not Found",
-											"code": 404,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										}
-									]
-								}
-							]
-						},
-						{
-							"name": "physical-therapy",
-							"item": [
-								{
-									"name": "Setup physical therapy protocol",
-									"request": {
-										"method": "POST",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"protocolType\": \"Intermediate\",\n  \"timelinePhases\": [\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/plans/:planId/physical-therapy",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"plans",
-												":planId",
-												"physical-therapy"
-											],
-											"variable": [
-												{
-													"key": "planId",
-													"value": "<string>",
-													"description": "(Required) "
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "Physical therapy protocol created",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"protocolType\": \"Intermediate\",\n  \"timelinePhases\": [\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/physical-therapy",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"physical-therapy"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Created",
-											"code": 201,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										},
-										{
-											"name": "Plan not found",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"protocolType\": \"Intermediate\",\n  \"timelinePhases\": [\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/physical-therapy",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"physical-therapy"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Not Found",
-											"code": 404,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										}
-									]
-								}
-							]
-						},
-						{
-							"name": "post-op-learning",
-							"item": [
-								{
-									"name": "Setup post-op learning center",
-									"request": {
-										"method": "POST",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"painManagement\": {\n    \"anesthesia\": \"<string>\",\n    \"medications\": {\n      \"narcotic\": \"<string>\",\n      \"antiInflammatory\": \"<string>\",\n      \"antiNausea\": \"<string>\",\n      \"dvtProphylaxis\": \"<string>\",\n      \"stoolSoftener\": \"<string>\"\n    },\n    \"ice\": \"<string>\"\n  },\n  \"woundCare\": {\n    \"incisionAndBandage\": \"<string>\",\n    \"showerRecovery\": \"<string>\"\n  },\n  \"nutrition\": \"<string>\",\n  \"physicalTherapy\": \"<string>\",\n  \"dailyActivities\": {\n    \"drivingAndTravel\": \"<string>\",\n    \"returnToWorkOrSchool\": \"<string>\",\n    \"followUp\": \"<string>\"\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/plans/:planId/post-op-learning",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"plans",
-												":planId",
-												"post-op-learning"
-											],
-											"variable": [
-												{
-													"key": "planId",
-													"value": "<string>",
-													"description": "(Required) "
-												}
-											]
-										}
-									},
-									"response": [
-										{
-											"name": "Post-op learning center created",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"painManagement\": {\n    \"anesthesia\": \"<string>\",\n    \"medications\": {\n      \"narcotic\": \"<string>\",\n      \"antiInflammatory\": \"<string>\",\n      \"antiNausea\": \"<string>\",\n      \"dvtProphylaxis\": \"<string>\",\n      \"stoolSoftener\": \"<string>\"\n    },\n    \"ice\": \"<string>\"\n  },\n  \"woundCare\": {\n    \"incisionAndBandage\": \"<string>\",\n    \"showerRecovery\": \"<string>\"\n  },\n  \"nutrition\": \"<string>\",\n  \"physicalTherapy\": \"<string>\",\n  \"dailyActivities\": {\n    \"drivingAndTravel\": \"<string>\",\n    \"returnToWorkOrSchool\": \"<string>\",\n    \"followUp\": \"<string>\"\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/post-op-learning",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"post-op-learning"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Created",
-											"code": 201,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										},
-										{
-											"name": "Plan not found",
-											"originalRequest": {
-												"method": "POST",
-												"header": [
-													{
-														"key": "Content-Type",
-														"value": "application/json"
-													}
-												],
-												"body": {
-													"mode": "raw",
-													"raw": "{\n  \"painManagement\": {\n    \"anesthesia\": \"<string>\",\n    \"medications\": {\n      \"narcotic\": \"<string>\",\n      \"antiInflammatory\": \"<string>\",\n      \"antiNausea\": \"<string>\",\n      \"dvtProphylaxis\": \"<string>\",\n      \"stoolSoftener\": \"<string>\"\n    },\n    \"ice\": \"<string>\"\n  },\n  \"woundCare\": {\n    \"incisionAndBandage\": \"<string>\",\n    \"showerRecovery\": \"<string>\"\n  },\n  \"nutrition\": \"<string>\",\n  \"physicalTherapy\": \"<string>\",\n  \"dailyActivities\": {\n    \"drivingAndTravel\": \"<string>\",\n    \"returnToWorkOrSchool\": \"<string>\",\n    \"followUp\": \"<string>\"\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
-													"options": {
-														"raw": {
-															"headerFamily": "json",
-															"language": "json"
-														}
-													}
-												},
-												"url": {
-													"raw": "{{baseUrl}}/plans/:planId/post-op-learning",
-													"host": [
-														"{{baseUrl}}"
-													],
-													"path": [
-														"plans",
-														":planId",
-														"post-op-learning"
-													],
-													"variable": [
-														{
-															"key": "planId"
-														}
-													]
-												}
-											},
-											"status": "Not Found",
-											"code": 404,
-											"_postman_previewlanguage": "text",
-											"header": [],
-											"cookie": [],
-											"body": null
-										}
-									]
-								}
-							]
-						}
-					]
+					}
 				},
 				{
-					"name": "Setup a new procedure or copy from existing",
+					"name": "4. Update User",
 					"request": {
-						"method": "POST",
+						"method": "PUT",
 						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
 							{
 								"key": "Content-Type",
 								"value": "application/json"
@@ -2396,1057 +276,80 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"procedureId\": \"<string>\",\n  \"clientId\": \"<string>\",\n  \"name\": \"<string>\"\n}",
-							"options": {
-								"raw": {
-									"headerFamily": "json",
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"email\": \"john.smith@example.com\",\n    \"dob\": \"1990-01-15\",\n    \"gender\": \"male\",\n    \"timeZone\": \"America/New_York\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/plans",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"plans"
-							]
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
 						}
-					},
-					"response": [
-						{
-							"name": "Plan created successfully",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"procedureId\": \"<string>\",\n  \"clientId\": \"<string>\",\n  \"name\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/plans",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"plans"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						},
-						{
-							"name": "Invalid input",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"procedureId\": \"<string>\",\n  \"clientId\": \"<string>\",\n  \"name\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/plans",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"plans"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
+					}
+				},
+				{
+					"name": "5. Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "users", "{{userId}}"]
 						}
-					]
+					}
 				}
 			]
 		},
 		{
-			"name": "exercises",
+			"name": "🏢 Clients",
 			"item": [
 				{
-					"name": "{exerciseId}",
-					"item": [
-						{
-							"name": "View a specific exercise",
-							"request": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/exercises/:exerciseId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"exercises",
-										":exerciseId"
-									],
-									"variable": [
-										{
-											"key": "exerciseId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Exercise details",
-									"originalRequest": {
-										"method": "GET",
-										"header": [
-											{
-												"key": "Accept",
-												"value": "application/json"
-											}
-										],
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "json",
-									"header": [
-										{
-											"key": "Content-Type",
-											"value": "application/json"
-										}
-									],
-									"cookie": [],
-									"body": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}"
-								},
-								{
-									"name": "Exercise not found",
-									"originalRequest": {
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Edit an exercise",
-							"request": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/exercises/:exerciseId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"exercises",
-										":exerciseId"
-									],
-									"variable": [
-										{
-											"key": "exerciseId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Exercise updated successfully",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Exercise not found",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Delete an exercise",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/exercises/:exerciseId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"exercises",
-										":exerciseId"
-									],
-									"variable": [
-										{
-											"key": "exerciseId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Exercise deleted successfully",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "No Content",
-									"code": 204,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Exercise not found",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Inactivate/Activate an exercise",
-							"request": {
-								"method": "PATCH",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/exercises/:exerciseId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"exercises",
-										":exerciseId"
-									],
-									"variable": [
-										{
-											"key": "exerciseId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Exercise status updated",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Exercise not found",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/exercises/:exerciseId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"exercises",
-												":exerciseId"
-											],
-											"variable": [
-												{
-													"key": "exerciseId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "Add a new exercise to library",
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
-							"options": {
-								"raw": {
-									"headerFamily": "json",
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/exercises",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"exercises"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "Exercise created successfully",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/exercises",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"exercises"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						},
-						{
-							"name": "Invalid input",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/exercises",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"exercises"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						}
-					]
-				},
-				{
-					"name": "View all exercises",
+					"name": "1. Get All Clients",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
-								"key": "Accept",
-								"value": "application/json"
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/exercises",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"exercises"
-							]
+							"raw": "{{baseUrl}}/api/v1/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients"]
 						}
-					},
-					"response": [
-						{
-							"name": "List of exercises",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/exercises",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"exercises"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"cookie": [],
-							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"media\": \"<string>\",\n    \"purpose\": \"<string>\",\n    \"procedure\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"media\": \"<string>\",\n    \"purpose\": \"<string>\",\n    \"procedure\": \"<string>\"\n  }\n]"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "procedures",
-			"item": [
-				{
-					"name": "{procedureId}",
-					"item": [
-						{
-							"name": "Edit a procedure",
-							"request": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/procedures/:procedureId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"procedures",
-										":procedureId"
-									],
-									"variable": [
-										{
-											"key": "procedureId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Procedure updated successfully",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/procedures/:procedureId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"procedures",
-												":procedureId"
-											],
-											"variable": [
-												{
-													"key": "procedureId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Procedure not found",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/procedures/:procedureId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"procedures",
-												":procedureId"
-											],
-											"variable": [
-												{
-													"key": "procedureId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Delete a procedure",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/procedures/:procedureId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"procedures",
-										":procedureId"
-									],
-									"variable": [
-										{
-											"key": "procedureId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Procedure deleted successfully",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/procedures/:procedureId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"procedures",
-												":procedureId"
-											],
-											"variable": [
-												{
-													"key": "procedureId"
-												}
-											]
-										}
-									},
-									"status": "No Content",
-									"code": 204,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Procedure not found",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/procedures/:procedureId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"procedures",
-												":procedureId"
-											],
-											"variable": [
-												{
-													"key": "procedureId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Inactivate/Activate a procedure",
-							"request": {
-								"method": "PATCH",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/procedures/:procedureId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"procedures",
-										":procedureId"
-									],
-									"variable": [
-										{
-											"key": "procedureId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Procedure status updated",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/procedures/:procedureId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"procedures",
-												":procedureId"
-											],
-											"variable": [
-												{
-													"key": "procedureId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Procedure not found",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/procedures/:procedureId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"procedures",
-												":procedureId"
-											],
-											"variable": [
-												{
-													"key": "procedureId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						}
-					]
+					}
 				},
 				{
-					"name": "Add a new procedure",
+					"name": "2. Get Client by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clients/{{clientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients", "{{clientId}}"]
+						}
+					}
+				},
+				{
+					"name": "3. Create Client",
 					"request": {
 						"method": "POST",
 						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
 							{
 								"key": "Content-Type",
 								"value": "application/json"
@@ -3454,507 +357,24 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-							"options": {
-								"raw": {
-									"headerFamily": "json",
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"name\": \"New Healthcare Clinic\",\n    \"description\": \"A comprehensive healthcare facility\",\n    \"timeZone\": \"America/New_York\",\n    \"website\": \"https://newhealthcare.com\",\n    \"logo\": \"https://example.com/logo.png\",\n    \"status\": 1\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/procedures",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"procedures"
-							]
+							"raw": "{{baseUrl}}/api/v1/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients"]
 						}
-					},
-					"response": [
-						{
-							"name": "Procedure created successfully",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/procedures",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"procedures"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						},
-						{
-							"name": "Invalid input",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/procedures",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"procedures"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						}
-					]
+					}
 				},
 				{
-					"name": "View all procedures",
+					"name": "4. Update Client",
 					"request": {
-						"method": "GET",
+						"method": "PUT",
 						"header": [
 							{
-								"key": "Accept",
-								"value": "application/json"
-							}
-						],
-						"url": {
-							"raw": "{{baseUrl}}/procedures",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"procedures"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "List of procedures",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/procedures",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"procedures"
-									]
-								}
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
 							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"cookie": [],
-							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  }\n]"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "medications",
-			"item": [
-				{
-					"name": "{medicationId}",
-					"item": [
-						{
-							"name": "Edit a medication",
-							"request": {
-								"method": "PUT",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/medications/:medicationId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"medications",
-										":medicationId"
-									],
-									"variable": [
-										{
-											"key": "medicationId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Medication updated successfully",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/medications/:medicationId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"medications",
-												":medicationId"
-											],
-											"variable": [
-												{
-													"key": "medicationId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Medication not found",
-									"originalRequest": {
-										"method": "PUT",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/medications/:medicationId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"medications",
-												":medicationId"
-											],
-											"variable": [
-												{
-													"key": "medicationId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Delete a medication",
-							"request": {
-								"method": "DELETE",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/medications/:medicationId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"medications",
-										":medicationId"
-									],
-									"variable": [
-										{
-											"key": "medicationId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Medication deleted successfully",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/medications/:medicationId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"medications",
-												":medicationId"
-											],
-											"variable": [
-												{
-													"key": "medicationId"
-												}
-											]
-										}
-									},
-									"status": "No Content",
-									"code": 204,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Medication not found",
-									"originalRequest": {
-										"method": "DELETE",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/medications/:medicationId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"medications",
-												":medicationId"
-											],
-											"variable": [
-												{
-													"key": "medicationId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						},
-						{
-							"name": "Inactivate/Activate a medication",
-							"request": {
-								"method": "PATCH",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/medications/:medicationId",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"medications",
-										":medicationId"
-									],
-									"variable": [
-										{
-											"key": "medicationId",
-											"value": "<string>",
-											"description": "(Required) "
-										}
-									]
-								}
-							},
-							"response": [
-								{
-									"name": "Medication status updated",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/medications/:medicationId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"medications",
-												":medicationId"
-											],
-											"variable": [
-												{
-													"key": "medicationId"
-												}
-											]
-										}
-									},
-									"status": "OK",
-									"code": 200,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								},
-								{
-									"name": "Medication not found",
-									"originalRequest": {
-										"method": "PATCH",
-										"header": [
-											{
-												"key": "Content-Type",
-												"value": "application/json"
-											}
-										],
-										"body": {
-											"mode": "raw",
-											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
-											"options": {
-												"raw": {
-													"headerFamily": "json",
-													"language": "json"
-												}
-											}
-										},
-										"url": {
-											"raw": "{{baseUrl}}/medications/:medicationId",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"medications",
-												":medicationId"
-											],
-											"variable": [
-												{
-													"key": "medicationId"
-												}
-											]
-										}
-									},
-									"status": "Not Found",
-									"code": 404,
-									"_postman_previewlanguage": "text",
-									"header": [],
-									"cookie": [],
-									"body": null
-								}
-							]
-						}
-					]
-				},
-				{
-					"name": "Add a new medication",
-					"request": {
-						"method": "POST",
-						"header": [
 							{
 								"key": "Content-Type",
 								"value": "application/json"
@@ -3962,215 +382,1244 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-							"options": {
-								"raw": {
-									"headerFamily": "json",
-									"language": "json"
-								}
-							}
+							"raw": "{\n    \"name\": \"Updated Healthcare Clinic\",\n    \"description\": \"An updated comprehensive healthcare facility\",\n    \"timeZone\": \"America/Chicago\",\n    \"website\": \"https://updatedhealthcare.com\",\n    \"status\": 1\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/medications",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"medications"
-							]
+							"raw": "{{baseUrl}}/api/v1/clients/{{clientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients", "{{clientId}}"]
 						}
-					},
-					"response": [
-						{
-							"name": "Medication created successfully",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/medications",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"medications"
-									]
-								}
-							},
-							"status": "Created",
-							"code": 201,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						},
-						{
-							"name": "Invalid input",
-							"originalRequest": {
-								"method": "POST",
-								"header": [
-									{
-										"key": "Content-Type",
-										"value": "application/json"
-									}
-								],
-								"body": {
-									"mode": "raw",
-									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
-									"options": {
-										"raw": {
-											"headerFamily": "json",
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/medications",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"medications"
-									]
-								}
-							},
-							"status": "Bad Request",
-							"code": 400,
-							"_postman_previewlanguage": "text",
-							"header": [],
-							"cookie": [],
-							"body": null
-						}
-					]
+					}
 				},
 				{
-					"name": "View all medications",
+					"name": "5. Delete Client",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/clients/{{clientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "clients", "{{clientId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏃‍♂️ Exercises",
+			"item": [
+				{
+					"name": "1. Get All Exercises",
 					"request": {
 						"method": "GET",
 						"header": [
 							{
-								"key": "Accept",
-								"value": "application/json"
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/medications",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"medications"
-							]
+							"raw": "{{baseUrl}}/api/v1/exercises",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "exercises"]
 						}
-					},
-					"response": [
-						{
-							"name": "List of medications",
-							"originalRequest": {
-								"method": "GET",
-								"header": [
-									{
-										"key": "Accept",
-										"value": "application/json"
-									}
-								],
-								"url": {
-									"raw": "{{baseUrl}}/medications",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"medications"
-									]
-								}
+					}
+				},
+				{
+					"name": "2. Create Exercise",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
 							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": "json",
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json"
-								}
-							],
-							"cookie": [],
-							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  }\n]"
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Ankle Pumps\",\n    \"description\": \"Simple ankle flexion and extension exercise for post-operative recovery\",\n    \"procedure\": [\n        \"Sit or lie down comfortably\",\n        \"Point toes away from you\",\n        \"Flex toes back toward you\",\n        \"Repeat for prescribed repetitions\"\n    ],\n    \"media_type\": \"video\",\n    \"media_url\": \"https://example.com/videos/ankle-pumps.mp4\",\n    \"frequency\": \"daily\",\n    \"unit\": \"Set\",\n    \"value\": 3,\n    \"repetition\": 15\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/exercises",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "exercises"]
 						}
-					]
+					}
+				},
+				{
+					"name": "3. Get Exercise by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/exercises/{{exerciseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "exercises", "{{exerciseId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Exercise",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Ankle Pumps\",\n    \"description\": \"Updated ankle flexion and extension exercise\",\n    \"procedure\": [\n        \"Sit or lie down comfortably\",\n        \"Point toes away from you slowly\",\n        \"Flex toes back toward you slowly\",\n        \"Hold for 2 seconds\",\n        \"Repeat for prescribed repetitions\"\n    ],\n    \"frequency\": \"twice daily\",\n    \"value\": 4,\n    \"repetition\": 20\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/exercises/{{exerciseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "exercises", "{{exerciseId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Exercise",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/exercises/{{exerciseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "exercises", "{{exerciseId}}"]
+						}
+					}
 				}
 			]
-		}
-	],
-	"auth": {
-		"type": "bearer",
-		"bearer": [
-			{
-				"key": "token",
-				"value": "RELIACARE_X_AUTH_TOKEN",
-				"type": "string"
-			}
-		]
-	},
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"type": "text/javascript",
-				"packages": {},
-				"exec": [
-					""
-				]
-			}
 		},
 		{
-			"listen": "test",
-			"script": {
-				"type": "text/javascript",
-				"packages": {},
-				"exec": [
-					""
-				]
-			}
+			"name": "📋 Plans",
+			"item": [
+				{
+					"name": "1. Get All Plans",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "plans"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Plan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Post-Surgery Recovery Plan\",\n    \"description\": \"Comprehensive recovery plan for post-operative patients\",\n    \"duration\": \"6 weeks\",\n    \"patientId\": 123,\n    \"exercises\": [1, 2, 3],\n    \"medications\": [1, 2],\n    \"procedures\": [1]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "plans"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Plan by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "plans", "{{planId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Plan",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Recovery Plan\",\n    \"description\": \"Updated comprehensive recovery plan\",\n    \"duration\": \"8 weeks\",\n    \"exercises\": [1, 2, 3, 4],\n    \"medications\": [1, 2, 3],\n    \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "plans", "{{planId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Plan",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "plans", "{{planId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💊 Medications",
+			"item": [
+				{
+					"name": "1. Get All Medications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/medications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "medications"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Medication",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Ibuprofen\",\n    \"genericName\": \"Ibuprofen\",\n    \"brandName\": \"Advil\",\n    \"description\": \"Anti-inflammatory pain reliever\",\n    \"dosage\": \"200mg\",\n    \"frequency\": \"Every 6 hours\",\n    \"type\": \"Tablet\",\n    \"category\": \"NSAID\",\n    \"sideEffects\": [\"Stomach upset\", \"Dizziness\"],\n    \"contraindications\": [\"Kidney disease\", \"Stomach ulcers\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/medications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "medications"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Medication by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/medications/{{medicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "medications", "{{medicationId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Medication",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated anti-inflammatory pain reliever\",\n    \"dosage\": \"400mg\",\n    \"frequency\": \"Every 8 hours\",\n    \"sideEffects\": [\"Stomach upset\", \"Dizziness\", \"Headache\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/medications/{{medicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "medications", "{{medicationId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Medication",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/medications/{{medicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "medications", "{{medicationId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏥 Procedures",
+			"item": [
+				{
+					"name": "1. Get All Procedures",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procedures",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "procedures"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Procedure",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Knee Replacement Surgery\",\n    \"description\": \"Total knee replacement procedure\",\n    \"category\": \"Orthopedic Surgery\",\n    \"duration\": \"2-3 hours\",\n    \"preparation\": [\"Fasting 12 hours before surgery\", \"Remove jewelry\"],\n    \"aftercare\": [\"Physical therapy\", \"Pain management\", \"Follow-up appointments\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procedures",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "procedures"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Procedure by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procedures/{{procedureId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "procedures", "{{procedureId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Procedure",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated total knee replacement procedure\",\n    \"duration\": \"2-4 hours\",\n    \"aftercare\": [\"Intensive physical therapy\", \"Pain management\", \"Regular follow-up appointments\", \"X-ray monitoring\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procedures/{{procedureId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "procedures", "{{procedureId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Procedure",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/procedures/{{procedureId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "procedures", "{{procedureId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📧 Email",
+			"item": [
+				{
+					"name": "1. Send Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"to\": [\"patient@example.com\"],\n    \"subject\": \"Appointment Reminder\",\n    \"body\": \"This is a reminder for your upcoming appointment.\",\n    \"isHtml\": false,\n    \"cc\": [],\n    \"bcc\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/email/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "email", "send"]
+						}
+					}
+				},
+				{
+					"name": "2. Send Template Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"to\": [\"patient@example.com\"],\n    \"templateName\": \"welcome-email\",\n    \"templateData\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"clinicName\": \"Healthcare Clinic\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/email/send-template",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "email", "send-template"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📞 Contacts",
+			"item": [
+				{
+					"name": "1. Get All Contacts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/contacts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "contacts"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": 1,\n    \"type\": \"phone\",\n    \"value\": \"+1-555-123-4567\",\n    \"isPrimary\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/contacts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "contacts"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Contact by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "contacts", "{{contactId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Contact",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"mobile\",\n    \"value\": \"+1-555-987-6543\",\n    \"isPrimary\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "contacts", "{{contactId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Contact",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "contacts", "{{contactId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔑 Roles",
+			"item": [
+				{
+					"name": "1. Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"THERAPIST\",\n    \"description\": \"Physical therapist role with patient interaction capabilities\",\n    \"permissions\": [\"read_patients\", \"update_exercises\", \"create_plans\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Role by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated physical therapist role\",\n    \"permissions\": [\"read_patients\", \"update_exercises\", \"create_plans\", \"send_messages\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "roles", "{{roleId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💬 Messaging",
+			"item": [
+				{
+					"name": "1. Get Inbox Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages/inbox?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages", "inbox"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"recipientIds\": [2, 3],\n    \"subject\": \"Appointment Reminder\",\n    \"content\": \"This is a reminder for your upcoming appointment tomorrow at 2 PM.\",\n    \"msgGroupId\": 1,\n    \"priority\": \"normal\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Sent Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages/sent?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages", "sent"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "4. Get Message by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages", "{{messageId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Mark Message as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/messages/{{messageId}}/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "messages", "{{messageId}}", "read"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👥 Message Groups",
+			"item": [
+				{
+					"name": "1. Get All Message Groups",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/msg-groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "msg-groups"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Message Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Patient Care Team\",\n    \"description\": \"Communication group for patient care coordination\",\n    \"memberIds\": [1, 2, 3, 4],\n    \"isPrivate\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/msg-groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "msg-groups"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Message Group by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/msg-groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "msg-groups", "{{groupId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Message Group",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Patient Care Team\",\n    \"description\": \"Updated communication group for enhanced patient care coordination\",\n    \"memberIds\": [1, 2, 3, 4, 5]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/msg-groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "msg-groups", "{{groupId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Message Group",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/msg-groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "msg-groups", "{{groupId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "✅ Todos",
+			"item": [
+				{
+					"name": "1. Get All Todos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/todos?page=1&limit=20&status=pending",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "todos"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "pending",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Create Todo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Follow up with patient\",\n    \"description\": \"Call patient to check on recovery progress\",\n    \"dueDate\": \"2025-06-20T10:00:00Z\",\n    \"priority\": \"high\",\n    \"assignedToId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/todos",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "todos"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Todo by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/todos/{{todoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "todos", "{{todoId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Todo",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated follow up with patient\",\n    \"status\": \"completed\",\n    \"completedAt\": \"2025-06-18T15:30:00Z\",\n    \"notes\": \"Patient is recovering well\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/todos/{{todoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "todos", "{{todoId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Todo",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/todos/{{todoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "todos", "{{todoId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📁 Media",
+			"item": [
+				{
+					"name": "1. Upload Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "category",
+									"value": "exercise_video",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Exercise demonstration video",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/media/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "media", "upload"]
+						}
+					}
+				},
+				{
+					"name": "2. Get Media by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/media/{{mediaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "media", "{{mediaId}}"]
+						}
+					}
+				},
+				{
+					"name": "3. Get All Media",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/media?category=exercise_video&page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "media"],
+							"query": [
+								{
+									"key": "category",
+									"value": "exercise_video",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "4. Delete Media",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/media/{{mediaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "media", "{{mediaId}}"]
+						}
+					}
+				}
+			]
 		}
 	],
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "/"
+			"value": "http://localhost:3000",
+			"type": "string"
 		},
 		{
-			"key": "RELIACARE_X_AUTH_TOKEN",
-			"value": ""
+			"key": "userId",
+			"value": "1",
+			"type": "string"
 		},
 		{
-			"key": "RELIACARE_TOKEN_TYPE",
-			"value": ""
+			"key": "clientId",
+			"value": "1",
+			"type": "string"
 		},
 		{
-			"key": "RELIACARE_EXPIRES_IN",
-			"value": ""
+			"key": "exerciseId",
+			"value": "1",
+			"type": "string"
 		},
 		{
-			"key": "RELIACARE_REFRESH_TOKEN",
-			"value": ""
+			"key": "planId",
+			"value": "1",
+			"type": "string"
 		},
 		{
-			"key": "RELIACARE_TOKEN_EXPIRES_AT",
-			"value": ""
+			"key": "medicationId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "procedureId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "contactId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "roleId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "todoId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "mediaId",
+			"value": "1",
+			"type": "string"
 		}
 	]
 }
