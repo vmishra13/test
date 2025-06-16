@@ -29,7 +29,7 @@ BEGIN
         ON DELETE RESTRICT ON UPDATE CASCADE;
     END IF;
 
-    -- Add unique constraint for loginName per client
+    -- Add unique constraint for loginName 
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE table_name = 'user' 
@@ -38,10 +38,10 @@ BEGIN
     ) THEN
         ALTER TABLE "user" 
         ADD CONSTRAINT uk_user_login_client 
-        UNIQUE ("loginName", "clientId");
+        UNIQUE ("loginName");
     END IF;
 
-    -- Add unique constraint for email per client (if email is provided)
+    -- Add unique constraint for email 
     IF NOT EXISTS (
         SELECT 1 FROM information_schema.table_constraints 
         WHERE table_name = 'user' 
@@ -49,7 +49,7 @@ BEGIN
         AND table_schema = 'reliacare'
     ) THEN
         CREATE UNIQUE INDEX uk_user_email_client 
-        ON "user" ("email", "clientId") 
+        ON "user" ("email") 
         WHERE email IS NOT NULL;
     END IF;
 
