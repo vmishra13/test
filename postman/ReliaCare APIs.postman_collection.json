@@ -1,0 +1,4337 @@
+{
+	"info": {
+		"_postman_id": "cb7d7edd-40c8-4250-9035-54e7c8ff6be6",
+		"name": "ReliaCare APIs",
+		"description": "API for managing clients, users, plans, exercise library, and system configurations for Super Admin.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33474631",
+		"_collection_link": "https://hifinite-3346.postman.co/workspace/Hifinite-Workspace~f407dd0f-bb57-40e8-856c-f4396622ae8e/collection/33474631-cb7d7edd-40c8-4250-9035-54e7c8ff6be6?action=share&source=collection_link&creator=33474631"
+	},
+	"item": [
+		{
+			"name": "authentication",
+			"item": [
+				{
+					"name": "Login (OAuth2 Password Grant)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success property\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"});",
+									"",
+									"pm.test(\"Login successful and save tokens\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"access_token\", jsonData.data.access_token);",
+									"        pm.environment.set(\"refresh_token\", jsonData.data.refresh_token);",
+									"        pm.environment.set(\"userId\", jsonData.data.user.userId);",
+									"        pm.environment.set(\"clientId\", jsonData.data.user.clientId || 1);",
+									"        console.log(\"✅ Tokens saved to environment\");",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"admin123\",\n  \"clientId\": 1,\n  \"grant_type\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "OAuth2 Token Endpoint",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Token endpoint successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"access_token\", jsonData.data.access_token);",
+									"        pm.environment.set(\"refresh_token\", jsonData.data.refresh_token);",
+									"        console.log(\"✅ Tokens updated from OAuth2 endpoint\");",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"admin123\",\n  \"clientId\": 1,\n  \"grant_type\": \"password\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/token",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Refresh token successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success && jsonData.data) {",
+									"        pm.environment.set(\"access_token\", jsonData.data.access_token);",
+									"        if (jsonData.data.refresh_token) {",
+									"            pm.environment.set(\"refresh_token\", jsonData.data.refresh_token);",
+									"        }",
+									"        console.log(\"✅ Access token refreshed\");",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/refresh",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Logout successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.success) {",
+									"        pm.environment.unset(\"access_token\");",
+									"        pm.environment.unset(\"refresh_token\");",
+									"        console.log(\"✅ Tokens cleared from environment\");",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/logout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"logout"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Token (OAuth2)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"{{access_token}}\",\n  \"token_type_hint\": \"access_token\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/revoke",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"auth",
+								"revoke"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "users",
+			"item": [
+				{
+					"name": "Register New User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"User registration successful\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"    if (jsonData.data && jsonData.data.user) {",
+									"        pm.environment.set(\"newUserId\", jsonData.data.user.userId);",
+									"        console.log(\"✅ New user ID saved:\", jsonData.data.user.userId);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"loginName\": \"testuser\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\",\n  \"userTypeId\": 5,\n  \"clientId\": {{clientId}},\n  \"roles\": [\"PATIENT\"],\n  \"gender\": \"Male\",\n  \"timeZone\": \"UTC\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/users/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"users",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has users data\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData.success).to.eql(true);",
+									"    pm.expect(jsonData).to.have.property('data');",
+									"    if (jsonData.data && jsonData.data.users && jsonData.data.users.length > 0) {",
+									"        console.log(\"✅ Found\", jsonData.data.users.length, \"users\");",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"v1",
+								"users"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "clients",
+			"item": [
+				{
+					"name": "{clientId}",
+					"item": [
+						{
+							"name": "fhir-configuration",
+							"item": [
+								{
+									"name": "Configure FHIR settings for a client",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"fhirServerUrl\": \"<string>\",\n  \"authDetails\": {}\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId/fhir-configuration",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId",
+												"fhir-configuration"
+											],
+											"variable": [
+												{
+													"key": "clientId",
+													"value": "<string>",
+													"description": "(Required) "
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "FHIR configuration updated",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"fhirServerUrl\": \"<string>\",\n  \"authDetails\": {}\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/clients/:clientId/fhir-configuration",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"clients",
+														":clientId",
+														"fhir-configuration"
+													],
+													"variable": [
+														{
+															"key": "clientId"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										},
+										{
+											"name": "Client not found",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"fhirServerUrl\": \"<string>\",\n  \"authDetails\": {}\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/clients/:clientId/fhir-configuration",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"clients",
+														":clientId",
+														"fhir-configuration"
+													],
+													"variable": [
+														{
+															"key": "clientId"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "View a specific client",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/clients/:clientId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"clients",
+										":clientId"
+									],
+									"variable": [
+										{
+											"key": "clientId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Client details",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}"
+								},
+								{
+									"name": "Client not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Edit a client",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/clients/:clientId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"clients",
+										":clientId"
+									],
+									"variable": [
+										{
+											"key": "clientId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Client updated successfully",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Client not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Delete a client",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/clients/:clientId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"clients",
+										":clientId"
+									],
+									"variable": [
+										{
+											"key": "clientId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Client deleted successfully",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Client not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Inactivate/Activate a client",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/clients/:clientId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"clients",
+										":clientId"
+									],
+									"variable": [
+										{
+											"key": "clientId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Client status updated",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Client not found",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/clients/:clientId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"clients",
+												":clientId"
+											],
+											"variable": [
+												{
+													"key": "clientId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Add a new client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/clients",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"clients"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Client created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/clients",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"clients"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						},
+						{
+							"name": "Invalid input",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"address\": \"<string>\",\n  \"phone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"timezone\": \"<string>\",\n  \"website\": \"<string>\",\n  \"language\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/clients",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"clients"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "View all clients",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/clients",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"clients"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "List of clients",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/clients",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"clients"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"address\": \"<string>\",\n    \"phone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"timezone\": \"<string>\",\n    \"website\": \"<string>\",\n    \"language\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"address\": \"<string>\",\n    \"phone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"timezone\": \"<string>\",\n    \"website\": \"<string>\",\n    \"language\": \"<string>\"\n  }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "users",
+			"item": [
+				{
+					"name": "{userId}",
+					"item": [
+						{
+							"name": "link-client",
+							"item": [
+								{
+									"name": "Link user to a client",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"clientId\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId/link-client",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId",
+												"link-client"
+											],
+											"variable": [
+												{
+													"key": "userId",
+													"value": "<string>",
+													"description": "(Required) "
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "User linked to client",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"clientId\": \"<string>\"\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/users/:userId/link-client",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"users",
+														":userId",
+														"link-client"
+													],
+													"variable": [
+														{
+															"key": "userId"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										},
+										{
+											"name": "User or client not found",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"clientId\": \"<string>\"\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/users/:userId/link-client",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"users",
+														":userId",
+														"link-client"
+													],
+													"variable": [
+														{
+															"key": "userId"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "password",
+							"item": [
+								{
+									"name": "Manage user password",
+									"request": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"password\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId/password",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId",
+												"password"
+											],
+											"variable": [
+												{
+													"key": "userId",
+													"value": "<string>",
+													"description": "(Required) "
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "Password updated successfully",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"password\": \"<string>\"\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/users/:userId/password",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"users",
+														":userId",
+														"password"
+													],
+													"variable": [
+														{
+															"key": "userId"
+														}
+													]
+												}
+											},
+											"status": "OK",
+											"code": 200,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										},
+										{
+											"name": "User not found",
+											"originalRequest": {
+												"method": "PUT",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"password\": \"<string>\"\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/users/:userId/password",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"users",
+														":userId",
+														"password"
+													],
+													"variable": [
+														{
+															"key": "userId"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "View a specific user",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/users/:userId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"users",
+										":userId"
+									],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "User details",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}"
+								},
+								{
+									"name": "User not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Edit a user",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/users/:userId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"users",
+										":userId"
+									],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "User updated successfully",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "User not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Delete a user",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/users/:userId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"users",
+										":userId"
+									],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "User deleted successfully",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "User not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Inactivate/Activate a user",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/users/:userId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"users",
+										":userId"
+									],
+									"variable": [
+										{
+											"key": "userId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "User status updated",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "User not found",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/users/:userId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"users",
+												":userId"
+											],
+											"variable": [
+												{
+													"key": "userId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Add a new user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "User created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/users",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"users"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						},
+						{
+							"name": "Invalid input",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"username\": \"<string>\",\n  \"name\": \"<string>\",\n  \"gender\": \"<string>\",\n  \"dob\": \"<date>\",\n  \"mrn\": \"<string>\",\n  \"mobile\": \"<string>\",\n  \"homePhone\": \"<string>\",\n  \"email\": \"<string>\",\n  \"userType\": \"Surgeon/Doctors\",\n  \"userRoles\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"clientId\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/users",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"users"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "View all users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"users"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "List of users",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/users",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "[\n  {\n    \"username\": \"<string>\",\n    \"name\": \"<string>\",\n    \"gender\": \"<string>\",\n    \"dob\": \"<date>\",\n    \"mrn\": \"<string>\",\n    \"mobile\": \"<string>\",\n    \"homePhone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"userType\": \"Clinical Staff\",\n    \"userRoles\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"clientId\": \"<string>\"\n  },\n  {\n    \"username\": \"<string>\",\n    \"name\": \"<string>\",\n    \"gender\": \"<string>\",\n    \"dob\": \"<date>\",\n    \"mrn\": \"<string>\",\n    \"mobile\": \"<string>\",\n    \"homePhone\": \"<string>\",\n    \"email\": \"<string>\",\n    \"userType\": \"Surgeon/Doctors\",\n    \"userRoles\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"clientId\": \"<string>\"\n  }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "plans",
+			"item": [
+				{
+					"name": "{planId}",
+					"item": [
+						{
+							"name": "pre-op-learning",
+							"item": [
+								{
+									"name": "Setup pre-op learning center",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"generalInfo\": {\n    \"whatToBring\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToPrepare\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToReschedule\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"antisepticProcess\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"fastingGuidelines\": {\n    \"adults\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"children\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"diabetic\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/plans/:planId/pre-op-learning",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"plans",
+												":planId",
+												"pre-op-learning"
+											],
+											"variable": [
+												{
+													"key": "planId",
+													"value": "<string>",
+													"description": "(Required) "
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "Pre-op learning center created",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"generalInfo\": {\n    \"whatToBring\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToPrepare\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToReschedule\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"antisepticProcess\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"fastingGuidelines\": {\n    \"adults\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"children\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"diabetic\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/pre-op-learning",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"pre-op-learning"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										},
+										{
+											"name": "Plan not found",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"generalInfo\": {\n    \"whatToBring\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToPrepare\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"howToReschedule\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"antisepticProcess\": [\n    \"<string>\",\n    \"<string>\"\n  ],\n  \"fastingGuidelines\": {\n    \"adults\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"children\": [\n      \"<string>\",\n      \"<string>\"\n    ],\n    \"diabetic\": [\n      \"<string>\",\n      \"<string>\"\n    ]\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/pre-op-learning",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"pre-op-learning"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "pre-op-instructions",
+							"item": [
+								{
+									"name": "Setup pre-op instructions with timeline phases",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"timelinePhases\": [\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/plans/:planId/pre-op-instructions",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"plans",
+												":planId",
+												"pre-op-instructions"
+											],
+											"variable": [
+												{
+													"key": "planId",
+													"value": "<string>",
+													"description": "(Required) "
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "Pre-op instructions created",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"timelinePhases\": [\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/pre-op-instructions",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"pre-op-instructions"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										},
+										{
+											"name": "Plan not found",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"timelinePhases\": [\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"phaseName\": \"<string>\",\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/pre-op-instructions",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"pre-op-instructions"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "physical-therapy",
+							"item": [
+								{
+									"name": "Setup physical therapy protocol",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"protocolType\": \"Intermediate\",\n  \"timelinePhases\": [\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/plans/:planId/physical-therapy",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"plans",
+												":planId",
+												"physical-therapy"
+											],
+											"variable": [
+												{
+													"key": "planId",
+													"value": "<string>",
+													"description": "(Required) "
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "Physical therapy protocol created",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"protocolType\": \"Intermediate\",\n  \"timelinePhases\": [\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/physical-therapy",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"physical-therapy"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										},
+										{
+											"name": "Plan not found",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"protocolType\": \"Intermediate\",\n  \"timelinePhases\": [\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"goals\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"precautions\": [\n        \"<string>\",\n        \"<string>\"\n      ],\n      \"exercises\": [\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        },\n        {\n          \"exerciseId\": \"<string>\",\n          \"sets\": \"<integer>\",\n          \"repetitions\": \"<integer>\",\n          \"duration\": \"<integer>\"\n        }\n      ],\n      \"instructions\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/physical-therapy",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"physical-therapy"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										}
+									]
+								}
+							]
+						},
+						{
+							"name": "post-op-learning",
+							"item": [
+								{
+									"name": "Setup post-op learning center",
+									"request": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"painManagement\": {\n    \"anesthesia\": \"<string>\",\n    \"medications\": {\n      \"narcotic\": \"<string>\",\n      \"antiInflammatory\": \"<string>\",\n      \"antiNausea\": \"<string>\",\n      \"dvtProphylaxis\": \"<string>\",\n      \"stoolSoftener\": \"<string>\"\n    },\n    \"ice\": \"<string>\"\n  },\n  \"woundCare\": {\n    \"incisionAndBandage\": \"<string>\",\n    \"showerRecovery\": \"<string>\"\n  },\n  \"nutrition\": \"<string>\",\n  \"physicalTherapy\": \"<string>\",\n  \"dailyActivities\": {\n    \"drivingAndTravel\": \"<string>\",\n    \"returnToWorkOrSchool\": \"<string>\",\n    \"followUp\": \"<string>\"\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/plans/:planId/post-op-learning",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"plans",
+												":planId",
+												"post-op-learning"
+											],
+											"variable": [
+												{
+													"key": "planId",
+													"value": "<string>",
+													"description": "(Required) "
+												}
+											]
+										}
+									},
+									"response": [
+										{
+											"name": "Post-op learning center created",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"painManagement\": {\n    \"anesthesia\": \"<string>\",\n    \"medications\": {\n      \"narcotic\": \"<string>\",\n      \"antiInflammatory\": \"<string>\",\n      \"antiNausea\": \"<string>\",\n      \"dvtProphylaxis\": \"<string>\",\n      \"stoolSoftener\": \"<string>\"\n    },\n    \"ice\": \"<string>\"\n  },\n  \"woundCare\": {\n    \"incisionAndBandage\": \"<string>\",\n    \"showerRecovery\": \"<string>\"\n  },\n  \"nutrition\": \"<string>\",\n  \"physicalTherapy\": \"<string>\",\n  \"dailyActivities\": {\n    \"drivingAndTravel\": \"<string>\",\n    \"returnToWorkOrSchool\": \"<string>\",\n    \"followUp\": \"<string>\"\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/post-op-learning",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"post-op-learning"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Created",
+											"code": 201,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										},
+										{
+											"name": "Plan not found",
+											"originalRequest": {
+												"method": "POST",
+												"header": [
+													{
+														"key": "Content-Type",
+														"value": "application/json"
+													}
+												],
+												"body": {
+													"mode": "raw",
+													"raw": "{\n  \"painManagement\": {\n    \"anesthesia\": \"<string>\",\n    \"medications\": {\n      \"narcotic\": \"<string>\",\n      \"antiInflammatory\": \"<string>\",\n      \"antiNausea\": \"<string>\",\n      \"dvtProphylaxis\": \"<string>\",\n      \"stoolSoftener\": \"<string>\"\n    },\n    \"ice\": \"<string>\"\n  },\n  \"woundCare\": {\n    \"incisionAndBandage\": \"<string>\",\n    \"showerRecovery\": \"<string>\"\n  },\n  \"nutrition\": \"<string>\",\n  \"physicalTherapy\": \"<string>\",\n  \"dailyActivities\": {\n    \"drivingAndTravel\": \"<string>\",\n    \"returnToWorkOrSchool\": \"<string>\",\n    \"followUp\": \"<string>\"\n  },\n  \"customElements\": [\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    },\n    {\n      \"name\": \"<string>\",\n      \"children\": [\n        \"<string>\",\n        \"<string>\"\n      ]\n    }\n  ]\n}",
+													"options": {
+														"raw": {
+															"headerFamily": "json",
+															"language": "json"
+														}
+													}
+												},
+												"url": {
+													"raw": "{{baseUrl}}/plans/:planId/post-op-learning",
+													"host": [
+														"{{baseUrl}}"
+													],
+													"path": [
+														"plans",
+														":planId",
+														"post-op-learning"
+													],
+													"variable": [
+														{
+															"key": "planId"
+														}
+													]
+												}
+											},
+											"status": "Not Found",
+											"code": 404,
+											"_postman_previewlanguage": "text",
+											"header": [],
+											"cookie": [],
+											"body": ""
+										}
+									]
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Setup a new procedure or copy from existing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"procedureId\": \"<string>\",\n  \"clientId\": \"<string>\",\n  \"name\": \"<string>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/plans",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"plans"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Plan created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"procedureId\": \"<string>\",\n  \"clientId\": \"<string>\",\n  \"name\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/plans",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"plans"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						},
+						{
+							"name": "Invalid input",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"procedureId\": \"<string>\",\n  \"clientId\": \"<string>\",\n  \"name\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/plans",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"plans"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "exercises",
+			"item": [
+				{
+					"name": "{exerciseId}",
+					"item": [
+						{
+							"name": "View a specific exercise",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/exercises/:exerciseId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"exercises",
+										":exerciseId"
+									],
+									"variable": [
+										{
+											"key": "exerciseId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Exercise details",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "Accept",
+												"value": "application/json"
+											}
+										],
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Content-Type",
+											"value": "application/json"
+										}
+									],
+									"cookie": [],
+									"body": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}"
+								},
+								{
+									"name": "Exercise not found",
+									"originalRequest": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Edit an exercise",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/exercises/:exerciseId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"exercises",
+										":exerciseId"
+									],
+									"variable": [
+										{
+											"key": "exerciseId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Exercise updated successfully",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Exercise not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Delete an exercise",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/exercises/:exerciseId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"exercises",
+										":exerciseId"
+									],
+									"variable": [
+										{
+											"key": "exerciseId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Exercise deleted successfully",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Exercise not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Inactivate/Activate an exercise",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/exercises/:exerciseId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"exercises",
+										":exerciseId"
+									],
+									"variable": [
+										{
+											"key": "exerciseId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Exercise status updated",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Exercise not found",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/exercises/:exerciseId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"exercises",
+												":exerciseId"
+											],
+											"variable": [
+												{
+													"key": "exerciseId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Add a new exercise to library",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/exercises",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"exercises"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Exercise created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/exercises",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"exercises"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						},
+						{
+							"name": "Invalid input",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"media\": \"<string>\",\n  \"purpose\": \"<string>\",\n  \"procedure\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/exercises",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"exercises"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "View all exercises",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/exercises",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"exercises"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "List of exercises",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/exercises",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"exercises"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"media\": \"<string>\",\n    \"purpose\": \"<string>\",\n    \"procedure\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"media\": \"<string>\",\n    \"purpose\": \"<string>\",\n    \"procedure\": \"<string>\"\n  }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "procedures",
+			"item": [
+				{
+					"name": "{procedureId}",
+					"item": [
+						{
+							"name": "Edit a procedure",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/procedures/:procedureId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"procedures",
+										":procedureId"
+									],
+									"variable": [
+										{
+											"key": "procedureId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Procedure updated successfully",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/procedures/:procedureId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"procedures",
+												":procedureId"
+											],
+											"variable": [
+												{
+													"key": "procedureId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Procedure not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/procedures/:procedureId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"procedures",
+												":procedureId"
+											],
+											"variable": [
+												{
+													"key": "procedureId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Delete a procedure",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/procedures/:procedureId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"procedures",
+										":procedureId"
+									],
+									"variable": [
+										{
+											"key": "procedureId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Procedure deleted successfully",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/procedures/:procedureId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"procedures",
+												":procedureId"
+											],
+											"variable": [
+												{
+													"key": "procedureId"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Procedure not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/procedures/:procedureId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"procedures",
+												":procedureId"
+											],
+											"variable": [
+												{
+													"key": "procedureId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Inactivate/Activate a procedure",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/procedures/:procedureId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"procedures",
+										":procedureId"
+									],
+									"variable": [
+										{
+											"key": "procedureId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Procedure status updated",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/procedures/:procedureId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"procedures",
+												":procedureId"
+											],
+											"variable": [
+												{
+													"key": "procedureId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Procedure not found",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/procedures/:procedureId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"procedures",
+												":procedureId"
+											],
+											"variable": [
+												{
+													"key": "procedureId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Add a new procedure",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/procedures",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"procedures"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Procedure created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/procedures",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"procedures"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						},
+						{
+							"name": "Invalid input",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/procedures",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"procedures"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "View all procedures",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/procedures",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"procedures"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "List of procedures",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/procedures",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"procedures"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "medications",
+			"item": [
+				{
+					"name": "{medicationId}",
+					"item": [
+						{
+							"name": "Edit a medication",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/medications/:medicationId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"medications",
+										":medicationId"
+									],
+									"variable": [
+										{
+											"key": "medicationId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Medication updated successfully",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/medications/:medicationId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"medications",
+												":medicationId"
+											],
+											"variable": [
+												{
+													"key": "medicationId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Medication not found",
+									"originalRequest": {
+										"method": "PUT",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/medications/:medicationId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"medications",
+												":medicationId"
+											],
+											"variable": [
+												{
+													"key": "medicationId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Delete a medication",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/medications/:medicationId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"medications",
+										":medicationId"
+									],
+									"variable": [
+										{
+											"key": "medicationId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Medication deleted successfully",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/medications/:medicationId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"medications",
+												":medicationId"
+											],
+											"variable": [
+												{
+													"key": "medicationId"
+												}
+											]
+										}
+									},
+									"status": "No Content",
+									"code": 204,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Medication not found",
+									"originalRequest": {
+										"method": "DELETE",
+										"header": [],
+										"url": {
+											"raw": "{{baseUrl}}/medications/:medicationId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"medications",
+												":medicationId"
+											],
+											"variable": [
+												{
+													"key": "medicationId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						},
+						{
+							"name": "Inactivate/Activate a medication",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/medications/:medicationId",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"medications",
+										":medicationId"
+									],
+									"variable": [
+										{
+											"key": "medicationId",
+											"value": "<string>",
+											"description": "(Required) "
+										}
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "Medication status updated",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/medications/:medicationId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"medications",
+												":medicationId"
+											],
+											"variable": [
+												{
+													"key": "medicationId"
+												}
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								},
+								{
+									"name": "Medication not found",
+									"originalRequest": {
+										"method": "PATCH",
+										"header": [
+											{
+												"key": "Content-Type",
+												"value": "application/json"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\n  \"isActive\": \"<boolean>\"\n}",
+											"options": {
+												"raw": {
+													"headerFamily": "json",
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "{{baseUrl}}/medications/:medicationId",
+											"host": [
+												"{{baseUrl}}"
+											],
+											"path": [
+												"medications",
+												":medicationId"
+											],
+											"variable": [
+												{
+													"key": "medicationId"
+												}
+											]
+										}
+									},
+									"status": "Not Found",
+									"code": 404,
+									"_postman_previewlanguage": "text",
+									"header": [],
+									"cookie": [],
+									"body": ""
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "Add a new medication",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+							"options": {
+								"raw": {
+									"headerFamily": "json",
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/medications",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"medications"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Medication created successfully",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/medications",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"medications"
+									]
+								}
+							},
+							"status": "Created",
+							"code": 201,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						},
+						{
+							"name": "Invalid input",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"<string>\",\n  \"description\": \"<string>\"\n}",
+									"options": {
+										"raw": {
+											"headerFamily": "json",
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/medications",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"medications"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "text",
+							"header": [],
+							"cookie": [],
+							"body": ""
+						}
+					]
+				},
+				{
+					"name": "View all medications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/medications",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"medications"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "List of medications",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Accept",
+										"value": "application/json"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/medications",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"medications"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								}
+							],
+							"cookie": [],
+							"body": "[\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  },\n  {\n    \"name\": \"<string>\",\n    \"description\": \"<string>\"\n  }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/v1/health",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"v1",
+						"health"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "/"
+		}
+	]
+}
