@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ZodError } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { ApiResponse } from '@utils/api-response';
 import logger from '@config/logger';
 import { ENV } from '@config/env';
@@ -23,7 +24,12 @@ type ErrorCode =
   | 'INTERNAL_ERROR'
   | 'SERVICE_UNAVAILABLE'
   | 'RATE_LIMITED'
-  | 'JWT_CONFIGURATION_ERROR';
+  | 'JWT_CONFIGURATION_ERROR'
+  | 'DATABASE_ERROR'
+  | 'NETWORK_ERROR'
+  | 'TIMEOUT_ERROR'
+  | 'FILE_UPLOAD_ERROR'
+  | 'PERMISSION_DENIED';
 
 interface AppError extends Error {
   statusCode?: number;
@@ -32,45 +38,124 @@ interface AppError extends Error {
 }
 
 /**
+ * Helper function to get correlation ID from request headers
+ */
+function getCorrelationId(req: Request): string {
+  return (
+    (req.headers['x-correlation-id'] as string) ||
+    (req.headers['x-request-id'] as string) ||
+    (req.headers['x-trace-id'] as string) ||
+    uuidv4()
+  );
+}
+
+/**
+ * Create error fingerprint for monitoring and grouping similar errors
+ */
+function createErrorFingerprint(error: Error): string {
+  const key = `${error.name}:${error.message.substring(0, 100)}`.toLowerCase();
+  return Buffer.from(key).toString('base64').substring(0, 16);
+}
+
+/**
+ * Sanitize headers for logging (remove sensitive information)
+ */
+function sanitizeHeaders(headers: any): Record<string, any> {
+  const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key', 'x-auth-token'];
+  const allowedHeaders = [
+    'user-agent',
+    'content-type',
+    'accept',
+    'x-forwarded-for',
+    'origin',
+    'referer',
+  ];
+
+  const sanitized: Record<string, any> = {};
+
+  allowedHeaders.forEach(header => {
+    if (headers[header]) {
+      sanitized[header] = headers[header];
+    }
+  });
+
+  // Mark sensitive headers as redacted if they exist
+  sensitiveHeaders.forEach(header => {
+    if (headers[header]) {
+      sanitized[header] = '[REDACTED]';
+    }
+  });
+
+  return sanitized;
+}
+
+/**
+ * Create enhanced error context for better debugging
+ */
+function createErrorContext(err: Error, req: Request, correlationId: string) {
+  return {
+    correlationId,
+    error: {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+      code: (err as AppError).code,
+      statusCode: (err as AppError).statusCode,
+      fingerprint: createErrorFingerprint(err),
+    },
+    request: {
+      method: req.method,
+      path: req.path,
+      url: req.url,
+      query: req.query,
+      params: req.params,
+      headers: sanitizeHeaders(req.headers),
+      body: ENV.isDevelopment ? req.body : '[REDACTED]',
+      ip: req.ip,
+    },
+    user: {
+      id: (req as any).user?.id || 'unauthenticated',
+      clientId: (req as any).user?.clientId || null,
+      roles: (req as any).user?.roles || [],
+    },
+    timestamp: new Date().toISOString(),
+    environment: ENV.nodeEnv,
+    service: 'reliacare-api',
+  };
+}
+
+/**
  * Handles all errors that occur in the application
  */
 export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction): void => {
-  // Create a structured error object for logging
-  const errorContext = {
-    message: err.message,
-    stack: err.stack,
-    path: `${req.method} ${req.path}`,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: (req as any).user?.id || 'unauthenticated',
-    clientId: (req as any).user?.clientId,
-    requestId: req.headers['x-request-id'] || 'unknown',
-    body: ENV.isDevelopment ? req.body : '[REDACTED]',
-    query: req.query,
-    timestamp: new Date().toISOString(),
-  };
+  // Generate correlation ID for request tracing
+  const correlationId = getCorrelationId(req);
 
-  logger.error('Unhandled error', errorContext);
+  // Create enhanced error context for logging
+  const errorContext = createErrorContext(err, req, correlationId);
 
-  // ✅ Add security headers
+  // Log error with full context and stack trace
+  logger.error('Unhandled application error', errorContext);
+
+  // Add correlation ID and security headers to response
   res.set({
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
+    'X-Correlation-ID': correlationId,
   });
-
   // ✅ Handle Zod validation errors first
   if (err instanceof ZodError) {
     res.status(StatusCodes.BAD_REQUEST).json(
-      ApiResponse.error(
-        'Request validation failed',
-        'VALIDATION_ERROR',
-        err.errors.map(e => ({
+      ApiResponse.error('Request validation failed', 'VALIDATION_ERROR', {
+        correlationId,
+        timestamp: new Date().toISOString(),
+        details: err.errors.map(e => ({
           field: e.path.join('.'),
           message: e.message,
           code: e.code,
         })),
-      ),
+      }),
     );
     return;
   }
@@ -78,92 +163,131 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
   // Handle custom application errors
   if ((err as AppError).statusCode && (err as AppError).code) {
     const appErr = err as AppError;
-    res
-      .status(appErr.statusCode!)
-      .json(ApiResponse.error(appErr.message, appErr.code!, appErr.details));
+    res.status(appErr.statusCode!).json(
+      ApiResponse.error(appErr.message, appErr.code!, {
+        correlationId,
+        timestamp: new Date().toISOString(),
+        ...(appErr.details && { details: appErr.details }),
+      }),
+    );
     return;
   }
-
   // Handle specific error types
   switch (err.name) {
     case 'ValidationError':
-      res
-        .status(StatusCodes.BAD_REQUEST)
-        .json(
-          ApiResponse.error(
-            'Validation failed',
-            'VALIDATION_ERROR',
-            ENV.isDevelopment ? err.message : undefined,
-          ),
-        );
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error('Validation failed', 'VALIDATION_ERROR', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+          ...(ENV.isDevelopment && { details: err.message }),
+        }),
+      );
       break;
 
     // ✅ Add auth-specific errors
     case 'AuthenticationError':
     case 'InvalidCredentialsError':
-      res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json(
-          ApiResponse.error(
-            'Authentication failed',
-            'INVALID_CREDENTIALS',
-            StatusCodes.UNAUTHORIZED,
-          ),
-        );
+      res.status(StatusCodes.UNAUTHORIZED).json(
+        ApiResponse.error('Authentication failed', 'INVALID_CREDENTIALS', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+        }),
+      );
       break;
 
     case 'TokenFamilyCompromisedError':
-      res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json(
-          ApiResponse.error(
-            'Token family compromised. Please login again.',
-            'TOKEN_FAMILY_COMPROMISED',
-            StatusCodes.UNAUTHORIZED,
-          ),
-        );
+      res.status(StatusCodes.UNAUTHORIZED).json(
+        ApiResponse.error(
+          'Token family compromised. Please login again.',
+          'TOKEN_FAMILY_COMPROMISED',
+          {
+            correlationId,
+            timestamp: new Date().toISOString(),
+          },
+        ),
+      );
       break;
 
     case 'AccountLockedError':
-      res
-        .status(StatusCodes.LOCKED)
-        .json(
-          ApiResponse.error(
-            'Account temporarily locked due to failed login attempts',
-            'ACCOUNT_LOCKED',
-            StatusCodes.LOCKED,
-          ),
-        );
+      res.status(StatusCodes.LOCKED).json(
+        ApiResponse.error(
+          'Account temporarily locked due to failed login attempts',
+          'ACCOUNT_LOCKED',
+          {
+            correlationId,
+            timestamp: new Date().toISOString(),
+          },
+        ),
+      );
       break;
 
     case 'AccountDisabledError':
-      res
-        .status(StatusCodes.FORBIDDEN)
-        .json(ApiResponse.error('Account is disabled', 'ACCOUNT_DISABLED', StatusCodes.FORBIDDEN));
+      res.status(StatusCodes.FORBIDDEN).json(
+        ApiResponse.error('Account is disabled', 'ACCOUNT_DISABLED', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+        }),
+      );
       break;
 
     case 'SyntaxError':
-      res
-        .status(StatusCodes.BAD_REQUEST)
-        .json(ApiResponse.error('Invalid request format', 'BAD_REQUEST', StatusCodes.BAD_REQUEST));
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error('Invalid request format', 'BAD_REQUEST', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+        }),
+      );
       break;
 
     case 'JsonWebTokenError':
-      res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json(ApiResponse.error('Invalid token', 'INVALID_TOKEN', StatusCodes.UNAUTHORIZED));
+      res.status(StatusCodes.UNAUTHORIZED).json(
+        ApiResponse.error('Invalid token', 'INVALID_TOKEN', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+        }),
+      );
       break;
 
     case 'TokenExpiredError':
-      res
-        .status(StatusCodes.UNAUTHORIZED)
-        .json(ApiResponse.error('Token expired', 'TOKEN_EXPIRED', StatusCodes.UNAUTHORIZED));
+      res.status(StatusCodes.UNAUTHORIZED).json(
+        ApiResponse.error('Token expired', 'TOKEN_EXPIRED', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+        }),
+      );
+      break;
+
+    // Add database-specific errors
+    case 'PrismaClientKnownRequestError':
+    case 'PrismaClientValidationError':
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error('Database validation error', 'BAD_REQUEST', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+          ...(ENV.isDevelopment && { details: err.message }),
+        }),
+      );
+      break;
+
+    case 'PrismaClientUnknownRequestError':
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Database connection error', 'INTERNAL_ERROR', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+        }),
+      );
       break;
 
     default:
       const statusCode = StatusCodes.INTERNAL_SERVER_ERROR;
       const message = ENV.isDevelopment ? err.message : 'Internal server error';
-      res.status(statusCode).json(ApiResponse.error(message, 'INTERNAL_ERROR', statusCode));
+      res.status(statusCode).json(
+        ApiResponse.error(message, 'INTERNAL_ERROR', {
+          correlationId,
+          timestamp: new Date().toISOString(),
+          ...(ENV.isDevelopment && { stack: err.stack?.split('\n').slice(0, 10) }), // Limit stack trace lines
+        }),
+      );
       break;
   }
 };
@@ -172,17 +296,24 @@ export const errorHandler = (err: Error, req: Request, res: Response, next: Next
  * Handles 404 Not Found errors for undefined routes
  */
 export const notFoundHandler = (req: Request, res: Response): void => {
-  logger.info(`Route not found: ${req.method} ${req.path}`);
+  const correlationId = getCorrelationId(req);
 
-  res
-    .status(StatusCodes.NOT_FOUND)
-    .json(
-      ApiResponse.error(
-        `Route ${req.method} ${req.path} not found`,
-        'NOT_FOUND',
-        StatusCodes.NOT_FOUND,
-      ),
-    );
+  logger.info(`Route not found: ${req.method} ${req.path}`, {
+    correlationId,
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+  });
+
+  res.set('X-Correlation-ID', correlationId);
+
+  res.status(StatusCodes.NOT_FOUND).json(
+    ApiResponse.error(`Route ${req.method} ${req.path} not found`, 'NOT_FOUND', {
+      correlationId,
+      timestamp: new Date().toISOString(),
+    }),
+  );
 };
 
 /**
