@@ -289,20 +289,22 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
       }
     }
 
+    const updateData = {
+      ...otherFields,
+      modUser: currentUser.id.toString(),
+      modDate: new Date(),
+      ...(extraInfo !== undefined && { extraInfo: sanitizedExtraInfo })
+    };
+
     const updatedUser = await prismaPostgres.user.update({
       where: { id: Number(userId) },
-      data: {
-        ...otherFields,
-        ...(extraInfo !== undefined && { extraInfo: sanitizedExtraInfo }),
-        modUser: currentUser.id.toString(),
-        modDate: new Date()
-      },
+      data: updateData,
       include: {
         client: { select: { id: true, name: true } },
         userType: { select: { id: true, name: true } },
-        userRole: {
+        userRoles: {
           include: {
-            role: { select: { id: true, name: true } }
+            role: true
           }
         }
       }
@@ -327,7 +329,7 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
         status: updatedUser.status,
         client: updatedUser.client,
         userType: updatedUser.userType,
-        roles: updatedUser.userRole.map(ur => ur.role),
+        roles: updatedUser.userRoles.map(ur => ur.role),
         modDate: updatedUser.modDate
       },
       message: 'User updated successfully'

@@ -10,7 +10,7 @@ BEGIN
 
     INSERT INTO "user"
 ("clientId", "userTypeId", "loginName", "firstName", "middleName", "lastName", email, dob, mrn, gender, "timeZone", "profilePicture", "passExpireInDays", "extraInfo", status, "crUser", "crDate", "modUser", "modDate")
-VALUES(1, 1, 'superadmin', 'System', NULL, 'Administrator', 'admin@reliacare.com', NULL, NULL, 'Other', 'UTC', NULL, 0, NULL, 1, 'Admin', CURRENT_TIMESTAMP, 'Admin', CURRENT_TIMESTAMP);
+VALUES(1, 1, 'superadmin', 'System', NULL, 'Administrator', 'admin@reliacare.com', NULL, NULL, 'Other', 'UTC', NULL, 1, NULL, 1, 'Admin', CURRENT_TIMESTAMP, 'Admin', CURRENT_TIMESTAMP);
  
 END IF;
 
