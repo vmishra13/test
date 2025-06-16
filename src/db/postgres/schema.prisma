@@ -10,28 +10,24 @@ datasource postgresDb {
 
 /// Client model with relationships
 model client {
-  id             Int               @id @default(autoincrement())
-  name           String            @unique @postgresDb.VarChar(100)
-  description    String?
-  timeZone       String?           @postgresDb.VarChar(100)
-  status         Int?              @default(-1)
-  logo           String?           @postgresDb.VarChar(2000)
-  favIcon        String?           @postgresDb.VarChar(2000)
-  language       String?           @postgresDb.VarChar(50)
-  website        String?           @postgresDb.VarChar(2000)
-  extraInfo      Json?             @postgresDb.Json
-  crUser         String            @postgresDb.VarChar(50)
-  crDate         DateTime          @default(now()) @postgresDb.Timestamp(6)
-  modUser        String?           @postgresDb.VarChar(50)
-  modDate        DateTime?         @default(now()) @postgresDb.Timestamp(6)
-
-  // Relationships
-  users          user[]
-  locations      client_location[]
-  contacts       contact[]
-  userRoles      user_role[]
-
-  @@index([timeZone])
+  id          Int               @id @default(autoincrement())
+  name        String            @postgresDb.VarChar(100)
+  description String?
+  timeZone    String?           @postgresDb.VarChar(100)
+  status      Int?              @default(-1)
+  logo        String?           @postgresDb.VarChar(2000)
+  favIcon     String?           @postgresDb.VarChar(2000)
+  language    String?           @postgresDb.VarChar(50)
+  website     String?           @postgresDb.VarChar(2000)
+  extraInfo   Json?             @postgresDb.Json
+  crUser      String            @postgresDb.VarChar(50)
+  crDate      DateTime          @default(now()) @postgresDb.Timestamp(6)
+  modUser     String?           @postgresDb.VarChar(50)
+  modDate     DateTime?         @default(now()) @postgresDb.Timestamp(6)
+  locations   client_location[]
+  contacts    contact[]
+  users       user[]
+  userRoles   user_role[]
 }
 
 /// Client location model with relationships
@@ -47,13 +43,11 @@ model client_location {
   crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser     String?   @postgresDb.VarChar(50)
   modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
-
-  // Relationships
-  client      client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client      client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_client_location_client")
   contacts    contact[]
 
-  @@unique([clientId, name])
-  @@index([clientId, status])
+  @@unique([clientId, name], map: "uk_client_location_name")
+  @@index([clientId, status], map: "idx_client_location_client_status")
 }
 
 /// Contact model with relationships
@@ -70,14 +64,9 @@ model contact {
   crDate     DateTime         @default(now()) @postgresDb.Timestamp(6)
   modUser    String?          @postgresDb.VarChar(50)
   modDate    DateTime?        @default(now()) @postgresDb.Timestamp(6)
-
-  // Relationships
-  user       user?            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client     client?          @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  location   client_location? @relation(fields: [locationId], references: [id], onDelete: Cascade)
-
-  @@index([userId, type])
-  @@index([clientId, type])
+  client     client?          @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_contact_client")
+  location   client_location? @relation(fields: [locationId], references: [id], onDelete: Cascade, map: "fk_contact_location")
+  user       user?            @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_contact_user")
 }
 
 /// Password model with relationships
@@ -91,63 +80,52 @@ model password {
   crDate     DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser    String?   @postgresDb.VarChar(50)
   modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
+  user       user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_password_user")
 
-  // Relationships
-  user       user      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, status])
-  @@index([expiryDate])
+  @@index([userId, status], map: "idx_password_user_status")
 }
 
 /// Role model with relationships
 model role {
   id          Int         @id @default(autoincrement())
-  name        String      @unique @postgresDb.VarChar(100)
+  name        String      @postgresDb.VarChar(100)
   description String?     @postgresDb.VarChar(100)
   crUser      String      @postgresDb.VarChar(50)
   crDate      DateTime    @default(now()) @postgresDb.Timestamp(6)
   modUser     String?     @postgresDb.VarChar(50)
   modDate     DateTime?   @default(now()) @postgresDb.Timestamp(6)
-
-  // Relationships
   userRoles   user_role[]
 }
 
 /// User model with relationships
 model user {
-  id               Int        @id @default(autoincrement())
+  id               Int         @id @default(autoincrement())
   clientId         Int
   userTypeId       Int
-  loginName        String     @postgresDb.VarChar(50)
-  firstName        String?    @postgresDb.VarChar(50)
-  middleName       String?    @postgresDb.VarChar(50)
-  lastName         String?    @postgresDb.VarChar(50)
-  email            String?    @postgresDb.VarChar(100)
-  dob              DateTime?  @postgresDb.Date
-  mrn              String?    @postgresDb.VarChar(50)
-  gender           String?    @postgresDb.VarChar(50)
-  timeZone         String?    @postgresDb.VarChar(100)
-  profilePicture   String?    @postgresDb.VarChar(2000)
+  loginName        String      @postgresDb.VarChar(50)
+  firstName        String?     @postgresDb.VarChar(50)
+  middleName       String?     @postgresDb.VarChar(50)
+  lastName         String?     @postgresDb.VarChar(50)
+  email            String?     @postgresDb.VarChar(100)
+  dob              DateTime?   @postgresDb.Date
+  mrn              String?     @postgresDb.VarChar(50)
+  gender           String?     @postgresDb.VarChar(50)
+  timeZone         String?     @postgresDb.VarChar(100)
+  profilePicture   String?     @postgresDb.VarChar(2000)
   passExpireInDays Int?
-  extraInfo        Json?      @postgresDb.Json
+  extraInfo        Json?       @postgresDb.Json
   status           Int?
-  crUser           String     @postgresDb.VarChar(50)
-  crDate           DateTime   @default(now()) @postgresDb.Timestamp(6)
-  modUser          String?    @postgresDb.VarChar(50)
-  modDate          DateTime?  @default(now()) @postgresDb.Timestamp(6)
-
-  // Relationships
-  client           client     @relation(fields: [clientId], references: [id], onDelete: Restrict)
-  userType         user_type  @relation(fields: [userTypeId], references: [id], onDelete: Restrict)
-  passwords        password[]
+  crUser           String      @postgresDb.VarChar(50)
+  crDate           DateTime    @default(now()) @postgresDb.Timestamp(6)
+  modUser          String?     @postgresDb.VarChar(50)
+  modDate          DateTime?   @default(now()) @postgresDb.Timestamp(6)
   contacts         contact[]
+  passwords        password[]
+  client           client      @relation(fields: [clientId], references: [id], map: "fk_user_client")
+  userType         user_type   @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
   userRoles        user_role[]
 
-  @@unique([loginName, clientId])
-  @@unique([email, clientId])
-  @@index([clientId])
-  @@index([userTypeId])
-  @@index([email])
+  @@unique([loginName, clientId], map: "uk_user_login_client")
 }
 
 /// User role model with relationships
@@ -160,28 +138,29 @@ model user_role {
   crDate   DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser  String?   @postgresDb.VarChar(50)
   modDate  DateTime? @default(now()) @postgresDb.Timestamp(6)
+  client   client    @relation(fields: [clientId], references: [id], onDelete: Cascade, map: "fk_user_role_client")
+  role     role      @relation(fields: [roleId], references: [id], onDelete: Cascade, map: "fk_user_role_role")
+  user     user      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_role_user")
 
-  // Relationships
-  user     user      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  client   client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  role     role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, clientId, roleId])
-  @@index([userId])
-  @@index([clientId])
-  @@index([roleId])
+  @@unique([userId, clientId, roleId], map: "uk_user_role_assignment")
+  @@index([clientId], map: "idx_user_role_client")
+  @@index([userId], map: "idx_user_role_user")
 }
 
 /// User type model with relationships
 model user_type {
   id          Int       @id @default(autoincrement())
-  name        String    @unique @postgresDb.VarChar(100)
+  name        String    @postgresDb.VarChar(100)
   description String?   @postgresDb.VarChar(100)
   crUser      String    @postgresDb.VarChar(50)
   crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
   modUser     String?   @postgresDb.VarChar(50)
   modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
-
-  // Relationships
   users       user[]
+}
+
+model india {
+  id         Int     @id
+  name       String? @postgresDb.VarChar(50)
+  new_column String? @postgresDb.VarChar(50)
 }
