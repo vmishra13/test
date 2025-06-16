@@ -1,228 +1,21 @@
-import prismaPostgres from '@db/postgres/client';
-import bcrypt from 'bcrypt';
+import { prismaPostgres } from '@/db/postgres/client'; // ✅ Fixed import
+import * as jwt from 'jsonwebtoken';
+import { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  refresh_token as RefreshToken,
-  RefreshTokenCreationData,
-  RefreshTokenWithUser,
-} from '@features/users/models/user.model';
-import { TokenFamilyInfo, ActiveTokenSummary, SecurityEvent } from '../dto/auth.dto';
+  TokenFamilyInfo,
+  ActiveTokenSummary,
+  SecurityEvent,
+  RefreshTokenPayload,
+  TokenRotationResult
+} from '../dto/auth.dto';
 
 // ===================================================================
-// 🎯 REFRESH TOKEN MANAGEMENT
-// ===================================================================
-
-/**
- * Create a new refresh token with family tracking
- */
-export async function createRefreshToken(
-  tokenData: RefreshTokenCreationData,
-): Promise<RefreshToken> {
-  try {
-    // Hash the token before storing
-    const saltRounds = 12;
-    const hashedToken = await bcrypt.hash(tokenData.token, saltRounds);
-
-    const refreshToken = await prismaPostgres.refresh_token.create({
-      data: {
-        userId: tokenData.userId,
-        clientId: tokenData.clientId,
-        jti: tokenData.jti,
-        family: tokenData.family,
-        token: hashedToken,
-        expiresAt: tokenData.expiresAt,
-        isRevoked: tokenData.isRevoked || false,
-        crUser: tokenData.crUser,
-      },
-    });
-
-    return refreshToken as RefreshToken;
-  } catch (error: any) {
-    if (error.code === 'P2002') {
-      throw new Error('JTI already exists');
-    }
-    throw new Error(`Failed to create refresh token: ${error}`);
-  }
-}
-
-/**
- * Find refresh token by JTI for validation
- */
-export async function findRefreshTokenByJti(jti: string): Promise<RefreshTokenWithUser | null> {
-  try {
-    const refreshToken = await prismaPostgres.refresh_token.findUnique({
-      where: { jti },
-      include: {
-        user: {
-          select: {
-            id: true,
-            loginName: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            status: true,
-          },
-        },
-        client: {
-          select: {
-            id: true,
-            name: true,
-            timeZone: true,
-            status: true,
-          },
-        },
-      },
-    });
-
-    return refreshToken as RefreshTokenWithUser | null;
-  } catch (error) {
-    throw new Error(`Failed to find refresh token by JTI: ${error}`);
-  }
-}
-
-/**
- * Verify refresh token against stored hash
- */
-export async function verifyRefreshToken(
-  plainToken: string,
-  jti: string,
-): Promise<{ isValid: boolean; tokenData?: RefreshTokenWithUser }> {
-  try {
-    const storedToken = await findRefreshTokenByJti(jti);
-
-    if (!storedToken) {
-      return { isValid: false };
-    }
-
-    // Check if token is revoked or expired
-    if (storedToken.isRevoked || storedToken.expiresAt < new Date()) {
-      return { isValid: false };
-    }
-
-    // Verify the token hash
-    const isValidHash = await bcrypt.compare(plainToken, storedToken.token);
-
-    if (!isValidHash) {
-      return { isValid: false };
-    }
-
-    return { isValid: true, tokenData: storedToken };
-  } catch (error) {
-    throw new Error(`Failed to verify refresh token: ${error}`);
-  }
-}
-
-/**
- * Revoke a specific refresh token
- */
-export async function revokeRefreshToken(jti: string, modUser: string): Promise<boolean> {
-  try {
-    const result = await prismaPostgres.refresh_token.updateMany({
-      where: {
-        jti,
-        isRevoked: false,
-      },
-      data: {
-        isRevoked: true,
-        modUser,
-        modDate: new Date(),
-      },
-    });
-
-    return result.count > 0;
-  } catch (error) {
-    throw new Error(`Failed to revoke refresh token: ${error}`);
-  }
-}
-
-/**
- * Revoke all tokens in a family (for token rotation security)
- */
-export async function revokeTokenFamily(
-  family: string,
-  modUser: string,
-): Promise<{ count: number; tokens: string[] }> {
-  try {
-    // Get all tokens in the family first for logging
-    const familyTokens = await prismaPostgres.refresh_token.findMany({
-      where: {
-        family,
-        isRevoked: false,
-      },
-      select: { jti: true },
-    });
-
-    // Revoke all tokens in the family
-    const result = await prismaPostgres.refresh_token.updateMany({
-      where: {
-        family,
-        isRevoked: false,
-      },
-      data: {
-        isRevoked: true,
-        modUser,
-        modDate: new Date(),
-      },
-    });
-
-    return {
-      count: result.count,
-      tokens: familyTokens.map(t => t.jti),
-    };
-  } catch (error) {
-    throw new Error(`Failed to revoke token family: ${error}`);
-  }
-}
-
-/**
- * Revoke all refresh tokens for a user (logout all devices)
- */
-export async function revokeAllUserTokens(
-  userId: number,
-  clientId: number,
-  modUser: string,
-): Promise<{ count: number; families: string[] }> {
-  try {
-    // Get all unique families for this user
-    const userTokens = await prismaPostgres.refresh_token.findMany({
-      where: {
-        userId,
-        clientId,
-        isRevoked: false,
-      },
-      select: { family: true },
-      distinct: ['family'],
-    });
-
-    // Revoke all tokens for this user
-    const result = await prismaPostgres.refresh_token.updateMany({
-      where: {
-        userId,
-        clientId,
-        isRevoked: false,
-      },
-      data: {
-        isRevoked: true,
-        modUser,
-        modDate: new Date(),
-      },
-    });
-
-    return {
-      count: result.count,
-      families: userTokens.map(t => t.family),
-    };
-  } catch (error) {
-    throw new Error(`Failed to revoke all user tokens: ${error}`);
-  }
-}
-
-// ===================================================================
-// 🎯 TOKEN FAMILY MANAGEMENT
+// 🎯 STATELESS JWT TOKEN MANAGEMENT (NO DATABASE STORAGE)
 // ===================================================================
 
 /**
- * Generate new token family for rotation
+ * Generate refresh token family ID
  */
 export function generateTokenFamily(): string {
   return uuidv4();
@@ -236,429 +29,668 @@ export function generateJti(): string {
 }
 
 /**
- * Get token family information
+ * Create refresh token (stateless JWT - not stored in DB)
  */
-export async function getTokenFamilyInfo(family: string): Promise<TokenFamilyInfo | null> {
+export function createRefreshToken(payload: RefreshTokenPayload): string {
   try {
-    const familyTokens = await prismaPostgres.refresh_token.findMany({
-      where: { family },
-      select: {
-        id: true,
-        userId: true,
-        clientId: true,
-        jti: true,
-        expiresAt: true,
-        isRevoked: true,
-        crDate: true,
-        modDate: true,
-      },
-      orderBy: { crDate: 'desc' },
-    });
-
-    if (familyTokens.length === 0) {
-      return null;
+    const secret = process.env.JWT_REFRESH_TOKEN_SECRET;
+    if (!secret) {
+      throw new Error('JWT_REFRESH_TOKEN_SECRET not configured');
     }
 
-    const activeTokens = familyTokens.filter(t => !t.isRevoked && t.expiresAt > new Date());
-    const firstToken = familyTokens[familyTokens.length - 1];
-    const lastUsedToken = familyTokens.find(t => t.modDate) || firstToken;
-
-    return {
-      family,
-      userId: firstToken.userId,
-      clientId: firstToken.clientId,
-      activeTokenCount: activeTokens.length,
-      createdAt: firstToken.crDate || new Date(),
-      lastUsedAt: lastUsedToken.modDate || lastUsedToken.crDate || new Date(),
+    const tokenPayload = {
+      sub: payload.userId.toString(),
+      clientId: payload.clientId,
+      jti: payload.jti,
+      family: payload.family,
+      type: 'refresh',
     };
-  } catch (error) {
-    throw new Error(`Failed to get token family info: ${error}`);
+
+    // Calculate expiration as a positive number of seconds and convert to string
+    const expiresInSeconds = Math.max(1, Math.floor((payload.expiresAt.getTime() - Date.now()) / 1000));
+    
+    const options: SignOptions = {
+      algorithm: 'HS256',
+      expiresIn: expiresInSeconds, // Use number directly instead of string
+    };
+
+    return jwt.sign(tokenPayload, secret, options);
+  } catch (error: any) {
+    throw new Error(`Failed to create refresh token: ${error.message}`);
   }
 }
 
 /**
- * Get active token summary for a user
+ * Create access token (stateless JWT)
+ */
+export function createAccessToken(
+  userId: number,
+  clientId: number,
+  roles: string[],
+  expiresInSeconds: number = 15 * 60 // 15 minutes by default
+): string {
+  try {
+    const secret = process.env.JWT_ACCESS_TOKEN_SECRET;
+    if (!secret) {
+      throw new Error('JWT_ACCESS_TOKEN_SECRET not configured');
+    }
+
+    const tokenPayload = {
+      sub: userId.toString(),
+      clientId,
+      roles,
+      jti: generateJti(),
+      type: 'access',
+    };
+
+    const options: SignOptions = {
+      algorithm: 'HS256',
+      expiresIn: expiresInSeconds,
+    };
+
+    return jwt.sign(tokenPayload, secret, options);
+  } catch (error: any) {
+    throw new Error(`Failed to create access token: ${error.message}`);
+  }
+}
+
+/**
+ * Verify and decode refresh token (stateless)
+ */
+export function verifyRefreshToken(token: string): {
+  isValid: boolean;
+  payload?: RefreshTokenPayload;
+  error?: string;
+} {
+  try {
+    const secret = process.env.JWT_REFRESH_TOKEN_SECRET;
+    if (!secret) {
+      return { isValid: false, error: 'JWT secret not configured' };
+    }
+
+    const decoded = jwt.verify(token, secret) as any;
+
+    // Validate token structure
+    if (decoded.type !== 'refresh') {
+      return { isValid: false, error: 'Invalid token type' };
+    }
+
+    const payload: RefreshTokenPayload = {
+      userId: parseInt(decoded.sub),
+      clientId: decoded.clientId,
+      jti: decoded.jti,
+      family: decoded.family,
+      expiresAt: new Date(decoded.exp * 1000),
+      issuedAt: new Date(decoded.iat * 1000),
+    };
+
+    return { isValid: true, payload };
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      return { isValid: false, error: 'Token expired' };
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return { isValid: false, error: 'Invalid token signature' };
+    }
+    return { isValid: false, error: `Token verification failed: ${error.message}` };
+  }
+}
+
+/**
+ * Verify access token (stateless)
+ */
+export function verifyAccessToken(token: string): {
+  isValid: boolean;
+  payload?: {
+    userId: number;
+    clientId: number;
+    roles: string[];
+    jti: string;
+    exp: number;
+    iat: number;
+  };
+  error?: string;
+} {
+  try {
+    const secret = process.env.JWT_ACCESS_TOKEN_SECRET;
+    if (!secret) {
+      return { isValid: false, error: 'JWT secret not configured' };
+    }
+
+    const decoded = jwt.verify(token, secret) as any;
+
+    if (decoded.type !== 'access') {
+      return { isValid: false, error: 'Invalid token type' };
+    }
+
+    const payload = {
+      userId: parseInt(decoded.sub),
+      clientId: decoded.clientId,
+      roles: decoded.roles || [],
+      jti: decoded.jti,
+      exp: decoded.exp,
+      iat: decoded.iat,
+    };
+
+    return { isValid: true, payload };
+  } catch (error: any) {
+    if (error.name === 'TokenExpiredError') {
+      return { isValid: false, error: 'Token expired' };
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return { isValid: false, error: 'Invalid token signature' };
+    }
+    return { isValid: false, error: `Token verification failed: ${error.message}` };
+  }
+}
+
+// ===================================================================
+// 🎯 BLACKLIST MANAGEMENT (Using existing tables for metadata only)
+// ===================================================================
+
+/**
+ * Use user table to track suspicious activity or security events
+ * Since we don't have refresh_token table, we'll use user audit fields
+ */
+export async function logSecurityEvent(
+  userId: number,
+  clientId: number,
+  eventType: 'token_rotation' | 'suspicious_activity' | 'logout_all',
+  details: Record<string, any>,
+  modUser: string
+): Promise<void> {
+  try {
+    // Update user's modDate to track last security event
+    await prismaPostgres.user.update({
+      where: { id: userId },
+      data: {
+        modUser,
+        modDate: new Date(),
+        // We could store security events in extraInfo JSON field
+        extraInfo: {
+          lastSecurityEvent: {
+            type: eventType,
+            timestamp: new Date().toISOString(),
+            details,
+          },
+        },
+      },
+    });
+  } catch (error: any) {
+    // Don't throw on logging failures
+    console.error('Failed to log security event:', error);
+  }
+}
+
+/**
+ * Check user for security flags
+ */
+export async function getUserSecurityInfo(userId: number): Promise<{
+  hasSecurityFlags: boolean;
+  lastSecurityEvent?: any;
+  suspiciousActivity?: boolean;
+}> {
+  try {
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: userId },
+      select: {
+        extraInfo: true,
+        modDate: true,
+      },
+    });
+
+    if (!user) {
+      return { hasSecurityFlags: false };
+    }
+
+    const extraInfo = user.extraInfo as any;
+    const lastSecurityEvent = extraInfo?.lastSecurityEvent;
+
+    // Check if there was recent suspicious activity (last 24 hours)
+    const suspiciousActivity = lastSecurityEvent &&
+      lastSecurityEvent.type === 'suspicious_activity' &&
+      new Date(lastSecurityEvent.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    return {
+      hasSecurityFlags: !!lastSecurityEvent,
+      lastSecurityEvent,
+      suspiciousActivity: !!suspiciousActivity,
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get user security info: ${error.message}`);
+  }
+}
+
+// ===================================================================
+// 🎯 TOKEN ROTATION (Stateless with User Audit Trail)
+// ===================================================================
+
+/**
+ * Rotate refresh token (pure stateless - just validate old and create new)
+ */
+export async function rotateRefreshToken(
+  oldToken: string,
+  newTokenData: RefreshTokenPayload,
+  rotatedBy: string,
+): Promise<TokenRotationResult> {
+  try {
+    // 1. Verify old token
+    const verification = verifyRefreshToken(oldToken);
+    if (!verification.isValid || !verification.payload) {
+      throw new Error(`Invalid token for rotation: ${verification.error}`);
+    }
+
+    const oldPayload = verification.payload;
+
+    // 2. Check for suspicious activity
+    const securityInfo = await getUserSecurityInfo(oldPayload.userId);
+    if (securityInfo.suspiciousActivity) {
+      throw new Error('Token rotation rejected: suspicious activity detected');
+    }
+
+    // 3. Log rotation event
+    await logSecurityEvent(
+      oldPayload.userId,
+      oldPayload.clientId,
+      'token_rotation',
+      {
+        oldJti: oldPayload.jti,
+        newJti: newTokenData.jti,
+        family: oldPayload.family,
+      },
+      rotatedBy
+    );
+
+    // 4. Create new token (stateless)
+    const newToken = createRefreshToken(newTokenData);
+
+    return {
+      newToken,
+      newJti: newTokenData.jti,
+      family: newTokenData.family,
+      expiresAt: newTokenData.expiresAt,
+      rotatedAt: new Date(),
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to rotate refresh token: ${error.message}`);
+  }
+}
+
+/**
+ * Invalidate all user sessions (logout all devices)
+ * Since we're stateless, we update user info to track forced logout
+ */
+export async function revokeAllUserTokens(
+  userId: number,
+  clientId: number,
+  revokedBy: string,
+): Promise<{ success: boolean; timestamp: Date }> {
+  try {
+    const timestamp = new Date();
+
+    // Update user with logout timestamp - all tokens issued before this are invalid
+    await prismaPostgres.user.update({
+      where: { id: userId },
+      data: {
+        modUser: revokedBy,
+        modDate: timestamp,
+        extraInfo: {
+          globalLogout: {
+            timestamp: timestamp.toISOString(),
+            revokedBy,
+            reason: 'logout_all_devices',
+          },
+        },
+      },
+    });
+
+    // Log security event
+    await logSecurityEvent(
+      userId,
+      clientId,
+      'logout_all',
+      { timestamp: timestamp.toISOString() },
+      revokedBy
+    );
+
+    return { success: true, timestamp };
+  } catch (error: any) {
+    throw new Error(`Failed to revoke all user tokens: ${error.message}`);
+  }
+}
+
+/**
+ * Check if user has been globally logged out
+ */
+export async function isUserGloballyLoggedOut(
+  userId: number,
+  tokenIssuedAt: Date
+): Promise<boolean> {
+  try {
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: userId },
+      select: { extraInfo: true },
+    });
+
+    if (!user) return true; // User not found, consider logged out
+
+    const extraInfo = user.extraInfo as any;
+    const globalLogout = extraInfo?.globalLogout;
+
+    if (!globalLogout?.timestamp) return false;
+
+    const logoutTimestamp = new Date(globalLogout.timestamp);
+    return tokenIssuedAt < logoutTimestamp;
+  } catch (error: any) {
+    // On error, be safe and consider logged out
+    return true;
+  }
+}
+
+// ===================================================================
+// 🎯 TOKEN VALIDATION (Comprehensive Security Checks)
+// ===================================================================
+
+/**
+ * Comprehensive token validation (includes all security checks)
+ */
+export async function validateRefreshToken(token: string): Promise<{
+  isValid: boolean;
+  payload?: RefreshTokenPayload;
+  error?: string;
+  securityFlags?: string[];
+}> {
+  try {
+    // 1. Verify JWT signature and structure
+    const verification = verifyRefreshToken(token);
+    if (!verification.isValid || !verification.payload) {
+      return { isValid: false, error: verification.error };
+    }
+
+    const payload = verification.payload;
+    const securityFlags: string[] = [];
+
+    // 2. Check if user exists and is active
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: payload.userId },
+      select: { 
+        status: true, 
+        clientId: true,
+        extraInfo: true 
+      },
+    });
+
+    if (!user) {
+      return { isValid: false, error: 'User not found' };
+    }
+
+    if (user.status === -99) {
+      return { isValid: false, error: 'User account disabled' };
+    }
+
+    if (user.clientId !== payload.clientId) {
+      securityFlags.push('client_mismatch');
+      return { isValid: false, error: 'Client mismatch', securityFlags };
+    }
+
+    // 3. Check global logout
+    const isGloballyLoggedOut = await isUserGloballyLoggedOut(
+      payload.userId, 
+      payload.issuedAt
+    );
+    
+    if (isGloballyLoggedOut) {
+      securityFlags.push('globally_logged_out');
+      return { isValid: false, error: 'Session invalidated', securityFlags };
+    }
+
+    // 4. Check for suspicious activity
+    const securityInfo = await getUserSecurityInfo(payload.userId);
+    if (securityInfo.suspiciousActivity) {
+      securityFlags.push('suspicious_activity');
+      // Don't reject, but flag for monitoring
+    }
+
+    return {
+      isValid: true,
+      payload,
+      securityFlags: securityFlags.length > 0 ? securityFlags : undefined,
+    };
+  } catch (error: any) {
+    return { isValid: false, error: `Token validation failed: ${error.message}` };
+  }
+}
+
+/**
+ * Validate access token with user status check
+ */
+export async function validateAccessToken(token: string): Promise<{
+  isValid: boolean;
+  payload?: {
+    userId: number;
+    clientId: number;
+    roles: string[];
+    jti: string;
+  };
+  error?: string;
+}> {
+  try {
+    // 1. Verify JWT
+    const verification = verifyAccessToken(token);
+    if (!verification.isValid || !verification.payload) {
+      return { isValid: false, error: verification.error };
+    }
+
+    const { userId, clientId, roles, jti } = verification.payload;
+
+    // 2. Check if user is still active
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: userId },
+      select: { 
+        status: true, 
+        clientId: true 
+      },
+    });
+
+    if (!user) {
+      return { isValid: false, error: 'User not found' };
+    }
+
+    if (user.status === -99) {
+      return { isValid: false, error: 'User account disabled' };
+    }
+
+    if (user.clientId !== clientId) {
+      return { isValid: false, error: 'Client mismatch' };
+    }
+
+    // 3. Check global logout
+    const tokenIssuedAt = new Date(verification.payload.iat * 1000);
+    const isGloballyLoggedOut = await isUserGloballyLoggedOut(userId, tokenIssuedAt);
+    
+    if (isGloballyLoggedOut) {
+      return { isValid: false, error: 'Session invalidated' };
+    }
+
+    return {
+      isValid: true,
+      payload: { userId, clientId, roles, jti },
+    };
+  } catch (error: any) {
+    return { isValid: false, error: `Access token validation failed: ${error.message}` };
+  }
+}
+
+// ===================================================================
+// 🎯 MONITORING & ANALYTICS (Using User Data)
+// ===================================================================
+
+/**
+ * Get token family information (simulated from user data)
+ */
+export async function getTokenFamilyInfo(family: string): Promise<TokenFamilyInfo | null> {
+  // Since we're stateless, we can't track family info without database
+  // This would need to be implemented differently or removed
+  return null;
+}
+
+/**
+ * Get active token summary (simulated)
  */
 export async function getActiveTokenSummary(
   userId: number,
   clientId: number,
 ): Promise<ActiveTokenSummary> {
   try {
-    const activeTokens = await prismaPostgres.refresh_token.findMany({
-      where: {
-        userId,
-        clientId,
-        isRevoked: false,
-        expiresAt: { gt: new Date() },
-      },
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: userId },
       select: {
-        family: true,
         crDate: true,
         modDate: true,
+        extraInfo: true,
       },
     });
 
-    // Group by family
-    const familyMap = new Map<string, Date[]>();
-    activeTokens.forEach(token => {
-      const dates = familyMap.get(token.family) || [];
-      dates.push(token.crDate || new Date());
-      if (token.modDate) {
-        dates.push(token.modDate);
-      }
-      familyMap.set(token.family, dates);
-    });
-
-    // Get family info for each unique family
-    const tokenFamilies: TokenFamilyInfo[] = [];
-    for (const family of familyMap.keys()) {
-      const familyInfo = await getTokenFamilyInfo(family);
-      if (familyInfo) {
-        tokenFamilies.push(familyInfo);
-      }
+    if (!user) {
+      throw new Error('User not found');
     }
 
-    const allDates = activeTokens.flatMap(t => [
-      t.crDate || new Date(),
-      ...(t.modDate ? [t.modDate] : []),
-    ]);
-
+    // Simulate token info from user data
     return {
       userId,
       clientId,
-      totalActiveTokens: activeTokens.length,
-      tokenFamilies,
-      oldestTokenDate:
-        allDates.length > 0 ? new Date(Math.min(...allDates.map(d => d.getTime()))) : new Date(),
-      newestTokenDate:
-        allDates.length > 0 ? new Date(Math.max(...allDates.map(d => d.getTime()))) : new Date(),
+      totalActiveTokens: 1, // Can't track without database
+      tokenFamilies: [],
+      oldestTokenDate: user.crDate,
+      newestTokenDate: user.modDate || user.crDate,
     };
-  } catch (error) {
-    throw new Error(`Failed to get active token summary: ${error}`);
-  }
-}
-
-// ===================================================================
-// 🎯 TOKEN CLEANUP AND MAINTENANCE
-// ===================================================================
-
-/**
- * Clean up expired tokens
- */
-export async function cleanupExpiredTokens(): Promise<{ deletedCount: number }> {
-  try {
-    const result = await prismaPostgres.refresh_token.deleteMany({
-      where: {
-        expiresAt: { lt: new Date() },
-      },
-    });
-
-    return { deletedCount: result.count };
-  } catch (error) {
-    throw new Error(`Failed to cleanup expired tokens: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get active token summary: ${error.message}`);
   }
 }
 
 /**
- * Clean up old revoked tokens (older than specified days)
+ * Detect suspicious token activity (based on user access patterns)
  */
-export async function cleanupOldRevokedTokens(
-  olderThanDays: number = 30,
-): Promise<{ deletedCount: number }> {
-  try {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
-
-    const result = await prismaPostgres.refresh_token.deleteMany({
-      where: {
-        isRevoked: true,
-        modDate: { lt: cutoffDate },
-      },
-    });
-
-    return { deletedCount: result.count };
-  } catch (error) {
-    throw new Error(`Failed to cleanup old revoked tokens: ${error}`);
-  }
-}
-
-/**
- * Get token statistics for monitoring
- */
-export async function getTokenStatistics(clientId?: number): Promise<any> {
-  try {
-    const where = clientId ? { clientId } : {};
-
-    const [totalTokens, activeTokens, revokedTokens, expiredTokens, tokensByUser, tokensByFamily] =
-      await Promise.all([
-        prismaPostgres.refresh_token.count({ where }),
-        prismaPostgres.refresh_token.count({
-          where: {
-            ...where,
-            isRevoked: false,
-            expiresAt: { gt: new Date() },
-          },
-        }),
-        prismaPostgres.refresh_token.count({
-          where: { ...where, isRevoked: true },
-        }),
-        prismaPostgres.refresh_token.count({
-          where: {
-            ...where,
-            expiresAt: { lt: new Date() },
-          },
-        }),
-        prismaPostgres.refresh_token.groupBy({
-          by: ['userId'],
-          where: {
-            ...where,
-            isRevoked: false,
-            expiresAt: { gt: new Date() },
-          },
-          _count: true,
-        }),
-        prismaPostgres.refresh_token.groupBy({
-          by: ['family'],
-          where: {
-            ...where,
-            isRevoked: false,
-            expiresAt: { gt: new Date() },
-          },
-          _count: true,
-        }),
-      ]);
-
-    return {
-      totalTokens,
-      activeTokens,
-      revokedTokens,
-      expiredTokens,
-      userDistribution: tokensByUser.reduce(
-        (acc, item) => {
-          acc[item.userId] = item._count;
-          return acc;
-        },
-        {} as Record<number, number>,
-      ),
-      familyDistribution: tokensByFamily.reduce(
-        (acc, item) => {
-          acc[item.family] = item._count;
-          return acc;
-        },
-        {} as Record<string, number>,
-      ),
-      utilizationRate: totalTokens > 0 ? (activeTokens / totalTokens) * 100 : 0,
-    };
-  } catch (error) {
-    throw new Error(`Failed to get token statistics: ${error}`);
-  }
-}
-
-// ===================================================================
-// 🎯 SECURITY AND MONITORING
-// ===================================================================
-
-/**
- * Detect suspicious token activity
- */
-export async function detectSuspiciousActivity(
+export async function detectSuspiciousTokenActivity(
   userId: number,
   clientId: number,
 ): Promise<SecurityEvent[]> {
   try {
     const events: SecurityEvent[] = [];
-    const now = new Date();
-    const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-
-    // Check for multiple token families (possible device hijacking)
-    const activeFamilies = await prismaPostgres.refresh_token.findMany({
-      where: {
-        userId,
-        clientId,
-        isRevoked: false,
-        expiresAt: { gt: now },
-        crDate: { gte: last24Hours },
-      },
-      select: { family: true },
-      distinct: ['family'],
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: userId },
+      select: { extraInfo: true },
     });
 
-    if (activeFamilies.length > 5) {
-      events.push({
-        type: 'suspicious_activity',
-        userId,
-        clientId,
-        details: {
-          reason: 'Multiple token families detected',
-          tokenFamily: `${activeFamilies.length} families`,
-        },
-        timestamp: now,
-        severity: 'medium',
-      });
-    }
+    if (!user) return events;
 
-    // Check for rapid token creation (possible brute force)
-    const recentTokens = await prismaPostgres.refresh_token.count({
-      where: {
-        userId,
-        clientId,
-        crDate: { gte: new Date(now.getTime() - 5 * 60 * 1000) }, // Last 5 minutes
-      },
-    });
+    const extraInfo = user.extraInfo as any;
+    const lastSecurityEvent = extraInfo?.lastSecurityEvent;
 
-    if (recentTokens > 10) {
-      events.push({
-        type: 'suspicious_activity',
-        userId,
-        clientId,
-        details: {
-          reason: 'Rapid token creation detected',
-          tokenFamily: `${recentTokens} tokens in 5 minutes`,
-        },
-        timestamp: now,
-        severity: 'high',
-      });
+    // Check for recent security events
+    if (lastSecurityEvent && lastSecurityEvent.type === 'suspicious_activity') {
+      const eventTime = new Date(lastSecurityEvent.timestamp);
+      const isRecent = eventTime > new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      if (isRecent) {
+        events.push({
+          type: 'suspicious_activity',
+          userId,
+          clientId,
+          details: lastSecurityEvent.details,
+          timestamp: eventTime,
+          severity: 'medium',
+        });
+      }
     }
 
     return events;
-  } catch (error) {
-    throw new Error(`Failed to detect suspicious activity: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to detect suspicious activity: ${error.message}`);
   }
 }
 
+// ===================================================================
+// 🎯 UTILITY FUNCTIONS
+// ===================================================================
+
 /**
- * Log security event (for audit trail)
+ * Extract token payload without verification (for debugging)
  */
-export async function logSecurityEvent(
-  event: SecurityEvent,
-  additionalDetails?: Record<string, any>,
-): Promise<void> {
+export function decodeTokenUnsafe(token: string): any {
   try {
-    // In a real implementation, you might log to a separate audit table
-    // For now, we'll just console.log in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔒 Security Event:', {
-        ...event,
-        additionalDetails,
-      });
-    }
-
-    // Here you could:
-    // 1. Log to MongoDB audit collection
-    // 2. Send to external monitoring service
-    // 3. Store in PostgreSQL audit table
-    // 4. Send alerts for high severity events
+    return jwt.decode(token);
   } catch (error) {
-    // Don't throw errors for logging failures
-    console.error('Failed to log security event:', error);
+    return null;
   }
 }
 
 /**
- * Check if token family should be rotated
+ * Check if token is expired (without verification)
  */
-export async function shouldRotateTokenFamily(family: string): Promise<boolean> {
+export function isTokenExpired(token: string): boolean {
   try {
-    const familyTokens = await prismaPostgres.refresh_token.findMany({
-      where: { family },
-      select: {
-        crDate: true,
-        modDate: true,
-        isRevoked: true,
-      },
-    });
-
-    if (familyTokens.length === 0) return false;
-
-    // Rotate if family has more than 10 tokens
-    if (familyTokens.length > 10) return true;
-
-    // Rotate if family is older than 30 days
-    const oldestToken = familyTokens[0];
-    const familyAge = new Date().getTime() - (oldestToken.crDate?.getTime() || 0);
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-
-    if (familyAge > thirtyDaysMs) return true;
-
-    // Rotate if there are any revoked tokens in the family
-    const hasRevokedTokens = familyTokens.some(t => t.isRevoked);
-    if (hasRevokedTokens) return true;
-
-    return false;
+    const decoded = jwt.decode(token) as any;
+    if (!decoded?.exp) return true;
+    return decoded.exp * 1000 < Date.now();
   } catch (error) {
-    throw new Error(`Failed to check token family rotation: ${error}`);
+    return true;
   }
 }
 
 /**
- * Find tokens by user and client (for admin operations)
+ * Get token TTL in seconds
  */
-export async function findTokensByUser(
+export function getTokenTTL(token: string): number {
+  try {
+    const decoded = jwt.decode(token) as any;
+    if (!decoded?.exp) return 0;
+    const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+    return Math.max(0, ttl);
+  } catch (error) {
+    return 0;
+  }
+}
+
+/**
+ * Create token pair (access + refresh)
+ */
+export async function createTokenPair(
   userId: number,
   clientId: number,
-  includeRevoked: boolean = false,
-): Promise<RefreshToken[]> {
+  roles: string[],
+  refreshExpiresIn: number = 7 * 24 * 60 * 60 * 1000 // 7 days
+): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  accessExpiresIn: number;
+  refreshExpiresIn: number;
+  tokenFamily: string;
+}> {
   try {
-    const where: any = { userId, clientId };
-
-    if (!includeRevoked) {
-      where.isRevoked = false;
-      where.expiresAt = { gt: new Date() };
-    }
-
-    const tokens = await prismaPostgres.refresh_token.findMany({
-      where,
-      orderBy: { crDate: 'desc' },
+    const family = generateTokenFamily();
+    const refreshExpiresAt = new Date(Date.now() + refreshExpiresIn);
+    
+    const refreshToken = createRefreshToken({
+      userId,
+      clientId,
+      jti: generateJti(),
+      family,
+      expiresAt: refreshExpiresAt,
+      issuedAt: new Date(),
     });
 
-    return tokens as RefreshToken[];
-  } catch (error) {
-    throw new Error(`Failed to find tokens by user: ${error}`);
-  }
-}
-
-/**
- * Get token usage analytics
- */
-export async function getTokenUsageAnalytics(
-  userId: number,
-  clientId: number,
-  days: number = 30,
-): Promise<any> {
-  try {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-
-    const tokens = await prismaPostgres.refresh_token.findMany({
-      where: {
-        userId,
-        clientId,
-        crDate: { gte: startDate },
-      },
-      select: {
-        crDate: true,
-        modDate: true,
-        isRevoked: true,
-        expiresAt: true,
-      },
-      orderBy: { crDate: 'desc' },
-    });
-
-    const dailyUsage = new Map<string, number>();
-    tokens.forEach(token => {
-      const day = (token.crDate || new Date()).toISOString().split('T')[0];
-      dailyUsage.set(day, (dailyUsage.get(day) || 0) + 1);
-    });
+    const accessToken = createAccessToken(userId, clientId, roles);
 
     return {
-      totalTokens: tokens.length,
-      activeTokens: tokens.filter(t => !t.isRevoked && t.expiresAt > new Date()).length,
-      revokedTokens: tokens.filter(t => t.isRevoked).length,
-      expiredTokens: tokens.filter(t => t.expiresAt <= new Date()).length,
-      dailyUsage: Object.fromEntries(dailyUsage),
-      averageTokensPerDay: tokens.length / days,
+      accessToken,
+      refreshToken,
+      accessExpiresIn: 15 * 60, // 15 minutes in seconds
+      refreshExpiresIn: refreshExpiresIn / 1000, // Convert to seconds
+      tokenFamily: family,
     };
-  } catch (error) {
-    throw new Error(`Failed to get token usage analytics: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to create token pair: ${error.message}`);
   }
 }

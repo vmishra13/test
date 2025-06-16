@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { authenticate } from '@/features/auth/middlewares/auth.middleware';
-import { validateJsonField, clientExtraInfoSchema } from '@/shared/schemas/json-schemas';
-import type { ClientExtraInfo } from '@/shared/schemas/json-schemas';
+import { validateJsonField, clientExtraInfoSchema } from '../validators/client.validators';
+import type { ClientExtraInfo } from '../validators/client.validators';
 import { ApiResponse } from '@/shared/utils/api-response';
 import { prismaPostgres } from '@/db/postgres/client';
 

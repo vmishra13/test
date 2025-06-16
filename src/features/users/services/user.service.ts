@@ -25,8 +25,8 @@ import {
   createAuthRequest,
   performAuthorization,
 } from '@shared/authorization';
-import { validateJsonField, userExtraInfoSchema, mergeJsonFields } from '@/shared/schemas/json-schemas';
-import type { UserExtraInfo } from '@/shared/schemas/json-schemas';
+import { validateJsonField, userExtraInfoSchema, mergeJsonFields } from '../validators/user.validators';
+import type { UserExtraInfo } from '../validators/user.validators';
 import { prismaPostgres } from '@/db/postgres/client';
 
 export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {

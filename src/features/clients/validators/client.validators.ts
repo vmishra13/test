@@ -1,42 +1,6 @@
 import { z } from 'zod';
 
 /**
- * User extraInfo Zod schema
- */
-export const userExtraInfoSchema = z.object({
-  preferences: z.object({
-    theme: z.enum(['light', 'dark']).optional(),
-    language: z.string().min(2).max(5).optional(),
-    notifications: z.object({
-      email: z.boolean().optional(),
-      sms: z.boolean().optional(),
-      push: z.boolean().optional()
-    }).optional(),
-    timezone: z.string().optional()
-  }).optional(),
-  
-  medical: z.object({
-    allergies: z.array(z.string()).optional(),
-    conditions: z.array(z.string()).optional(),
-    emergencyContact: z.object({
-      name: z.string().optional(),
-      phone: z.string().optional(),
-      relationship: z.string().optional()
-    }).optional()
-  }).optional(),
-  
-  profile: z.object({
-    bio: z.string().max(500).optional(),
-    socialLinks: z.object({
-      linkedin: z.string().url().optional(),
-      twitter: z.string().url().optional()
-    }).optional()
-  }).optional(),
-  
-  custom: z.record(z.string(), z.any()).optional()
-}).optional();
-
-/**
  * Client extraInfo Zod schema
  */
 export const clientExtraInfoSchema = z.object({
@@ -74,7 +38,6 @@ export const clientExtraInfoSchema = z.object({
 }).optional();
 
 // ✅ Infer TypeScript types from Zod schemas
-export type UserExtraInfo = z.infer<typeof userExtraInfoSchema>;
 export type ClientExtraInfo = z.infer<typeof clientExtraInfoSchema>;
 
 /**

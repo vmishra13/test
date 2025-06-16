@@ -1,4 +1,5 @@
-import jwt, { SignOptions } from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
+import { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import ms from 'ms';
 import { ENV } from '@config/env';
@@ -16,7 +17,6 @@ import {
 } from '../dto/auth.dto';
 import {
   UserWithAuthData,
-  RefreshTokenCreateInput,
 } from '@features/users/validators/user.validators';
 import * as tokenRepository from '../repositories/token.repository';
 import * as userRepository from '@features/users/repositories/user.repository';
@@ -65,106 +65,42 @@ export async function generateTokenPair(
   deviceInfo?: { userAgent?: string; ipAddress?: string },
 ): Promise<TokenPair> {
   try {
-    const config = getJWTConfig();
-
-    // Calculate expiry times
-    const accessTokenExpirySeconds = getAccessTokenExpirySeconds();
-    const refreshTokenExpirySeconds = getRefreshTokenExpirySeconds();
-
-    // Generate token family and JTI for token rotation
-    const tokenFamily = tokenRepository.generateTokenFamily();
-    const jti = tokenRepository.generateJti();
-
     // Extract user roles
     const roles = user.userRole?.map(ur => ur.role.name as CoreRole) || [];
 
-    // Generate Access Token
-    const accessTokenPayload: AccessTokenClaims = {
-      userId: user.id,
-      clientId: user.clientId,
-      userTypeId: user.userTypeId,
-      loginName: user.loginName,
+    // Calculate refresh token expiry in milliseconds (7 days default)
+    const refreshExpiryMs = calculateExpiresInSeconds(ENV.jwt.refreshTokenExpiresIn) * 1000;
+
+    // Use the stateless token repository to create token pair
+    const tokenPair = await tokenRepository.createTokenPair(
+      user.id,
+      user.clientId,
       roles,
-      permissions: [],
-      type: 'access',
-    };
-
-    const accessTokenOptions: SignOptions = {
-      expiresIn: accessTokenExpirySeconds,
-      issuer: config.issuer,
-      audience: config.audience,
-      subject: user.id.toString(),
-    };
-
-    const accessToken = jwt.sign(
-      accessTokenPayload,
-      config.accessTokenSecret as jwt.Secret,
-      accessTokenOptions,
+      refreshExpiryMs
     );
 
-    // Generate Refresh Token
-    const refreshTokenPayload: RefreshTokenClaims = {
-      userId: user.id,
-      clientId: user.clientId,
-      type: 'refresh',
-      family: tokenFamily,
-    };
-
-    const refreshTokenOptions: SignOptions = {
-      expiresIn: refreshTokenExpirySeconds,
-      issuer: config.issuer,
-      audience: config.audience,
-      subject: user.id.toString(),
-      jwtid: jti,
-    };
-
-    const refreshToken = jwt.sign(
-      refreshTokenPayload,
-      config.refreshTokenSecret as jwt.Secret,
-      refreshTokenOptions,
-    );
-
-    // Calculate expiration timestamp for database storage
-    const now = Math.floor(Date.now() / 1000);
-
-    // Store refresh token in database
-    const refreshTokenData: RefreshTokenCreateInput = {
-      userId: user.id,
-      clientId: user.clientId,
-      jti,
-      family: tokenFamily,
-      token: refreshToken,
-      expiresAt: new Date((now + refreshTokenExpirySeconds) * 1000),
-      isRevoked: false,
-      crUser: user.loginName,
-    };
-
-    await tokenRepository.createRefreshToken(refreshTokenData);
-
-    // Log security event
-    const securityEvent: SecurityEvent = {
-      type: 'login',
-      userId: user.id,
-      clientId: user.clientId,
-      details: {
+    // Log security event for login
+    await tokenRepository.logSecurityEvent(
+      user.id,
+      user.clientId,
+      'token_rotation', // Use available event type for login tracking
+      {
+        action: 'login',
         ipAddress: deviceInfo?.ipAddress,
         userAgent: deviceInfo?.userAgent,
-        tokenFamily,
+        tokenFamily: tokenPair.tokenFamily,
       },
-      timestamp: new Date(),
-      severity: 'low',
-    };
-
-    await tokenRepository.logSecurityEvent(securityEvent);
+      user.loginName
+    );
 
     return {
-      accessToken,
-      refreshToken,
-      expiresIn: accessTokenExpirySeconds,
-      refreshExpiresIn: refreshTokenExpirySeconds,
+      accessToken: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+      expiresIn: tokenPair.accessExpiresIn,
+      refreshExpiresIn: tokenPair.refreshExpiresIn,
     };
-  } catch (error) {
-    throw new Error(`Failed to generate token pair: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to generate token pair: ${error.message}`);
   }
 }
 
@@ -176,152 +112,61 @@ export async function refreshAccessToken(
   deviceInfo?: { userAgent?: string; ipAddress?: string },
 ): Promise<TokenPair> {
   try {
-    const config = getJWTConfig();
-
-    const decoded = jwt.decode(refreshToken) as DecodedRefreshToken;
-    if (!decoded?.jti) {
-      throw new Error('Invalid refresh token format');
+    // Validate refresh token using stateless token repository
+    const validation = await tokenRepository.validateRefreshToken(refreshToken);
+    
+    if (!validation.isValid || !validation.payload) {
+      throw new Error(validation.error || 'Invalid refresh token');
     }
 
-    // Verify refresh token against database
-    const { isValid, tokenData } = await tokenRepository.verifyRefreshToken(
-      refreshToken,
-      decoded.jti,
-    );
-
-    if (!isValid || !tokenData) {
-      throw new Error('Invalid or expired refresh token');
-    }
-
-    // Verify JWT signature
-    try {
-      jwt.verify(refreshToken, config.refreshTokenSecret);
-    } catch (jwtError) {
-      // Revoke the token family for security
-      await tokenRepository.revokeTokenFamily(decoded.family, 'system');
-      throw new Error('Invalid refresh token signature');
-    }
+    const oldPayload = validation.payload;
 
     // Get fresh user data for new tokens
-    const user = await userRepository.findUserById(tokenData.userId);
+    const user = await userRepository.findUserById(oldPayload.userId);
     if (!user) {
       throw new Error('User not found');
     }
 
     // Check if user is still active
     if (user.status === -99 || user.status === 0) {
-      await tokenRepository.revokeTokenFamily(decoded.family, 'system');
       throw new Error('User account is inactive');
     }
-
-    // Revoke the used refresh token
-    await tokenRepository.revokeRefreshToken(decoded.jti, user.loginName);
-
-    // Check if token family should be rotated
-    const shouldRotate = await tokenRepository.shouldRotateTokenFamily(decoded.family);
-    const tokenFamily = shouldRotate ? tokenRepository.generateTokenFamily() : decoded.family;
-
-    if (shouldRotate) {
-      await tokenRepository.revokeTokenFamily(decoded.family, user.loginName);
-    }
-
-    // Generate new token pair
-    const newJti = tokenRepository.generateJti();
-
-    // Calculate expiry times
-    const accessTokenExpirySeconds = getAccessTokenExpirySeconds();
-    const refreshTokenExpirySeconds = getRefreshTokenExpirySeconds();
 
     // Extract user roles
     const roles = user.userRole?.map(ur => ur.role.name as CoreRole) || [];
 
-    // Generate new Access Token
-    const accessTokenPayload: AccessTokenClaims = {
-      userId: user.id,
-      clientId: user.clientId,
-      userTypeId: user.userTypeId,
-      loginName: user.loginName,
-      roles,
-      permissions: [],
-      type: 'access',
+    // Create new token data for rotation
+    const newTokenData = {
+      userId: oldPayload.userId,
+      clientId: oldPayload.clientId,
+      jti: tokenRepository.generateJti(),
+      family: oldPayload.family,
+      expiresAt: new Date(Date.now() + calculateExpiresInSeconds(ENV.jwt.refreshTokenExpiresIn) * 1000),
+      issuedAt: new Date(),
     };
 
-    const accessTokenOptions: SignOptions = {
-      expiresIn: accessTokenExpirySeconds,
-      issuer: config.issuer,
-      audience: config.audience,
-      subject: user.id.toString(),
-    };
-
-    const newAccessToken = jwt.sign(
-      accessTokenPayload,
-      config.accessTokenSecret as jwt.Secret,
-      accessTokenOptions,
+    // Rotate refresh token (stateless)
+    const rotationResult = await tokenRepository.rotateRefreshToken(
+      refreshToken,
+      newTokenData,
+      user.loginName
     );
 
-    // Generate new Refresh Token
-    const refreshTokenPayload: RefreshTokenClaims = {
-      userId: user.id,
-      clientId: user.clientId,
-      type: 'refresh',
-      family: tokenFamily,
-    };
-
-    const refreshTokenOptions: SignOptions = {
-      expiresIn: refreshTokenExpirySeconds,
-      issuer: config.issuer,
-      audience: config.audience,
-      subject: user.id.toString(),
-      jwtid: newJti,
-    };
-
-    const newRefreshToken = jwt.sign(
-      refreshTokenPayload,
-      config.refreshTokenSecret as jwt.Secret,
-      refreshTokenOptions,
+    // Create new access token
+    const accessToken = tokenRepository.createAccessToken(
+      oldPayload.userId,
+      oldPayload.clientId,
+      roles
     );
-
-    // Calculate expiration for database
-    const now = Math.floor(Date.now() / 1000);
-
-    // Store new refresh token
-    const newRefreshTokenData: RefreshTokenCreateInput = {
-      userId: user.id,
-      clientId: user.clientId,
-      jti: newJti,
-      family: tokenFamily,
-      token: newRefreshToken,
-      expiresAt: new Date((now + refreshTokenExpirySeconds) * 1000),
-      isRevoked: false,
-      crUser: user.loginName,
-    };
-
-    await tokenRepository.createRefreshToken(newRefreshTokenData);
-
-    // Log security event
-    const securityEvent: SecurityEvent = {
-      type: 'token_refresh',
-      userId: user.id,
-      clientId: user.clientId,
-      details: {
-        ipAddress: deviceInfo?.ipAddress,
-        userAgent: deviceInfo?.userAgent,
-        tokenFamily,
-      },
-      timestamp: new Date(),
-      severity: 'low',
-    };
-
-    await tokenRepository.logSecurityEvent(securityEvent);
 
     return {
-      accessToken: newAccessToken,
-      refreshToken: newRefreshToken,
-      expiresIn: accessTokenExpirySeconds,
-      refreshExpiresIn: refreshTokenExpirySeconds,
+      accessToken,
+      refreshToken: rotationResult.newToken,
+      expiresIn: 15 * 60, // 15 minutes
+      refreshExpiresIn: calculateExpiresInSeconds(ENV.jwt.refreshTokenExpiresIn),
     };
-  } catch (error) {
-    throw new Error(`Failed to refresh token: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to refresh token: ${error.message}`);
   }
 }
 
@@ -334,45 +179,35 @@ export async function refreshAccessToken(
  */
 export async function validateAccessToken(token: string): Promise<AuthenticatedUser> {
   try {
-    const config = getJWTConfig();
-
-    const decoded = jwt.verify(token, config.accessTokenSecret as jwt.Secret) as DecodedAccessToken;
-
-    // Validate token structure
-    if (decoded.type !== 'access') {
-      throw new Error('Invalid token type');
+    // Use stateless token repository validation
+    const validation = await tokenRepository.validateAccessToken(token);
+    
+    if (!validation.isValid || !validation.payload) {
+      throw new Error(validation.error || 'Invalid access token');
     }
 
-    // Ensure user still exists and is active
-    const user = await userRepository.findUserById(decoded.userId);
+    const { userId, clientId, roles, jti } = validation.payload;
+
+    // Get user data for additional context
+    const user = await userRepository.findUserById(userId);
     if (!user) {
       throw new Error('User not found');
     }
 
-    if (user.status === -99 || user.status === 0) {
-      throw new Error('User account is inactive');
-    }
-
     // Return authenticated user context
     return {
-      userId: decoded.userId,
-      clientId: decoded.clientId,
-      userTypeId: decoded.userTypeId,
-      loginName: decoded.loginName,
-      roles: decoded.roles,
-      permissions: decoded.permissions || [],
+      userId,
+      clientId,
+      userTypeId: user.userTypeId,
+      loginName: user.loginName,
+      roles: roles as CoreRole[],
+      permissions: [], // Would be populated from user roles/permissions
       tokenType: 'access',
-      tokenExp: decoded.exp,
-      tokenIat: decoded.iat,
+      tokenExp: Math.floor(Date.now() / 1000) + (15 * 60), // Access tokens are 15 minutes
+      tokenIat: Math.floor(Date.now() / 1000),
     };
-  } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      throw new Error('Invalid token signature');
-    }
-    if (error instanceof jwt.TokenExpiredError) {
-      throw new Error('Token expired');
-    }
-    throw new Error(`Token validation failed: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Token validation failed: ${error.message}`);
   }
 }
 
@@ -424,55 +259,32 @@ export async function revokeToken(
   tokenTypeHint?: 'access_token' | 'refresh_token',
 ): Promise<{ success: boolean; revokedCount: number; families: string[] }> {
   try {
-    // Try to decode as refresh token first
-    let isRefreshToken = false;
-    let decoded: DecodedRefreshToken | null = null;
-
-    try {
-      decoded = validateRefreshTokenStructure(token);
-      isRefreshToken = true;
-    } catch {
-      // Not a valid refresh token, might be access token
-      if (tokenTypeHint === 'access_token') {
-        // Access tokens are stateless, just validate structure
-        await validateAccessToken(token);
-        return { success: true, revokedCount: 0, families: [] };
-      }
+    // For stateless tokens, we use global logout mechanism
+    if (tokenTypeHint === 'access_token') {
+      // Access tokens are stateless, just validate structure
+      await validateAccessToken(token);
+      return { success: true, revokedCount: 0, families: [] };
     }
 
-    if (!isRefreshToken || !decoded) {
-      throw new Error('Invalid token or unsupported token type');
+    // For refresh tokens, validate and get user info for global logout
+    const validation = await tokenRepository.validateRefreshToken(token);
+    
+    if (!validation.isValid || !validation.payload) {
+      throw new Error('Invalid token');
     }
 
-    // Revoke the specific refresh token
-    const revoked = await tokenRepository.revokeRefreshToken(decoded.jti, revokedBy);
+    const { userId, clientId, family } = validation.payload;
 
-    if (!revoked) {
-      throw new Error('Token not found or already revoked');
-    }
-
-    // Log security event
-    const securityEvent: SecurityEvent = {
-      type: 'token_revoke',
-      userId: decoded.userId,
-      clientId: decoded.clientId,
-      details: {
-        tokenFamily: decoded.family,
-        reason: 'Manual revocation',
-      },
-      timestamp: new Date(),
-      severity: 'medium',
-    };
-
-    await tokenRepository.logSecurityEvent(securityEvent);
+    // Perform global logout for this user to invalidate all tokens
+    const result = await tokenRepository.revokeAllUserTokens(userId, clientId, revokedBy);
 
     return {
-      success: true,
+      success: result.success,
       revokedCount: 1,
-      families: [decoded.family],
+      families: [family],
     };
-  } catch (error) {
-    throw new Error(`Failed to revoke token: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to revoke token: ${error.message}`);
   }
 }
 
@@ -487,27 +299,13 @@ export async function revokeAllUserTokens(
   try {
     const result = await tokenRepository.revokeAllUserTokens(userId, clientId, revokedBy);
 
-    // Log security event
-    const securityEvent: SecurityEvent = {
-      type: 'logout',
-      userId,
-      clientId,
-      details: {
-        reason: 'Logout from all devices',
-      },
-      timestamp: new Date(),
-      severity: 'low',
-    };
-
-    await tokenRepository.logSecurityEvent(securityEvent);
-
     return {
-      success: true,
-      revokedCount: result.count,
-      families: result.families,
+      success: result.success,
+      revokedCount: 1, // Stateless - we just mark global logout
+      families: [], // Not tracked in stateless approach
     };
-  } catch (error) {
-    throw new Error(`Failed to revoke all user tokens: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to revoke all user tokens: ${error.message}`);
   }
 }
 
@@ -626,9 +424,9 @@ export async function detectSuspiciousTokenActivity(
   clientId: number,
 ): Promise<SecurityEvent[]> {
   try {
-    return await tokenRepository.detectSuspiciousActivity(userId, clientId);
-  } catch (error) {
-    throw new Error(`Failed to detect suspicious activity: ${error}`);
+    return await tokenRepository.detectSuspiciousTokenActivity(userId, clientId);
+  } catch (error: any) {
+    throw new Error(`Failed to detect suspicious activity: ${error.message}`);
   }
 }
 
@@ -638,30 +436,38 @@ export async function detectSuspiciousTokenActivity(
 export async function getUserTokenSummary(userId: number, clientId: number) {
   try {
     return await tokenRepository.getActiveTokenSummary(userId, clientId);
-  } catch (error) {
-    throw new Error(`Failed to get user token summary: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get user token summary: ${error.message}`);
   }
 }
 
 /**
- * Cleanup expired tokens (maintenance function)
+ * Cleanup expired tokens (maintenance function) - Limited in stateless approach
  */
 export async function cleanupExpiredTokens(): Promise<{ deletedCount: number }> {
   try {
-    return await tokenRepository.cleanupExpiredTokens();
-  } catch (error) {
-    throw new Error(`Failed to cleanup expired tokens: ${error}`);
+    // In stateless approach, tokens auto-expire. No cleanup needed.
+    return { deletedCount: 0 };
+  } catch (error: any) {
+    throw new Error(`Failed to cleanup expired tokens: ${error.message}`);
   }
 }
 
 /**
- * Get token statistics for monitoring
+ * Get token statistics for monitoring - Limited in stateless approach
  */
 export async function getTokenStatistics(clientId?: number) {
   try {
-    return await tokenRepository.getTokenStatistics(clientId);
-  } catch (error) {
-    throw new Error(`Failed to get token statistics: ${error}`);
+    // In stateless approach, we can't track detailed statistics
+    return {
+      totalActiveTokens: 0,
+      totalTokenFamilies: 0,
+      expiredTokens: 0,
+      revokedTokens: 0,
+      message: 'Statistics not available in stateless token mode',
+    };
+  } catch (error: any) {
+    throw new Error(`Failed to get token statistics: ${error.message}`);
   }
 }
 

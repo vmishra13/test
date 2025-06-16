@@ -1,9 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["src/*"]
-    },  
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
     /* Projects */
@@ -31,20 +27,18 @@
 
     /* Modules */
     "module": "NodeNext" /* Specify what module code is generated. */,
-    // "rootDir": "./",                                  /* Specify the root folder within your source files. */
     "moduleResolution": "NodeNext" /* Specify how TypeScript looks up a file from a given module specifier. */,
     "rootDir": "./src",
     "outDir": "./dist",
-    // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"],
-      "@config": ["config/index"], // For clean config imports
+      "@config": ["config/index"],
       "@config/*": ["config/*"],
-      "@db": ["db/index"], // For clean db imports
+      "@db": ["db/index"],
       "@db/*": ["db/*"],
       "@features/*": ["features/*"],
-      "@shared": ["shared/index"], // If you have a shared/index.ts
+      "@shared": ["shared/index"],
       "@shared/*": ["shared/*"],
       "@api/*": ["api/*"],
       "@middleware/*": ["middleware/*"],

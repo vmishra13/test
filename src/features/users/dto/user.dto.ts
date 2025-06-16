@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { userExtraInfoSchema } from '@/shared/schemas/json-schemas';
+import { userExtraInfoSchema } from '../validators/user.validators';
 
 // ===================================================================
 // 🎯 USER MANAGEMENT DTOs (User CRUD and registration types)

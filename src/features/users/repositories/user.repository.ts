@@ -1,4 +1,4 @@
-import prismaPostgres from '@db/postgres/client';
+import { prismaPostgres } from '@/db/postgres/client'; // ✅ Fixed import
 import bcrypt from 'bcrypt';
 import {
   UserWithAuthData,
@@ -43,7 +43,7 @@ export async function findUserWithAuthData(
       include: {
         client: true,
         userType: true,
-        userRole: {
+        userRoles: { // Fixed: using userRoles (plural) as per schema
           include: {
             role: true,
           },
@@ -52,8 +52,8 @@ export async function findUserWithAuthData(
     });
 
     return user as UserWithAuthData | null;
-  } catch (error) {
-    throw new Error(`Failed to find user with auth data: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to find user with auth data: ${error.message}`);
   }
 }
 
@@ -72,7 +72,7 @@ export async function findUserWithPassword(
         status: { not: -99 },
       },
       include: {
-        password: {
+        passwords: {
           orderBy: { crDate: 'desc' },
           take: 1, // Get most recent password
         },
@@ -82,8 +82,8 @@ export async function findUserWithPassword(
     });
 
     return user as UserWithPassword | null;
-  } catch (error) {
-    throw new Error(`Failed to find user with password: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to find user with password: ${error.message}`);
   }
 }
 
@@ -99,7 +99,7 @@ export async function findUserById(userId: number): Promise<UserWithAuthData | n
       include: {
         client: true,
         userType: true,
-        userRole: {
+        userRoles: { // Fixed relationship name
           include: {
             role: true,
           },
@@ -108,8 +108,8 @@ export async function findUserById(userId: number): Promise<UserWithAuthData | n
     });
 
     return user as UserWithAuthData | null;
-  } catch (error) {
-    throw new Error(`Failed to find user by ID: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to find user by ID: ${error.message}`);
   }
 }
 
@@ -121,16 +121,22 @@ export async function findUserByEmail(
   clientId?: number,
 ): Promise<UserWithAuthData | null> {
   try {
+    // ✅ Fixed: Handle unique constraint on email + clientId
+    const whereClause: any = {
+      email,
+      status: { not: -99 },
+    };
+
+    if (clientId) {
+      whereClause.clientId = clientId;
+    }
+
     const user = await prismaPostgres.user.findFirst({
-      where: {
-        email,
-        ...(clientId && { clientId }),
-        status: { not: -99 },
-      },
+      where: whereClause,
       include: {
         client: true,
         userType: true,
-        userRole: {
+        userRoles: {
           include: {
             role: true,
           },
@@ -139,8 +145,8 @@ export async function findUserByEmail(
     });
 
     return user as UserWithAuthData | null;
-  } catch (error) {
-    throw new Error(`Failed to find user by email: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to find user by email: ${error.message}`);
   }
 }
 
@@ -157,16 +163,16 @@ export async function createUser(
 ): Promise<CreatedUserSummary> {
   try {
     return await prismaPostgres.$transaction(async tx => {
-      // 1. Create the user
+      // ✅ Fixed: Handle nullable fields properly
       const newUser = await tx.user.create({
         data: {
           clientId: userData.clientId,
           userTypeId: userData.userTypeId,
           loginName: userData.loginName,
-          firstName: userData.firstName || '',
-          middleName: userData.middleName || '',
-          lastName: userData.lastName || '',
-          email: userData.email || '',
+          firstName: userData.firstName || null, // ✅ Allow null
+          middleName: userData.middleName || null,
+          lastName: userData.lastName || null,
+          email: userData.email || null,
           dob: userData.dob ? new Date(userData.dob) : null,
           mrn: userData.mrn || null,
           gender: userData.gender || null,
@@ -184,6 +190,7 @@ export async function createUser(
         data: {
           userId: newUser.id,
           password: hashedPassword,
+          status: 1, // ✅ Added status field
           crUser,
         },
       });
@@ -210,7 +217,7 @@ export async function createUser(
         email: newUser.email,
         clientId: newUser.clientId,
         userTypeId: newUser.userTypeId,
-        status: newUser.status,
+        status: newUser.status || 1, // ✅ Handle nullable status
         createdAt: newUser.crDate,
       };
     });
@@ -218,13 +225,13 @@ export async function createUser(
     if (error.code === 'P2002') {
       const target = error.meta?.target;
       if (target?.includes('loginName')) {
-        throw new Error('Login name already exists');
+        throw new Error('Login name already exists for this client');
       }
       if (target?.includes('email')) {
-        throw new Error('Email already exists');
+        throw new Error('Email already exists for this client');
       }
     }
-    throw new Error(`Failed to create user: ${error}`);
+    throw new Error(`Failed to create user: ${error.message}`);
   }
 }
 
@@ -233,17 +240,19 @@ export async function createUser(
  */
 export async function isLoginNameTaken(loginName: string, clientId?: number): Promise<boolean> {
   try {
+    const whereClause: any = { loginName };
+    if (clientId) {
+      whereClause.clientId = clientId;
+    }
+
     const user = await prismaPostgres.user.findFirst({
-      where: {
-        loginName,
-        ...(clientId && { clientId }),
-      },
+      where: whereClause,
       select: { id: true },
     });
 
     return !!user;
-  } catch (error) {
-    throw new Error(`Failed to check login name: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to check login name: ${error.message}`);
   }
 }
 
@@ -252,17 +261,19 @@ export async function isLoginNameTaken(loginName: string, clientId?: number): Pr
  */
 export async function isEmailTaken(email: string, clientId?: number): Promise<boolean> {
   try {
+    const whereClause: any = { email };
+    if (clientId) {
+      whereClause.clientId = clientId;
+    }
+
     const user = await prismaPostgres.user.findFirst({
-      where: {
-        email,
-        ...(clientId && { clientId }),
-      },
+      where: whereClause,
       select: { id: true },
     });
 
     return !!user;
-  } catch (error) {
-    throw new Error(`Failed to check email: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to check email: ${error.message}`);
   }
 }
 
@@ -293,7 +304,7 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
             description: true,
           },
         },
-        userRole: {
+        userRoles: { // Fixed relationship name
           include: {
             role: {
               select: {
@@ -304,7 +315,7 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
             },
           },
         },
-        contact: {
+        contacts: { // ✅ Fixed: was contact, now contacts per schema
           select: {
             id: true,
             type: true,
@@ -332,14 +343,14 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
       status: user.status,
       client: user.client,
       userType: user.userType,
-      roles: user.userRole.map(ur => ({
+      roles: user.userRoles.map(ur => ({ // Fixed property name
         id: ur.role.id,
         name: ur.role.name,
         description: ur.role.description,
         assignedAt: ur.crDate,
         assignedBy: ur.crUser,
       })),
-      contacts: user.contact.map(c => ({
+      contacts: user.contacts.map(c => ({
         id: c.id,
         type: c.type,
         value: c.value,
@@ -347,8 +358,8 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
       createdAt: user.crDate,
       updatedAt: user.modDate,
     };
-  } catch (error) {
-    throw new Error(`Failed to get user profile: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get user profile: ${error.message}`);
   }
 }
 
@@ -384,7 +395,7 @@ export async function updateUserProfile(
             description: true,
           },
         },
-        userRole: {
+        userRoles: {
           include: {
             role: {
               select: {
@@ -395,7 +406,7 @@ export async function updateUserProfile(
             },
           },
         },
-        contact: {
+        contacts: {
           select: {
             id: true,
             type: true,
@@ -421,14 +432,14 @@ export async function updateUserProfile(
       status: updatedUser.status,
       client: updatedUser.client,
       userType: updatedUser.userType,
-      roles: updatedUser.userRole.map(ur => ({
+      roles: updatedUser.userRoles.map(ur => ({
         id: ur.role.id,
         name: ur.role.name,
         description: ur.role.description,
         assignedAt: ur.crDate,
         assignedBy: ur.crUser,
       })),
-      contacts: updatedUser.contact.map(c => ({
+      contacts: updatedUser.contacts.map(c => ({
         id: c.id,
         type: c.type,
         value: c.value,
@@ -436,8 +447,8 @@ export async function updateUserProfile(
       createdAt: updatedUser.crDate,
       updatedAt: updatedUser.modDate,
     };
-  } catch (error) {
-    throw new Error(`Failed to update user profile: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update user profile: ${error.message}`);
   }
 }
 
@@ -485,7 +496,7 @@ export async function searchUsers(
     if (status !== undefined) where.status = status;
 
     if (roleId) {
-      where.userRole = {
+      where.userRoles = { // Fixed relationship name
         some: {
           roleId,
         },
@@ -500,7 +511,7 @@ export async function searchUsers(
           userType: {
             select: { name: true },
           },
-          userRole: {
+          userRoles: { // Fixed relationship name
             include: {
               role: {
                 select: { name: true },
@@ -523,14 +534,14 @@ export async function searchUsers(
       email: user.email,
       status: user.status,
       userType: user.userType.name,
-      roles: user.userRole.map(ur => ur.role.name),
+      roles: user.userRoles.map(ur => ur.role.name), // Fixed property name
       createdAt: user.crDate,
       // Note: lastLogin would need to be tracked separately
     }));
 
     return { users: searchResults, total };
-  } catch (error) {
-    throw new Error(`Failed to search users: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to search users: ${error.message}`);
   }
 }
 
@@ -550,7 +561,7 @@ export async function assignRole(assignment: UserRoleAssignment): Promise<void> 
     if (error.code === 'P2002') {
       throw new Error('User already has this role assigned');
     }
-    throw new Error(`Failed to assign role: ${error}`);
+    throw new Error(`Failed to assign role: ${error.message}`);
   }
 }
 
@@ -566,8 +577,8 @@ export async function removeRole(userId: number, roleId: number, clientId: numbe
         clientId,
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to remove role: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to remove role: ${error.message}`);
   }
 }
 
@@ -589,8 +600,8 @@ export async function getUserRoles(userId: number, clientId?: number): Promise<s
     });
 
     return userRoles.map(ur => ur.role.name);
-  } catch (error) {
-    throw new Error(`Failed to get user roles: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get user roles: ${error.message}`);
   }
 }
 
@@ -614,11 +625,12 @@ export async function updatePassword(
       data: {
         userId,
         password: hashedPassword,
+        status: 1, // ✅ Added required status field
         crUser,
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to update password: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update password: ${error.message}`);
   }
 }
 
@@ -628,7 +640,10 @@ export async function updatePassword(
 export async function verifyPassword(userId: number, password: string): Promise<boolean> {
   try {
     const userPassword = await prismaPostgres.password.findFirst({
-      where: { userId },
+      where: { 
+        userId,
+        status: 1 // ✅ Only check active passwords
+      },
       orderBy: { crDate: 'desc' },
       take: 1,
     });
@@ -636,8 +651,8 @@ export async function verifyPassword(userId: number, password: string): Promise<
     if (!userPassword) return false;
 
     return await bcrypt.compare(password, userPassword.password);
-  } catch (error) {
-    throw new Error(`Failed to verify password: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to verify password: ${error.message}`);
   }
 }
 
@@ -662,8 +677,8 @@ export async function updateUserStatus(
         modDate: new Date(),
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to update user status: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update user status: ${error.message}`);
   }
 }
 
@@ -680,8 +695,8 @@ export async function softDeleteUser(userId: number, modUser: string): Promise<v
         modDate: new Date(),
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to delete user: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to delete user: ${error.message}`);
   }
 }
 
@@ -743,8 +758,8 @@ export async function getUserAnalytics(clientId?: number): Promise<any> {
       ),
       recentRegistrations,
     };
-  } catch (error) {
-    throw new Error(`Failed to get user analytics: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get user analytics: ${error.message}`);
   }
 }
 
@@ -765,9 +780,9 @@ export async function createUserWithRoles(
       const user = await tx.user.create({
         data: {
           ...data.userData,
-          firstName: data.userData.firstName || '',
-          lastName: data.userData.lastName || '',
-          email: data.userData.email || '',
+          firstName: data.userData.firstName || null, // ✅ Handle nullable
+          lastName: data.userData.lastName || null,
+          email: data.userData.email || null,
         },
         include: {
           client: {
@@ -836,7 +851,7 @@ export async function createUserWithRoles(
           profilePicture: user.profilePicture,
           clientId: user.clientId,
           userTypeId: user.userTypeId,
-          status: user.status,
+          status: user.status || 1, // ✅ Handle nullable status
           crUser: user.crUser,
           crDate: user.crDate,
           modUser: user.modUser,
@@ -1027,7 +1042,7 @@ export async function getUserRegistrationStats(clientId: number): Promise<{
  */
 export async function findUserByLoginName(loginName: string) {
   try {
-    return await prismaPostgres.user.findUnique({
+    return await prismaPostgres.user.findFirst({
       where: { loginName },
       select: {
         id: true,
@@ -1193,7 +1208,7 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
         };
       }
 
-      where.userRole = roleConditions;
+      where.userRoles = roleConditions; // Fixed relationship name
     }
 
     // Get total count
@@ -1218,7 +1233,7 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
             name: true,
           },
         },
-        userRole: {
+        userRoles: { // Fixed relationship name
           include: {
             role: {
               select: {
@@ -1238,11 +1253,11 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        status: user.status!,
+        status: user.status || 1, // ✅ Handle nullable status
         crDate: user.crDate,
         client: user.client,
         userType: user.userType,
-        roles: user.userRole.map(ur => ur.role),
+        roles: user.userRoles.map(ur => ur.role), // Fixed relationship name
       })),
       pagination: {
         page,

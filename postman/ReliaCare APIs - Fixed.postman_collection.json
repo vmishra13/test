@@ -1,0 +1,1625 @@
+{
+	"info": {
+		"_postman_id": "10baf4a2-ffb0-401f-9ac1-7186fc58a6e1",
+		"name": "ReliaCare APIs - Complete",
+		"description": "Complete API collection for ReliaCare backend with all endpoints and proper request bodies",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "2237202"
+	},
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "1. OAuth Token (Password Grant)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"try {",
+									"    const responseJson = pm.response.json();",
+									"    ",
+									"    if (pm.response.code === 200 && responseJson.access_token) {",
+									"        pm.collectionVariables.set(\"RELIACARE_X_AUTH_TOKEN\", responseJson.access_token);",
+									"        console.log(\"✅ Access token stored in collection variable:\", responseJson.access_token);",
+									"        ",
+									"        if (responseJson.token_type) {",
+									"            pm.collectionVariables.set(\"RELIACARE_TOKEN_TYPE\", responseJson.token_type);",
+									"        }",
+									"        ",
+									"        if (responseJson.expires_in) {",
+									"            pm.collectionVariables.set(\"RELIACARE_TOKEN_EXPIRES_IN\", responseJson.expires_in);",
+									"            const expirationTime = new Date(Date.now() + (responseJson.expires_in * 1000));",
+									"            pm.collectionVariables.set(\"RELIACARE_TOKEN_EXPIRES_AT\", expirationTime.toISOString());",
+									"        }",
+									"        ",
+									"        if (responseJson.refresh_token) {",
+									"            pm.collectionVariables.set(\"RELIACARE_REFRESH_TOKEN\", responseJson.refresh_token);",
+									"        }",
+									"        ",
+									"        if (responseJson.user) {",
+									"            pm.collectionVariables.set(\"CURRENT_USER_ID\", responseJson.user.id);",
+									"            pm.collectionVariables.set(\"CURRENT_CLIENT_ID\", responseJson.user.clientId);",
+									"        }",
+									"    } else {",
+									"        console.error(\"❌ Failed to extract access token from response\");",
+									"    }",
+									"} catch (error) {",
+									"    console.error(\"❌ Error processing response:\", error.message);",
+									"}",
+									"",
+									"pm.test(\"Authentication successful\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('access_token');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"grant_type\": \"password\",\n    \"username\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"client_id\": \"reliacare-client\",\n    \"scope\": \"read write\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/token",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "auth", "token"]
+						}
+					}
+				},
+				{
+					"name": "2. Login (Legacy)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"clientId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "3. Refresh Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh_token\": \"{{RELIACARE_REFRESH_TOKEN}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/refresh",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "auth", "refresh"]
+						}
+					}
+				},
+				{
+					"name": "4. Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "auth", "logout"]
+						}
+					}
+				},
+				{
+					"name": "5. Revoke Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"{{RELIACARE_X_AUTH_TOKEN}}\",\n    \"tokenTypeHint\": \"access_token\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/auth/revoke",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "auth", "revoke"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👥 Users",
+			"item": [
+				{
+					"name": "1. Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"loginName\": \"john.doe\",\n    \"password\": \"password123\",\n    \"clientId\": 1,\n    \"userTypeId\": 1,\n    \"roles\": [\"PATIENT\"],\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"sendWelcomeEmail\": true,\n    \"temporaryPassword\": false,\n    \"timeZone\": \"America/New_York\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/users/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "users", "register"]
+						}
+					}
+				},
+				{
+					"name": "2. Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/users?page=1&limit=20&sort=asc",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "sort",
+									"value": "asc"
+								},
+								{
+									"key": "clientId",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "role",
+									"value": "PATIENT",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "john",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "3. Get User by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "users", "{{userId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update User",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"email\": \"john.smith@example.com\",\n    \"dob\": \"1990-01-15\",\n    \"gender\": \"male\",\n    \"timeZone\": \"America/New_York\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "users", "{{userId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete User",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/users/{{userId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "users", "{{userId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏢 Clients",
+			"item": [
+				{
+					"name": "1. Get All Clients",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "clients"]
+						}
+					}
+				},
+				{
+					"name": "2. Get Client by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/clients/{{clientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "clients", "{{clientId}}"]
+						}
+					}
+				},
+				{
+					"name": "3. Create Client",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"New Healthcare Clinic\",\n    \"description\": \"A comprehensive healthcare facility\",\n    \"timeZone\": \"America/New_York\",\n    \"website\": \"https://newhealthcare.com\",\n    \"logo\": \"https://example.com/logo.png\",\n    \"status\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/clients",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "clients"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Client",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Healthcare Clinic\",\n    \"description\": \"An updated comprehensive healthcare facility\",\n    \"timeZone\": \"America/Chicago\",\n    \"website\": \"https://updatedhealthcare.com\",\n    \"status\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/clients/{{clientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "clients", "{{clientId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Client",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/clients/{{clientId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "clients", "{{clientId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏃‍♂️ Exercises",
+			"item": [
+				{
+					"name": "1. Get All Exercises",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/exercises",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "exercises"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Exercise",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Ankle Pumps\",\n    \"description\": \"Simple ankle flexion and extension exercise for post-operative recovery\",\n    \"procedure\": [\n        \"Sit or lie down comfortably\",\n        \"Point toes away from you\",\n        \"Flex toes back toward you\",\n        \"Repeat for prescribed repetitions\"\n    ],\n    \"media_type\": \"video\",\n    \"media_url\": \"https://example.com/videos/ankle-pumps.mp4\",\n    \"frequency\": \"daily\",\n    \"unit\": \"Set\",\n    \"value\": 3,\n    \"repetition\": 15\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/exercises",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "exercises"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Exercise by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/exercises/{{exerciseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "exercises", "{{exerciseId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Exercise",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Ankle Pumps\",\n    \"description\": \"Updated ankle flexion and extension exercise\",\n    \"procedure\": [\n        \"Sit or lie down comfortably\",\n        \"Point toes away from you slowly\",\n        \"Flex toes back toward you slowly\",\n        \"Hold for 2 seconds\",\n        \"Repeat for prescribed repetitions\"\n    ],\n    \"frequency\": \"twice daily\",\n    \"value\": 4,\n    \"repetition\": 20\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/exercises/{{exerciseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "exercises", "{{exerciseId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Exercise",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/exercises/{{exerciseId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "exercises", "{{exerciseId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📋 Plans",
+			"item": [
+				{
+					"name": "1. Get All Plans",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "plans"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Plan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Post-Surgery Recovery Plan\",\n    \"description\": \"Comprehensive recovery plan for post-operative patients\",\n    \"duration\": \"6 weeks\",\n    \"patientId\": 123,\n    \"exercises\": [1, 2, 3],\n    \"medications\": [1, 2],\n    \"procedures\": [1]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/plans",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "plans"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Plan by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "plans", "{{planId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Plan",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Recovery Plan\",\n    \"description\": \"Updated comprehensive recovery plan\",\n    \"duration\": \"8 weeks\",\n    \"exercises\": [1, 2, 3, 4],\n    \"medications\": [1, 2, 3],\n    \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "plans", "{{planId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Plan",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/plans/{{planId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "plans", "{{planId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💊 Medications",
+			"item": [
+				{
+					"name": "1. Get All Medications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/medications",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "medications"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Medication",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Ibuprofen\",\n    \"genericName\": \"Ibuprofen\",\n    \"brandName\": \"Advil\",\n    \"description\": \"Anti-inflammatory pain reliever\",\n    \"dosage\": \"200mg\",\n    \"frequency\": \"Every 6 hours\",\n    \"type\": \"Tablet\",\n    \"category\": \"NSAID\",\n    \"sideEffects\": [\"Stomach upset\", \"Dizziness\"],\n    \"contraindications\": [\"Kidney disease\", \"Stomach ulcers\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/medications",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "medications"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Medication by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/medications/{{medicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "medications", "{{medicationId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Medication",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated anti-inflammatory pain reliever\",\n    \"dosage\": \"400mg\",\n    \"frequency\": \"Every 8 hours\",\n    \"sideEffects\": [\"Stomach upset\", \"Dizziness\", \"Headache\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/medications/{{medicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "medications", "{{medicationId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Medication",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/medications/{{medicationId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "medications", "{{medicationId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏥 Procedures",
+			"item": [
+				{
+					"name": "1. Get All Procedures",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/procedures",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "procedures"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Procedure",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Knee Replacement Surgery\",\n    \"description\": \"Total knee replacement procedure\",\n    \"category\": \"Orthopedic Surgery\",\n    \"duration\": \"2-3 hours\",\n    \"preparation\": [\"Fasting 12 hours before surgery\", \"Remove jewelry\"],\n    \"aftercare\": [\"Physical therapy\", \"Pain management\", \"Follow-up appointments\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/procedures",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "procedures"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Procedure by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/procedures/{{procedureId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "procedures", "{{procedureId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Procedure",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated total knee replacement procedure\",\n    \"duration\": \"2-4 hours\",\n    \"aftercare\": [\"Intensive physical therapy\", \"Pain management\", \"Regular follow-up appointments\", \"X-ray monitoring\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/procedures/{{procedureId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "procedures", "{{procedureId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Procedure",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/procedures/{{procedureId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "procedures", "{{procedureId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📧 Email",
+			"item": [
+				{
+					"name": "1. Send Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"to\": [\"patient@example.com\"],\n    \"subject\": \"Appointment Reminder\",\n    \"body\": \"This is a reminder for your upcoming appointment.\",\n    \"isHtml\": false,\n    \"cc\": [],\n    \"bcc\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/email/send",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "email", "send"]
+						}
+					}
+				},
+				{
+					"name": "2. Send Template Email",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"to\": [\"patient@example.com\"],\n    \"templateName\": \"welcome-email\",\n    \"templateData\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"clinicName\": \"Healthcare Clinic\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/email/send-template",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "email", "send-template"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📞 Contacts",
+			"item": [
+				{
+					"name": "1. Get All Contacts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/contacts",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "contacts"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": 1,\n    \"type\": \"phone\",\n    \"value\": \"+1-555-123-4567\",\n    \"isPrimary\": true\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/contacts",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "contacts"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Contact by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "contacts", "{{contactId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Contact",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"type\": \"mobile\",\n    \"value\": \"+1-555-987-6543\",\n    \"isPrimary\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "contacts", "{{contactId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Contact",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/contacts/{{contactId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "contacts", "{{contactId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔑 Roles",
+			"item": [
+				{
+					"name": "1. Get All Roles",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "roles"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"THERAPIST\",\n    \"description\": \"Physical therapist role with patient interaction capabilities\",\n    \"permissions\": [\"read_patients\", \"update_exercises\", \"create_plans\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/roles",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "roles"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Role by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "roles", "{{roleId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Role",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"description\": \"Updated physical therapist role\",\n    \"permissions\": [\"read_patients\", \"update_exercises\", \"create_plans\", \"send_messages\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "roles", "{{roleId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Role",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/roles/{{roleId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "roles", "{{roleId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💬 Messaging",
+			"item": [
+				{
+					"name": "1. Get Inbox Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/messages/inbox?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "messages", "inbox"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"recipientIds\": [2, 3],\n    \"subject\": \"Appointment Reminder\",\n    \"content\": \"This is a reminder for your upcoming appointment tomorrow at 2 PM.\",\n    \"msgGroupId\": 1,\n    \"priority\": \"normal\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/messages",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "messages"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Sent Messages",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/messages/sent?page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "messages", "sent"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "4. Get Message by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/messages/{{messageId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "messages", "{{messageId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Mark Message as Read",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/messages/{{messageId}}/read",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "messages", "{{messageId}}", "read"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "👥 Message Groups",
+			"item": [
+				{
+					"name": "1. Get All Message Groups",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/msg-groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "msg-groups"]
+						}
+					}
+				},
+				{
+					"name": "2. Create Message Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Patient Care Team\",\n    \"description\": \"Communication group for patient care coordination\",\n    \"memberIds\": [1, 2, 3, 4],\n    \"isPrivate\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/msg-groups",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "msg-groups"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Message Group by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/msg-groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "msg-groups", "{{groupId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Message Group",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Patient Care Team\",\n    \"description\": \"Updated communication group for enhanced patient care coordination\",\n    \"memberIds\": [1, 2, 3, 4, 5]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/msg-groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "msg-groups", "{{groupId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Message Group",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/msg-groups/{{groupId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "msg-groups", "{{groupId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "✅ Todos",
+			"item": [
+				{
+					"name": "1. Get All Todos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/todos?page=1&limit=20&status=pending",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "todos"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "status",
+									"value": "pending",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Create Todo",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Follow up with patient\",\n    \"description\": \"Call patient to check on recovery progress\",\n    \"dueDate\": \"2025-06-20T10:00:00Z\",\n    \"priority\": \"high\",\n    \"assignedToId\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/todos",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "todos"]
+						}
+					}
+				},
+				{
+					"name": "3. Get Todo by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/todos/{{todoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "todos", "{{todoId}}"]
+						}
+					}
+				},
+				{
+					"name": "4. Update Todo",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated follow up with patient\",\n    \"status\": \"completed\",\n    \"completedAt\": \"2025-06-18T15:30:00Z\",\n    \"notes\": \"Patient is recovering well\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/todos/{{todoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "todos", "{{todoId}}"]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Todo",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/todos/{{todoId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "todos", "{{todoId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📁 Media",
+			"item": [
+				{
+					"name": "1. Upload Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "category",
+									"value": "exercise_video",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "Exercise demonstration video",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/v1/media/upload",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "media", "upload"]
+						}
+					}
+				},
+				{
+					"name": "2. Get Media by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/media/{{mediaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "media", "{{mediaId}}"]
+						}
+					}
+				},
+				{
+					"name": "3. Get All Media",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/media?category=exercise_video&page=1&limit=20",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "media"],
+							"query": [
+								{
+									"key": "category",
+									"value": "exercise_video",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "4. Delete Media",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/v1/media/{{mediaId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["v1", "media", "{{mediaId}}"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "clientId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "exerciseId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "planId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "medicationId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "procedureId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "contactId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "roleId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "messageId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "groupId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "todoId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "mediaId",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}
