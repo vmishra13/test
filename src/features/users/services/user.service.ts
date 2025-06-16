@@ -36,6 +36,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
     const actionUserId = null; // No specific user ID for view action
     const actionClientId = req.query.clientId ? parseInt(req.query.clientId) : currentUser.clientId;
     const actionUserTypeId = null; // No specific user type ID for view action
+    const actionUserRoles = (req.query.role as CoreRole) || currentUser.roles; // Use roles from query or current user
     const actionPermission = RequestUserAction.userView; // Specific permission for viewing users
 
     const oAuthReq: AuthRequest = createAuthRequest(
@@ -43,6 +44,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
       actionUserId,
       actionClientId,
       actionUserTypeId,
+      actionUserRoles,
       actionPermission,
     );
 

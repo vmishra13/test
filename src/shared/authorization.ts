@@ -70,6 +70,7 @@ export function createAuthRequest(
   actionUserId: number | null,
   actionClientId: number | null,
   actionUserTypeId: number | null,
+  actionUserRoles: CoreRole[] | CoreRole | null,
   actionPermission: RequestUserAction,
 ): AuthRequest {
   // Validate currentUser first
@@ -85,6 +86,7 @@ export function createAuthRequest(
     actionUserId,
     actionClientId,
     actionUserTypeId,
+    actionUserRoles,
     actionPermission,
   };
 }
@@ -162,24 +164,48 @@ function validateUserRegistrationAccess(
   oAuthReq: AuthRequest,
   currentUserRoles: CoreRole[],
 ): boolean {
-  //   const targetRoles: CoreRole[] = oAuthReq.actionUserRoles || [];
+  const actionUserRoles = oAuthReq.actionUserRoles || [];
 
-  //   if (targetRoles.length === 0) {
-  //     throw createAuthorizationError('No roles specified for user registration');
-  //   }
+  if (actionUserRoles.length === 0) {
+    return false; // No roles specified for the action user
+  }
 
-  // SUPER_ADMIN can add users anywhere
+  if (actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    return false; // Cannot register a SUPER_ADMIN user
+  }
+
+  // SUPER_ADMIN can add users anywhere except for SUPER_ADMIN
   if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
     return true;
   }
 
+  if (oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+    // If actionClientId is specified, it must match the requester's client
+    return false;
+  }
+
   // CLIENT_ADMIN can add users within their own client
   if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
-    // If actionClientID is specified, it must match the requester's client
-    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+    if (
+      actionUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
+      actionUserRoles.includes(CoreRole.OFFICE_STAFF) ||
+      actionUserRoles.includes(CoreRole.PATIENT)
+    ) {
+      return true;
+    } else {
       return false;
     }
-    return true;
+  }
+
+  if (
+    currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
+    currentUserRoles.includes(CoreRole.OFFICE_STAFF)
+  ) {
+    if (actionUserRoles.includes(CoreRole.PATIENT)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   // Other roles (CLINICAL_STAFF, OFFICE_STAFF) cannot add users

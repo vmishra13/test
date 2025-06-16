@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import * as authService from '../services/auth.service';
 import { AuthenticatedUser } from '../dto/auth.dto';
+import type { CoreRole } from '@/shared/constants';
 
 // Extend Express Request interface to include user context
 declare global {
@@ -165,7 +166,7 @@ export function hasRole(requiredRoles: string | string[]): (req: Request) => boo
     const userRoles = req.user.roles || [];
     const rolesArray = Array.isArray(requiredRoles) ? requiredRoles : [requiredRoles];
 
-    return rolesArray.some(role => userRoles.includes(role));
+    return rolesArray.some(role => userRoles.includes(role as CoreRole));
   };
 }
 
@@ -260,22 +261,6 @@ export const getCurrentUserTypeId = (req: Request): number | undefined => {
  */
 export const isAuthenticated = (req: Request): boolean => {
   return !!req.user;
-};
-
-/**
- * Check if user has admin role
- */
-export const isAdmin = (req: Request): boolean => {
-  const userRoles = req.user?.roles || [];
-  return userRoles.includes('admin') || userRoles.includes('super_admin');
-};
-
-/**
- * Check if user has super admin role
- */
-export const isSuperAdmin = (req: Request): boolean => {
-  const userRoles = req.user?.roles || [];
-  return userRoles.includes('super_admin');
 };
 
 /**

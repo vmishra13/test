@@ -4,7 +4,7 @@ A robust healthcare sector backend application built with **Express.js** and **T
 
 ---
 
-## 📁 Project Directory Structure (Vertically Sliced)
+## 📁 Project Directory Structure Example (Vertically Sliced)
 
 A scalable and maintainable directory structure using feature-based modular organization.
 
@@ -112,21 +112,152 @@ These principles guide our code organization, architecture decisions, and review
 
 ## Development
 
-### Setup
+## 📋 **Prerequisites**
+
+### **1. Install Node.js**
+
+- **Download and install Node.js v18 or higher** from [nodejs.org](https://nodejs.org/)
+- Verify installation:
+  ```bash
+  node --version
+  npm --version
+  ```
+
+### **2. Install pnpm Package Manager**
 
 ```bash
-# Install dependencies
+# Install pnpm globally
+npm install -g pnpm
+
+# Verify installation
+pnpm --version
+```
+
+**Alternative installation methods:**
+
+```bash
+# Using npm
+npm install -g pnpm@10.10.0
+
+# Using Homebrew (macOS)
+brew install pnpm
+
+# Using Chocolatey (Windows)
+choco install pnpm
+
+# Using Scoop (Windows)
+scoop install pnpm
+```
+
+## 🚀 **Project Setup**
+
+### **1. Clone Repository**
+
+```bash
+# Clone from AWS CodeCommit
+git clone https://git-codecommit.us-west-2.amazonaws.com/v1/repos/reliacare-backend
+
+# Navigate to project directory
+cd reliacare-backend
+```
+
+### **2. Install Dependencies**
+
+```bash
+# Install all project dependencies
+pnpm install
+```
+
+### **3. Environment Configuration**
+
+```bash
+# Copy environment template (if available)
+cp .env.example .env
+
+# Or create .env file with required variables
+```
+
+### **4. Generate Prisma Clients**
+
+```bash
+# Generate both PostgreSQL and MongoDB Prisma clients
+pnpm generate
+```
+
+### **5. Start Development Server**
+
+```bash
+# Start server in development mode with auto-reload
+pnpm dev
+
+# Server will start at http://localhost:3000
+```
+
+## 🔧 **Available Scripts**
+
+### **Development Scripts**
+
+```bash
+# Start development server with hot reload
+pnpm dev
+
+# Build TypeScript to JavaScript
+pnpm build
+
+# Start production server
+pnpm start
+```
+
+### **Database Scripts**
+
+```bash
+# Generate Prisma clients for both databases
+pnpm generate
+
+# Generate PostgreSQL client only
+pnpm generate:postgres
+
+# Generate MongoDB client only
+pnpm generate:mongodb
+
+# Pull schema from databases
+pnpm pull
+
+# Clean generated clients
+pnpm db:clean
+
+# Full database sync (pull + generate)
+pnpm db:sync
+```
+
+### **Database Management**
+
+```bash
+# Open Prisma Studio for PostgreSQL
+pnpm studio:postgres
+
+# Open Prisma Studio for MongoDB
+pnpm studio:mongodb
+```
+
+## ⚡ **Quick Start**
+
+```bash
+# 1. Clone repository
+git clone https://git-codecommit.us-west-2.amazonaws.com/v1/repos/reliacare-backend
+cd reliacare-backend
+
+# 2. Install dependencies
 pnpm install
 
-# Start development server
+# 3. Setup environment
+cp .env.example .env  # Configure your database URLs
+
+# 4. Generate Prisma clients
+pnpm generate
+
+# 5. Start development server
 pnpm dev
 ```
 
-### Available Scripts
-
-- `pnpm build`: Build the project
-- `pnpm start`: Run the built project
-- `pnpm dev`: Start development server with hot-reload
-- `pnpm lint`: Run ESLint
-- `pnpm lint:fix`: Fix ESLint issues
-- `pnpm format`: Format code with Prettier
+🎉 **Your server is now running at http://localhost:3000**

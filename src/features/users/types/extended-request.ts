@@ -62,8 +62,9 @@ export interface AuthRequest {
   reqUserRoles: CoreRole[];
   actionUserId: number | null;
   actionClientId: number | null;
-  actionPermission: RequestUserAction;
   actionUserTypeId: number | null;
+  actionUserRoles: CoreRole[] | CoreRole | null;
+  actionPermission: RequestUserAction;
 }
 
 // export interface ExtendedGetUsersRequest extends Request {

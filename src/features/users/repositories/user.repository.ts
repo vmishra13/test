@@ -60,6 +60,7 @@ export async function findUserWithAuthData(
 /**
  * Find user with password for authentication validation
  */
+<<<<<<< HEAD
 export async function findUserWithPassword(
   loginName: string,
   clientId?: number,
@@ -86,6 +87,34 @@ export async function findUserWithPassword(
     throw new Error(`Failed to find user with password: ${error.message}`);
   }
 }
+=======
+// export async function findUserWithPassword(
+//   loginName: string,
+//   clientId?: number,
+// ): Promise<UserWithPassword | null> {
+//   try {
+//     const user = await prismaPostgres.user.findFirst({
+//       where: {
+//         loginName,
+//         ...(clientId && { clientId }),
+//         status: { not: -99 },
+//       },
+//       include: {
+//         password: {
+//           orderBy: { crDate: 'desc' },
+//           take: 1, // Get most recent password
+//         },
+//         client: true,
+//         userType: true,
+//       },
+//     });
+
+//     return user as UserWithPassword | null;
+//   } catch (error) {
+//     throw new Error(`Failed to find user with password: ${error}`);
+//   }
+// }
+>>>>>>> dev
 
 /**
  * Find user by ID with authentication context
