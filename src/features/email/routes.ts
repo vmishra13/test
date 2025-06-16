@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ApiResponse } from '@/shared/utils/api-response';
 import { authenticate } from '@/features/auth/middlewares/auth.middleware';
-import { sesService } from '@/aws/services/ses.service';
+import { sesService } from '@/services/aws/services/ses.service';
 
 const router = Router();
 

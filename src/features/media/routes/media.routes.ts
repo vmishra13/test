@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ApiResponse } from '@/shared/utils/api-response';
 import { authenticate } from '@/features/auth/middlewares/auth.middleware';
-import { s3Service } from '@/aws/services/s3.service';
+import { s3Service } from '@/services/aws/services/s3.service';
 import { UploadedFile } from 'express-fileupload';
 import path from 'path';
 import fs from 'fs/promises';
