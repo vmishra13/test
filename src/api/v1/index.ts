@@ -17,6 +17,8 @@ import { todoRouter } from '@/features/todo';
 import mediaRoutes from '@/features/media/routes/media.routes';
 import msgGroupRoutes from '@/features/messaging/routes/msg-group.routes';
 import messageRoutes from '@/features/messaging/routes/message.routes';
+import modmedRoutes from '@/features/modmed/modmed.routes';
+import enhancedModmedRoutes from '@/features/modmed/enhanced-modmed.routes';
 
 const v1Router = Router();
 
@@ -59,5 +61,7 @@ v1Router.use('/todos', todoRouter);
 v1Router.use('/media', mediaRoutes);
 v1Router.use('/msg-groups', msgGroupRoutes);
 v1Router.use('/messages', messageRoutes);
+v1Router.use('/modmed', modmedRoutes);
+v1Router.use('/enhanced-modmed', enhancedModmedRoutes);
 
 export default v1Router;

@@ -6,6 +6,16 @@
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "2237202"
 	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{RELIACARE_X_AUTH_TOKEN}}",
+				"type": "string"
+			}
+		]
+	},
 	"item": [
 		{
 			"name": "🔐 Authentication",
@@ -60,6 +70,9 @@
 						}
 					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -81,6 +94,9 @@
 				{
 					"name": "2. Login (Legacy)",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [
 							{
@@ -124,12 +140,7 @@
 					"name": "4. Logout",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/logout",
 							"host": ["{{baseUrl}}"],
@@ -142,10 +153,6 @@
 					"request": {
 						"method": "POST",
 						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
-							},
 							{
 								"key": "Content-Type",
 								"value": "application/json"
@@ -173,10 +180,6 @@
 						"method": "POST",
 						"header": [
 							{
-								"key": "Authorization",
-								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
-							},
-							{
 								"key": "Content-Type",
 								"value": "application/json"
 							}
@@ -196,12 +199,7 @@
 					"name": "2. Get All Users",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/users?page=1&limit=20&sort=asc",
 							"host": ["{{baseUrl}}"],
@@ -1553,9 +1551,193 @@
 					}
 				}
 			]
+		},
+		{
+			"name": "🏥 ModMed Integration",
+			"item": [
+				{
+					"name": "1. Test Connection",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/test",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "test"]
+						},
+						"description": "Test the connection to ModMed API and verify authentication"
+					}
+				},
+				{
+					"name": "2. Search Patient",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/patients/search?firstName=John&lastName=Doe&dateOfBirth=1990-01-01",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "patients", "search"],
+							"query": [
+								{
+									"key": "firstName",
+									"value": "John",
+									"description": "Patient's first name"
+								},
+								{
+									"key": "lastName",
+									"value": "Doe",
+									"description": "Patient's last name"
+								},
+								{
+									"key": "dateOfBirth",
+									"value": "1990-01-01",
+									"description": "Patient's date of birth (YYYY-MM-DD format)"
+								}
+							]
+						},
+						"description": "Search for a specific patient in ModMed by name and date of birth"
+					}
+				},
+				{
+					"name": "3. Get All Patients",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/patients?quantity=10&page=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "patients"],
+							"query": [
+								{
+									"key": "quantity",
+									"value": "10",
+									"description": "Number of patients to retrieve"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								}
+							]
+						},
+						"description": "Get a paginated list of patients from ModMed"
+					}
+				},
+				{
+					"name": "4. Get Patient Appointments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/appointments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "appointments"]
+						},
+						"description": "Get all appointments for a specific patient from ModMed"
+					}
+				},
+				{
+					"name": "5. Get Patient Documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/documents?category=labs",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "documents"],
+							"query": [
+								{
+									"key": "category",
+									"value": "labs",
+									"description": "Optional: Document category filter (e.g., labs, imaging, notes)"
+								}
+							]
+						},
+						"description": "Get documents for a specific patient from ModMed, optionally filtered by category"
+					}
+				},
+				{
+					"name": "6. Get Patient Conditions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/conditions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "conditions"]
+						},
+						"description": "Get medical conditions for a specific patient from ModMed"
+					}
+				},
+				{
+					"name": "7. Get Patient Medications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/medications",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "medications"]
+						},
+						"description": "Get medications and prescriptions for a specific patient from ModMed"
+					}
+				},
+				{
+					"name": "8. Search Documents",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/modmed/documents/search?patientId={{modmedPatientId}}&date=2024-01-01&page=1&type=lab",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "modmed", "documents", "search"],
+							"query": [
+								{
+									"key": "patientId",
+									"value": "{{modmedPatientId}}",
+									"description": "Patient ID (required)"
+								},
+								{
+									"key": "date",
+									"value": "2024-01-01",
+									"description": "Search date (YYYY-MM-DD format, required)"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination (required)"
+								},
+								{
+									"key": "type",
+									"value": "lab",
+									"description": "Document type filter (optional)"
+								},
+								{
+									"key": "description",
+									"value": "",
+									"description": "Description filter (optional)",
+									"disabled": true
+								},
+								{
+									"key": "identifier",
+									"value": "",
+									"description": "Identifier filter (optional)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Search for documents across ModMed with various filters"
+					}
+				}
+			]
 		}
 	],
 	"variable": [
+		{
+			"key": "RELIACARE_X_AUTH_TOKEN",
+			"value": "",
+			"type": "string"
+		},
 		{
 			"key": "baseUrl",
 			"value": "http://localhost:3000",
@@ -1619,6 +1801,11 @@
 		{
 			"key": "mediaId",
 			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "modmedPatientId",
+			"value": "example-patient-id-123",
 			"type": "string"
 		}
 	]

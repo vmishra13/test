@@ -2,6 +2,7 @@
 export * from './roles';
 export * from './statuses';
 export * from './user-types';
+export * from './modmed';
 
 // Re-export commonly used items
 export { CoreRole, ROLE_HIERARCHY, RoleUtils } from './roles';
