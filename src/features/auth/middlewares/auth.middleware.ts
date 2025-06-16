@@ -60,6 +60,7 @@ export const authenticate = async (
     // Continue to next middleware
     next();
   } catch (error) {
+
     // Handle different types of authentication errors
     if (error instanceof Error) {
       if (error.message.includes('expired')) {

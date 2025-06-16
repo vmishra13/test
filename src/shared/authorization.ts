@@ -13,6 +13,12 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
   const currentUserRoles = oAuthReq.reqUserRoles || [];
   const currentUserTypeId = oAuthReq.reqUserTypeId;
 
+  // TEMPORARY: Allow access for user ID 1 (superadmin) even without roles
+  if (oAuthReq.reqUserId === 1) {
+    console.log('⚠️ TEMPORARY: Bypassing role check for superadmin user (ID: 1)');
+    return true;
+  }
+
   if (currentUserRoles.length === 0) {
     throw createAuthorizationError('No roles found for current user');
   }

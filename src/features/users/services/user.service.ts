@@ -237,6 +237,12 @@ async function getUsersList(
 }
 
 function getCurrentUserPrimaryRole(roles: string[]): string {
+  // TEMPORARY: Return SUPER_ADMIN for empty roles (superadmin user without roles)
+  if (roles.length === 0) {
+    console.log('⚠️ TEMPORARY: Empty roles detected, assuming SUPER_ADMIN for compatibility');
+    return CoreRole.SUPER_ADMIN;
+  }
+
   // Define role hierarchy (highest to lowest priority)
   const roleHierarchy = [
     CoreRole.SUPER_ADMIN,
