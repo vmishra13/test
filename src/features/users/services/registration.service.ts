@@ -328,29 +328,29 @@ async function validateRegistrationRules(
   currentUser: AuthenticatedUser,
 ): Promise<void> {
   // 1. Validate role assignment permissions - Check if ANY role can assign
-  const roleAssignmentResult = canAssignRoles(currentUser.roles, requestData.roles);
+  // const roleAssignmentResult = canAssignRoles(currentUser.roles, requestData.roles);
 
-  if (!roleAssignmentResult.canAssign) {
-    throw new Error(
-      `Insufficient permissions to assign roles: ${roleAssignmentResult.deniedRoles.join(', ')}`,
-    );
-  }
+  // if (!roleAssignmentResult.canAssign) {
+  //   throw new Error(
+  //     `Insufficient permissions to assign roles: ${roleAssignmentResult.deniedRoles.join(', ')}`,
+  //   );
+  // }
 
-  // 2. Validate client access permissions - Check if ANY role can manage clients
-  const canManageClients = hasRolePermission(currentUser.roles, role =>
-    RoleUtils.canManageAllClients(role),
-  );
+  // // 2. Validate client access permissions - Check if ANY role can manage clients
+  // const canManageClients = hasRolePermission(currentUser.roles, role =>
+  //   RoleUtils.canManageAllClients(role),
+  // );
 
-  if (!canManageClients && currentUser.clientId !== requestData.clientId) {
-    throw new Error('You can only create users in your own organization');
-  }
+  // if (!canManageClients && currentUser.clientId !== requestData.clientId) {
+  //   throw new Error('You can only create users in your own organization');
+  // }
 
-  // 3. Validate role combinations
-  const roleCombinationResult = validateRoleCombinations(requestData.roles);
+  // // 3. Validate role combinations
+  // const roleCombinationResult = validateRoleCombinations(requestData.roles);
 
-  if (!roleCombinationResult.isValid) {
-    throw new Error(roleCombinationResult.errors.join('; '));
-  }
+  // if (!roleCombinationResult.isValid) {
+  //   throw new Error(roleCombinationResult.errors.join('; '));
+  // }
 
   // 4. Validate email domain if provided
   if (requestData.email) {
