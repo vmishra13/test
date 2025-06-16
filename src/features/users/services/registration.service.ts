@@ -30,6 +30,7 @@ export async function registerUser(
   const actionUserId = null; // No specific user ID for registration action
   const actionClientId = req.body.clientId; // Target client from request body
   const actionUserTypeId = req.body.userTypeId; // Target user type from request body
+  const actionUserRoles = req.body.roles; // Target user type from request body
   const actionPermission = RequestUserAction.userAdd; // Specific permission for user registration
 
   const oAuthReq: AuthRequest = createAuthRequest(
@@ -37,6 +38,7 @@ export async function registerUser(
     actionUserId,
     actionClientId,
     actionUserTypeId,
+    actionUserRoles,
     actionPermission,
   );
   // 2. Determine registration action
