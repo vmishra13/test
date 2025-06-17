@@ -273,7 +273,7 @@ export const UserWithAuthDataSchema = z.object({
   // Relations for authentication
   client: ClientSchema,
   userType: UserTypeSchema,
-  userRole: z.array(
+  userRoles: z.array(
     z.object({
       id: z.number().int().positive(),
       userId: z.number().int().positive(),

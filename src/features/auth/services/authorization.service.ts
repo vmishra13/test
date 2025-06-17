@@ -2,21 +2,18 @@ import {
   RequestUserAction,
   type AuthRequest,
   type ExtendedRequest,
+  //   type UserAction,
 } from '@features/users/types/extended-request';
 import { CoreRole, RoleUtils } from '@shared/constants';
-import type { AuthenticatedUser } from '@/features/auth/middlewares';
+import type { AuthenticatedUser } from '@/features/auth/dto/auth.dto';
 import { createAuthError, createAuthorizationError } from '@/shared/errors/application-error';
 
 export function performAuthorization(oAuthReq: AuthRequest): boolean {
+  //   const currentUserRole = getCurrentUserPrimaryRole(oAuthReq.reqUserRoles);
   const currentUserRoles = oAuthReq.reqUserRoles || [];
   const currentUserTypeId = oAuthReq.reqUserTypeId;
 
-  // TEMPORARY: Allow access for user ID 1 (superadmin) even without roles
-  if (oAuthReq.reqUserId === 1) {
-    console.log('⚠️ TEMPORARY: Bypassing role check for superadmin user (ID: 1)');
-    return true;
-  }
-
+  console.log(currentUserRoles, 'currentUserRoles');
   if (currentUserRoles.length === 0) {
     throw createAuthorizationError('No roles found for current user');
   }
@@ -24,6 +21,23 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
   switch (oAuthReq.actionPermission) {
     case RequestUserAction.userAdd:
       return validateUserRegistrationAccess(oAuthReq, currentUserRoles);
+    //   // SUPER_ADMIN can add users anywhere
+    //   //   if (oAuthReq.reqUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    //   if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    //     return true;
+    //   }
+
+    //   // CLIENT_ADMIN can add users within their own client
+    //   if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    //     // If actionClientID is specified, it must match the requester's client
+    //     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+    //       return false;
+    //     }
+    //     return true;
+    //   }
+
+    //   // Other roles cannot add users
+    //   return false;
 
     case RequestUserAction.userView:
       return validateUserViewAccess(oAuthReq, currentUserRoles);

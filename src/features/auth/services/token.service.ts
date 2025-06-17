@@ -66,7 +66,7 @@ export async function generateTokenPair(
 ): Promise<TokenPair> {
   try {
     // Extract user roles
-    const roles = user.userRole?.map(ur => ur.role.name as CoreRole) || [];
+    const roles = user.userRoles?.map(ur => ur.role.name as CoreRole) || [];
 
     // Calculate refresh token expiry in milliseconds (7 days default)
     const refreshExpiryMs = calculateExpiresInSeconds(ENV.jwt.refreshTokenExpiresIn) * 1000;
@@ -133,7 +133,7 @@ export async function refreshAccessToken(
     }
 
     // Extract user roles
-    const roles = user.userRole?.map(ur => ur.role.name as CoreRole) || [];
+    const roles = user.userRoles?.map(ur => ur.role.name as CoreRole) || [];
 
     // Create new token data for rotation
     const newTokenData = {
