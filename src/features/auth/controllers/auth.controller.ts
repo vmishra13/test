@@ -372,3 +372,152 @@ export const oauth2Token = async (req: Request, res: Response): Promise<void> =>
     });
   }
 };
+
+/**
+ * Forgot password endpoint - Send reset link via email
+ */
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error(
+          'Email is required',
+          'MISSING_EMAIL',
+          'Please provide your email address'
+        )
+      );
+      return;
+    }
+
+    // Call service to handle forgot password
+    const result = await authService.initiatePasswordReset(email);
+
+    res.status(StatusCodes.OK).json(
+      ApiResponse.success(
+        { 
+          message: 'If an account with this email exists, a password reset link has been sent',
+          requestId: result.requestId 
+        },
+        'Password reset initiated successfully'
+      )
+    );
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+      ApiResponse.error(
+        'Failed to process password reset request',
+        'PASSWORD_RESET_ERROR',
+        error instanceof Error ? error.message : 'Unknown error'
+      )
+    );
+  }
+};
+
+/**
+ * Reset password endpoint - Reset password with token
+ */
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    if (!token || !newPassword || !confirmPassword) {
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error(
+          'Missing required fields',
+          'MISSING_FIELDS',
+          'Token, new password, and confirm password are required'
+        )
+      );
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error(
+          'Passwords do not match',
+          'PASSWORD_MISMATCH',
+          'New password and confirm password must match'
+        )
+      );
+      return;
+    }
+
+    // Call service to reset password
+    const result = await authService.resetPassword(token, newPassword);
+
+    res.status(StatusCodes.OK).json(
+      ApiResponse.success(
+        { message: 'Password has been reset successfully' },
+        'Password reset completed'
+      )
+    );
+  } catch (error) {
+    console.error('Reset password error:', error);
+    
+    if (error instanceof Error) {
+      if (error.message.includes('invalid_token')) {
+        res.status(StatusCodes.BAD_REQUEST).json(
+          ApiResponse.error(
+            'Invalid or expired reset token',
+            'INVALID_TOKEN',
+            'The password reset token is invalid or has expired'
+          )
+        );
+        return;
+      }
+    }
+
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+      ApiResponse.error(
+        'Failed to reset password',
+        'PASSWORD_RESET_ERROR',
+        error instanceof Error ? error.message : 'Unknown error'
+      )
+    );
+  }
+};
+
+/**
+ * Verify reset token endpoint - Check if reset token is valid
+ */
+export const verifyResetToken = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { token } = req.params;
+
+    if (!token) {
+      res.status(StatusCodes.BAD_REQUEST).json(
+        ApiResponse.error(
+          'Reset token is required',
+          'MISSING_TOKEN',
+          'Please provide a valid reset token'
+        )
+      );
+      return;
+    }
+
+    // Call service to verify token
+    const result = await authService.verifyResetToken(token);
+
+    res.status(StatusCodes.OK).json(
+      ApiResponse.success(
+        { 
+          valid: result.valid,
+          email: result.email,
+          expiresAt: result.expiresAt
+        },
+        'Token verification completed'
+      )
+    );
+  } catch (error) {
+    console.error('Verify reset token error:', error);
+    res.status(StatusCodes.BAD_REQUEST).json(
+      ApiResponse.error(
+        'Invalid or expired reset token',
+        'INVALID_TOKEN',
+        error instanceof Error ? error.message : 'The reset token is invalid or has expired'
+      )
+    );
+  }
+};

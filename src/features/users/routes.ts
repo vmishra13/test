@@ -5,6 +5,7 @@ import { requireResourceOwner } from '@features/auth/middlewares/role.middleware
 import { ApiResponse } from '@shared/utils/api-response';
 import { registerUserController } from './controllers/registration.controller';
 import { getUsersController } from './controllers/user.controller';
+import * as profileController from './controllers/profile.controller';
 
 const router = Router();
 
@@ -13,6 +14,28 @@ router.post('/register', authenticate, registerUserController as any);
 
 // Core user management endpoints
 router.get('/', authenticate, getUsersController as any);
+
+// ===================================================================
+// 🎯 MOBILE APP PROFILE ENDPOINTS (MUST BE BEFORE /:userId ROUTES)
+// ===================================================================
+
+// Get user profile
+router.get('/profile', authenticate, profileController.getUserProfile);
+
+// Update user profile
+router.put('/profile', authenticate, profileController.updateUserProfile);
+
+// Update personal information
+router.put('/profile/personal-info', authenticate, profileController.updatePersonalInfo);
+
+// Complete onboarding
+router.post('/profile/complete-onboarding', authenticate, profileController.completeOnboarding);
+
+// Get onboarding status
+router.get('/profile/onboarding-status', authenticate, profileController.getOnboardingStatus);
+
+// Upload profile picture
+router.post('/profile/upload-picture', authenticate, profileController.uploadProfilePicture);
 
 /**
  * GET /users/:userId

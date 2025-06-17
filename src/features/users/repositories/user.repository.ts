@@ -1239,3 +1239,45 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
     throw new Error(`Failed to get users with filters: ${error.message}`);
   }
 }
+
+// ===================================================================
+// 🎯 EXTRA INFO MANAGEMENT (for mobile app profile/onboarding)
+// ===================================================================
+
+/**
+ * Update user's extraInfo field (used for onboarding status, profile extensions, etc.)
+ */
+export async function updateUserExtraInfo(
+  userId: number,
+  extraInfo: Record<string, any>,
+  modUser: string,
+): Promise<void> {
+  try {
+    await prismaPostgres.user.update({
+      where: { id: userId },
+      data: {
+        extraInfo,
+        modUser,
+        modDate: new Date(),
+      },
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to update user extra info: ${error.message}`);
+  }
+}
+
+/**
+ * Get user's extraInfo field
+ */
+export async function getUserExtraInfo(userId: number): Promise<Record<string, any> | null> {
+  try {
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: userId },
+      select: { extraInfo: true },
+    });
+
+    return user?.extraInfo as Record<string, any> | null;
+  } catch (error: any) {
+    throw new Error(`Failed to get user extra info: ${error.message}`);
+  }
+}

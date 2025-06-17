@@ -82,7 +82,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"grant_type\": \"password\",\n    \"username\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"client_id\": \"reliacare-client\",\n    \"scope\": \"read write\"\n}"
+							"raw": "{\n    \"grant_type\": \"password\",\n    \"username\": \"superadmin\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": 1\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/token",
@@ -106,7 +106,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"username\": \"admin@example.com\",\n    \"password\": \"password123\",\n    \"clientId\": 1\n}"
+							"raw": "{\n    \"username\": \"superadmin\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": 1\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/auth/login",
@@ -168,6 +168,100 @@
 							"path": ["api", "v1", "auth", "revoke"]
 						}
 					}
+				},
+				{
+					"name": "6. Forgot Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"try {",
+									"    const responseJson = pm.response.json();",
+									"    ",
+									"    if (pm.response.code === 200 && responseJson.success && responseJson.data && responseJson.data.token) {",
+									"        pm.collectionVariables.set(\"resetToken\", responseJson.data.token);",
+									"        console.log(\"✅ Reset token stored in collection variable:\", responseJson.data.token);",
+									"    } else {",
+									"        console.log(\"ℹ️ Reset token not found in response or request failed\");",
+									"    }",
+									"} catch (error) {",
+									"    console.error(\"❌ Error processing forgot password response:\", error.message);",
+									"}",
+									"",
+									"pm.test(\"Forgot password request successful\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    const responseJson = pm.response.json();",
+									"    pm.expect(responseJson).to.have.property('success');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"superadmin@reliacare.com\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/forgot-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "forgot-password"]
+						},
+						"description": "Initiate password reset process by sending reset token to user's email"
+					}
+				},
+				{
+					"name": "7. Verify Reset Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/verify-reset-token/{{resetToken}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "verify-reset-token", "{{resetToken}}"]
+						},
+						"description": "Verify if a password reset token is valid and not expired"
+					}
+				},
+				{
+					"name": "8. Reset Password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"token\": \"{{resetToken}}\",\n    \"newPassword\": \"newPassword123!\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/auth/reset-password",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "v1", "auth", "reset-password"]
+						},
+						"description": "Complete password reset using valid token and new password"
+					}
 				}
 			]
 		},
@@ -186,7 +280,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"loginName\": \"john.doe\",\n    \"password\": \"password123\",\n    \"clientId\": 1,\n    \"userTypeId\": 1,\n    \"roles\": [\"PATIENT\"],\n    \"firstName\": \"John\",\n    \"lastName\": \"Doe\",\n    \"email\": \"john.doe@example.com\",\n    \"sendWelcomeEmail\": true,\n    \"temporaryPassword\": false,\n    \"timeZone\": \"America/New_York\"\n}"
+							"raw": "{\n    \"loginName\": \"sarah.johnson\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": 1,\n    \"userTypeId\": 5,\n    \"roles\": [\"PATIENT\"],\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"email\": \"sarah.johnson@reliacare.com\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"sendWelcomeEmail\": true,\n    \"temporaryPassword\": false,\n    \"timeZone\": \"America/New_York\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/users/register",
@@ -299,6 +393,154 @@
 							"path": ["api", "v1", "users", "{{userId}}"]
 						}
 					}
+				},
+				{
+					"name": "📱 Mobile Profile",
+					"description": "Mobile app endpoints for user profile management, onboarding, and personal information updates",
+					"item": [
+						{
+							"name": "1. Get User Profile",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/profile",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "profile"]
+								},
+								"description": "Get complete user profile including personal info, onboarding status, and extraInfo fields"
+							}
+						},
+						{
+							"name": "2. Update User Profile",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"email\": \"sarah.johnson@reliacare.com\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"timeZone\": \"America/New_York\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/profile",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "profile"]
+								},
+								"description": "Update basic user profile information (name, email, DOB, gender, timezone)"
+							}
+						},
+						{
+							"name": "3. Update Personal Info",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"phoneNumber\": \"+1-555-123-4567\",\n    \"address\": {\n        \"street\": \"456 Healthcare Ave\",\n        \"city\": \"Boston\",\n        \"state\": \"MA\",\n        \"zipCode\": \"02101\",\n        \"country\": \"USA\"\n    },\n    \"emergencyContact\": {\n        \"name\": \"Michael Johnson\",\n        \"relationship\": \"spouse\",\n        \"phoneNumber\": \"+1-555-123-4568\",\n        \"email\": \"michael.johnson@email.com\"\n    },\n    \"insurance\": {\n        \"provider\": \"Blue Cross Blue Shield\",\n        \"memberId\": \"BC123456789\",\n        \"groupNumber\": \"GRP001\"\n    },\n    \"medicalHistory\": {\n        \"allergies\": [\"Penicillin\", \"Shellfish\"],\n        \"medications\": [\"Lisinopril 10mg daily\"],\n        \"conditions\": [\"Hypertension\"]\n    }\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/profile/personal-info",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "profile", "personal-info"]
+								},
+								"description": "Update extended personal information including address, emergency contacts, insurance, and medical history"
+							}
+						},
+						{
+							"name": "4. Complete Onboarding",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"email\": \"sarah.johnson@reliacare.com\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"timeZone\": \"America/New_York\",\n    \"onboardingStep\": \"completed\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/profile/complete-onboarding",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "profile", "complete-onboarding"]
+								},
+								"description": "Mark specific onboarding steps as complete (basicInfo, personalInfo, contactInfo, preferences, profilePicture)"
+							}
+						},
+						{
+							"name": "5. Get Onboarding Status",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/profile/onboarding-status",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "profile", "onboarding-status"]
+								},
+								"description": "Get current onboarding progress, completed steps, and next step to complete"
+							}
+						},
+						{
+							"name": "6. Upload Profile Picture",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"body": {
+									"mode": "formdata",
+									"formdata": [
+										{
+											"key": "profilePicture",
+											"type": "file",
+											"src": []
+										}
+									]
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/profile/upload-picture",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "profile", "upload-picture"]
+								},
+								"description": "Upload profile picture using multipart/form-data with 'profilePicture' field"
+							}
+						}
+					]
 				}
 			]
 		},
@@ -1807,6 +2049,12 @@
 			"key": "modmedPatientId",
 			"value": "example-patient-id-123",
 			"type": "string"
+		},
+		{
+			"key": "resetToken",
+			"value": "sample-reset-token-abc123",
+			"type": "string",
+			"description": "Password reset token received from forgot-password endpoint"
 		}
 	]
 }

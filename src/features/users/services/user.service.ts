@@ -1,4 +1,5 @@
 import { Request } from 'express';
+import { UploadedFile } from 'express-fileupload';
 import { CoreRole, RoleUtils } from '@shared/constants';
 import type { AuthenticatedUser } from '@features/auth/dto/auth.dto';
 import type { GetUsersResponse } from '../dto/user.dto';
@@ -346,5 +347,273 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
     logger.error('Error updating user:', error);
     throw error;
   }
+}
+
+// ===================================================================
+// 📱 MOBILE APP USER PROFILE FUNCTIONS
+// ===================================================================
+
+/**
+ * Get user profile for mobile app
+ */
+export async function getUserProfile(userId: number) {
+  try {
+    const user = await userRepository.findUserById(userId);
+    
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return {
+      id: user.id,
+      loginName: user.loginName,
+      firstName: user.firstName,
+      middleName: user.middleName,
+      lastName: user.lastName,
+      email: user.email,
+      dob: user.dob,
+      gender: user.gender,
+      timeZone: user.timeZone,
+      mrn: user.mrn,
+      clientId: user.clientId,
+      userTypeId: user.userTypeId,
+      status: user.status,
+      extraInfo: user.extraInfo,
+      // Default values for mobile app
+      profilePicture: user.extraInfo?.profilePicture || null,
+      phoneNumber: user.extraInfo?.phoneNumber || null,
+      address: user.extraInfo?.address || null,
+      emergencyContact: user.extraInfo?.emergencyContact || null,
+      medicalHistory: user.extraInfo?.medicalHistory || null,
+      preferences: user.extraInfo?.preferences || null,
+      onboardingCompleted: user.extraInfo?.onboardingCompleted || false
+    };
+  } catch (error) {
+    console.error('Get user profile error:', error);
+    throw new Error('Failed to retrieve user profile');
+  }
+}
+
+/**
+ * Update user profile
+ */
+export async function updateUserProfile(userId: number, profileData: any) {
+  try {
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Merge existing extraInfo with new data
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      phoneNumber: profileData.phoneNumber ?? currentExtraInfo.phoneNumber,
+      address: profileData.address ?? currentExtraInfo.address,
+      emergencyContact: profileData.emergencyContact ?? currentExtraInfo.emergencyContact,
+      emergencyPhoneNumber: profileData.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber,
+      preferences: profileData.preferences ?? currentExtraInfo.preferences,
+      medicalHistory: profileData.medicalHistory ?? currentExtraInfo.medicalHistory,
+      allergies: profileData.allergies ?? currentExtraInfo.allergies,
+      medications: profileData.medications ?? currentExtraInfo.medications,
+      conditions: profileData.conditions ?? currentExtraInfo.conditions
+    };
+
+    // Prepare UserUpdateInput object (following auth service pattern)
+    const userUpdateInput = {
+      firstName: profileData.firstName ?? undefined,
+      middleName: profileData.middleName ?? undefined,
+      lastName: profileData.lastName ?? undefined,
+      email: profileData.email ?? undefined,
+      dob: profileData.dob ? new Date(profileData.dob) : undefined,
+      mrn: profileData.mrn ?? undefined,
+      gender: profileData.gender ?? undefined,
+      timeZone: profileData.timeZone ?? undefined,
+      profilePicture: profileData.profilePicture ?? undefined,
+      extraInfo: newExtraInfo,
+      modUser: 'mobile-app', // Required field
+    };
+
+    // Update user with properly formatted UserUpdateInput
+    await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
+
+    return await getUserProfile(userId);
+  } catch (error) {
+    console.error('Update user profile error:', error);
+    throw new Error(`Failed to update user profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+/**
+ * Update personal information
+ */
+export async function updatePersonalInfo(userId: number, personalInfo: any) {
+  try {
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Merge existing extraInfo with new personal info
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      phoneNumber: personalInfo.phoneNumber ?? currentExtraInfo.phoneNumber,
+      address: personalInfo.address ?? currentExtraInfo.address,
+      medicalHistory: personalInfo.medicalHistory ?? currentExtraInfo.medicalHistory,
+      allergies: personalInfo.allergies ?? currentExtraInfo.allergies,
+      medications: personalInfo.medications ?? currentExtraInfo.medications,
+      conditions: personalInfo.conditions ?? currentExtraInfo.conditions,
+      emergencyContact: personalInfo.emergencyContact ?? currentExtraInfo.emergencyContact,
+      emergencyPhoneNumber: personalInfo.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber
+    };
+
+    // Prepare UserUpdateInput object (following auth service pattern)
+    const userUpdateInput = {
+      firstName: personalInfo.firstName ?? undefined,
+      middleName: personalInfo.middleName ?? undefined,
+      lastName: personalInfo.lastName ?? undefined,
+      email: personalInfo.email ?? undefined,
+      dob: personalInfo.dob ? new Date(personalInfo.dob) : undefined,
+      gender: personalInfo.gender ?? undefined,
+      extraInfo: newExtraInfo,
+      modUser: 'mobile-app', // Required field
+    };
+
+    // Update user with properly formatted UserUpdateInput
+    await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
+
+    return await getUserProfile(userId);
+  } catch (error) {
+    console.error('Update personal info error:', error);
+    throw new Error('Failed to update personal information');
+  }
+}
+
+/**
+ * Complete user onboarding
+ */
+export async function completeOnboarding(userId: number, onboardingData: any) {
+  try {
+    // Update user profile with onboarding data
+    await updateUserProfile(userId, onboardingData);
+
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Mark onboarding as completed
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      onboardingCompleted: true,
+      onboardingCompletedAt: new Date().toISOString()
+    };
+
+    await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
+
+    return {
+      success: true,
+      message: 'Onboarding completed successfully',
+      profile: await getUserProfile(userId)
+    };
+  } catch (error) {
+    console.error('Complete onboarding error:', error);
+    throw new Error('Failed to complete onboarding');
+  }
+}
+
+/**
+ * Get onboarding status
+ */
+export async function getOnboardingStatus(userId: number) {
+  try {
+    const profile = await getUserProfile(userId);
+    
+    const completedSteps = {
+      basicInfo: !!(profile.firstName && profile.lastName && profile.email),
+      personalInfo: !!(profile.dob && profile.gender),
+      contactInfo: !!(profile.phoneNumber),
+      preferences: !!(profile.preferences),
+      profilePicture: !!(profile.profilePicture)
+    };
+
+    const totalSteps = Object.keys(completedSteps).length;
+    const completedCount = Object.values(completedSteps).filter(Boolean).length;
+    const progressPercentage = Math.round((completedCount / totalSteps) * 100);
+
+    return {
+      isCompleted: profile.onboardingCompleted || false,
+      steps: completedSteps,
+      progress: {
+        completed: completedCount,
+        total: totalSteps,
+        percentage: progressPercentage
+      },
+      nextStep: getNextOnboardingStep(completedSteps)
+    };
+  } catch (error) {
+    console.error('Get onboarding status error:', error);
+    throw new Error('Failed to retrieve onboarding status');
+  }
+}
+
+/**
+ * Upload profile picture
+ */
+export async function uploadProfilePicture(userId: number, file: UploadedFile) {
+  try {
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // TODO: Implement file upload to cloud storage (AWS S3, etc.)
+    // For now, just generate a URL based on file info
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `${userId}_${Date.now()}.${fileExtension}`;
+    const profilePictureUrl = `/uploads/profiles/${fileName}`;
+    
+    // Update extraInfo with profile picture
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      profilePicture: profilePictureUrl,
+      profilePictureInfo: {
+        originalName: file.name,
+        size: file.size,
+        mimeType: file.mimetype,
+        uploadedAt: new Date().toISOString()
+      }
+    };
+
+    await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
+
+    return {
+      success: true,
+      profilePicture: profilePictureUrl,
+      message: 'Profile picture uploaded successfully'
+    };
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+    throw new Error('Failed to upload profile picture');
+  }
+}
+
+/**
+ * Helper function to determine next onboarding step
+ */
+function getNextOnboardingStep(completedSteps: any): string | null {
+  if (!completedSteps.basicInfo) return 'basicInfo';
+  if (!completedSteps.personalInfo) return 'personalInfo';
+  if (!completedSteps.contactInfo) return 'contactInfo';
+  if (!completedSteps.preferences) return 'preferences';
+  if (!completedSteps.profilePicture) return 'profilePicture';
+  return null; // All steps completed
 }
 

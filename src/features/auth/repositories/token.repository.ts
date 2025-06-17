@@ -612,8 +612,120 @@ export async function detectSuspiciousTokenActivity(
 }
 
 // ===================================================================
-// 🎯 UTILITY FUNCTIONS
+// 🔒 PASSWORD RESET TOKEN MANAGEMENT (IN-MEMORY STORAGE)
 // ===================================================================
+
+// In-memory storage for password reset tokens
+// TODO: Replace with persistent storage (database table) in production
+interface PasswordResetToken {
+  userId: number;
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+  used: boolean;
+}
+
+const passwordResetTokens = new Map<string, PasswordResetToken>();
+
+/**
+ * Store password reset token in memory
+ */
+export async function storePasswordResetToken(
+  userId: number, 
+  token: string, 
+  expiresAt: Date
+): Promise<void> {
+  try {
+    // Clean up expired tokens
+    cleanupExpiredTokens();
+    
+    passwordResetTokens.set(token, {
+      userId,
+      token,
+      expiresAt,
+      createdAt: new Date(),
+      used: false
+    });
+  } catch (error) {
+    console.error('Failed to store password reset token:', error);
+    throw new Error('Failed to store password reset token');
+  }
+}
+
+/**
+ * Verify password reset token
+ */
+export async function verifyPasswordResetToken(token: string): Promise<{
+  userId: number;
+  expiresAt: Date;
+} | null> {
+  try {
+    const resetToken = passwordResetTokens.get(token);
+
+    if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) {
+      return null;
+    }
+
+    return {
+      userId: resetToken.userId,
+      expiresAt: resetToken.expiresAt
+    };
+  } catch (error) {
+    console.error('Failed to verify password reset token:', error);
+    return null;
+  }
+}
+
+/**
+ * Invalidate password reset token
+ */
+export async function invalidatePasswordResetToken(token: string): Promise<void> {
+  try {
+    const resetToken = passwordResetTokens.get(token);
+    if (resetToken) {
+      resetToken.used = true;
+      passwordResetTokens.set(token, resetToken);
+    }
+  } catch (error) {
+    console.error('Failed to invalidate password reset token:', error);
+    throw new Error('Failed to invalidate password reset token');
+  }
+}
+
+/**
+ * Invalidate all user tokens (for security after password reset)
+ */
+export async function invalidateAllUserTokens(userId: number): Promise<void> {
+  try {
+    // Mark all password reset tokens as used for this user
+    for (const [token, tokenData] of passwordResetTokens.entries()) {
+      if (tokenData.userId === userId && !tokenData.used) {
+        tokenData.used = true;
+        passwordResetTokens.set(token, tokenData);
+      }
+    }
+    
+    // Note: For stateless JWT tokens, we can't invalidate them in the DB
+    // In a production system, you might want to maintain a blacklist
+    // or use shorter token expiration times
+    console.log(`Invalidated password reset tokens for user ${userId}`);
+  } catch (error) {
+    console.error('Failed to invalidate user tokens:', error);
+    throw new Error('Failed to invalidate user tokens');
+  }
+}
+
+/**
+ * Clean up expired tokens from memory
+ */
+function cleanupExpiredTokens(): void {
+  const now = new Date();
+  for (const [token, tokenData] of passwordResetTokens.entries()) {
+    if (tokenData.expiresAt < now) {
+      passwordResetTokens.delete(token);
+    }
+  }
+}
 
 /**
  * Extract token payload without verification (for debugging)

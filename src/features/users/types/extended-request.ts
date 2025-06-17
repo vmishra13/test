@@ -1,4 +1,4 @@
-import type { AuthenticatedUser } from '@features/auth/middlewares';
+import type { AuthenticatedUser } from '@features/auth/dto/auth.dto';
 import type { CoreRole } from '@shared/constants';
 
 // Define possible user registration actions

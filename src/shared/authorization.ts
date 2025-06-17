@@ -5,7 +5,7 @@ import {
   //   type UserAction,
 } from '@features/users/types/extended-request';
 import { CoreRole, RoleUtils } from './constants';
-import type { AuthenticatedUser } from '@/features/auth/middlewares';
+import type { AuthenticatedUser } from '@/features/auth/dto/auth.dto';
 import { createAuthError, createAuthorizationError } from '@/shared/errors/application-error';
 
 export function performAuthorization(oAuthReq: AuthRequest): boolean {
