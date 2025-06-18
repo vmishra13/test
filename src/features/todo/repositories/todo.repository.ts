@@ -1,5 +1,5 @@
-import { db } from '@db';
-import logger from '@config/logger';
+import { db } from '../../../db';
+import logger from '../../../config/logger';
 import { TodoCreateInput, TodoUpdateInput } from '../models/todo.model';
 
 export const findAllTodos = async () => {
