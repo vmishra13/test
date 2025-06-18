@@ -2,8 +2,7 @@ name: Deploy to AWS EC2
 
 on:
   push:
-    branches:
-      - main
+    branches: [ dev ]
   workflow_dispatch:
 
 env:
@@ -31,6 +30,7 @@ jobs:
 
       - name: Build TypeScript
         run: pnpm run build      - name: Run tests
+        if: ${{ !inputs.skip_tests }}
         run: pnpm test
         continue-on-error: true
 
@@ -61,10 +61,15 @@ jobs:
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           # Add all your environment variables here
-          EOF
-
-      - name: Deploy on EC2
+          EOF      - name: Deploy on EC2
+        env:
+          DEBUG_MODE: ${{ inputs.debug_mode }}
         run: |
+          if [ "$DEBUG_MODE" = "true" ]; then
+            echo "Running in debug mode"
+            set -x
+          fi
+          
           ssh ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "bash -s" << 'ENDSSH'
             cd ${{ secrets.EC2_PATH }}
             
