@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ApiResponse } from '@/shared/utils/api-response';
 import { authenticate } from '@/features/auth/middlewares/auth.middleware';
+// Import care plan controller functions
+import * as carePlanController from './controllers/care-plan.controller';
 
 const router = Router();
 
@@ -202,5 +204,34 @@ router.delete('/:planId', authenticate, async (req, res) => {
     );
   }
 });
+
+// ===================================================================
+// 🎯 CARE PLAN ENDPOINTS
+// ===================================================================
+
+// Get or create care plan
+router.get('/users/:userId/care-plan', authenticate, (req, res) => 
+  carePlanController.getCarePlan(req as any, res)
+);
+
+// Update care plan
+router.put('/users/:userId/care-plan', authenticate, (req, res) => 
+  carePlanController.updateCarePlan(req as any, res)
+);
+
+// Get user's injuries
+router.get('/users/:userId/injuries', authenticate, (req, res) => 
+  carePlanController.getInjuries(req as any, res)
+);
+
+// Track or update injury
+router.post('/users/:userId/injuries', authenticate, (req, res) => 
+  carePlanController.trackInjury(req as any, res)
+);
+
+// Get learning center content (doesn't need userId)
+router.get('/learning-center', authenticate, (req, res) => 
+  carePlanController.getLearningCenter(req as any, res)
+);
 
 export default router;

@@ -1,5 +1,6 @@
-import type { AuthenticatedUser } from '@features/auth/dto/auth.dto';
-import type { CoreRole } from '@shared/constants';
+import { Request } from 'express';
+import type { AuthenticatedUser } from '../../auth/dto/auth.dto';
+import type { CoreRole } from '../../../shared/constants';
 
 // Define possible user registration actions
 

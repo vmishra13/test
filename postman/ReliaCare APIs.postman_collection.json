@@ -269,31 +269,44 @@
 			"name": "👥 Users",
 			"item": [
 				{
-					"name": "1. Register User",
+					"name": "1. Register User (HIPAA Secure)",
 					"request": {
 						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
 								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}",
+								"description": "Required for client validation"
 							}
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"loginName\": \"sarah.johnson\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": 1,\n    \"userTypeId\": 5,\n    \"roles\": [\"PATIENT\"],\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"email\": \"sarah.johnson@reliacare.com\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"sendWelcomeEmail\": true,\n    \"temporaryPassword\": false,\n    \"timeZone\": \"America/New_York\"\n}"
+							"raw": "{\n    \"loginName\": \"sarah.johnson\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": {{CURRENT_CLIENT_ID}},\n    \"userTypeId\": 5,\n    \"roles\": [\"PATIENT\"],\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"email\": \"sarah.johnson@reliacare.com\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"sendWelcomeEmail\": true,\n    \"temporaryPassword\": false,\n    \"timeZone\": \"America/New_York\"\n}",
+							"description": "Updated registration with mandatory clientId validation. Only SuperAdmin can create users for different clients."
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/users/register",
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "v1", "users", "register"]
-						}
+						},
+						"description": "Register new user with strict client validation. The clientId must match the authenticated user's client unless the user is a SuperAdmin."
 					}
 				},
 				{
-					"name": "2. Get All Users",
+					"name": "2. Get All Users (Client Filtered)",
 					"request": {
 						"method": "GET",
-						"header": [],
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}",
+								"description": "Required for client-filtered results"
+							}
+						],
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/users?page=1&limit=20&sort=asc",
 							"host": ["{{baseUrl}}"],
@@ -314,7 +327,8 @@
 								{
 									"key": "clientId",
 									"value": "1",
-									"disabled": true
+									"disabled": true,
+									"description": "Only SuperAdmin can filter by different clientId"
 								},
 								{
 									"key": "role",
@@ -332,11 +346,12 @@
 									"disabled": true
 								}
 							]
-						}
+						},
+						"description": "Get all users with automatic client filtering. Results are restricted to the authenticated user's client unless the user is a SuperAdmin."
 					}
 				},
 				{
-					"name": "3. Get User by ID",
+					"name": "3. Get User by ID (HIPAA Secure)",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -349,11 +364,12 @@
 							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "v1", "users", "{{userId}}"]
-						}
+						},
+						"description": "Get user by ID with strict client validation. Users can only access their own data or users within their client (with proper permissions)."
 					}
 				},
 				{
-					"name": "4. Update User",
+					"name": "4. Update User (HIPAA Secure)",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -374,11 +390,12 @@
 							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "v1", "users", "{{userId}}"]
-						}
+						},
+						"description": "Update user with client validation. Only allows updates to users within the same client. Validates permissions and data access rights."
 					}
 				},
 				{
-					"name": "5. Delete User",
+					"name": "5. Delete User (HIPAA Secure)",
 					"request": {
 						"method": "DELETE",
 						"header": [
@@ -538,6 +555,124 @@
 									"path": ["api", "v1", "users", "profile", "upload-picture"]
 								},
 								"description": "Upload profile picture using multipart/form-data with 'profilePicture' field"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "📱 Mobile App Features (HIPAA Secure)",
+			"description": "Mobile app specific endpoints with strict multi-tenant security and client validation",
+			"item": [
+				{
+					"name": "🏥 Doctor Selection",
+					"item": [
+						{
+							"name": "1. Get Available Doctors",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/doctors?specialty=cardiology&clientId={{CURRENT_CLIENT_ID}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "doctors"],
+									"query": [
+										{
+											"key": "specialty",
+											"value": "cardiology"
+										},
+										{
+											"key": "clientId",
+											"value": "{{CURRENT_CLIENT_ID}}"
+										}
+									]
+								},
+								"description": "Get available doctors filtered by client. Only shows doctors within the user's client."
+							}
+						},
+						{
+							"name": "2. Select Doctor",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"doctorId\": 15,\n    \"clientId\": {{CURRENT_CLIENT_ID}},\n    \"isPrimary\": true,\n    \"specialtyRequired\": \"cardiology\",\n    \"reasonForSelection\": \"Previous positive experience\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/doctors/select",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "doctors", "select"]
+								},
+								"description": "Select a doctor with client validation. Ensures doctor belongs to the same client."
+							}
+						}
+					]
+				},
+				{
+					"name": "📋 Mobile Registration",
+					"item": [
+						{
+							"name": "1. Mobile Registration",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"firstName\": \"Mobile\",\n    \"lastName\": \"User\",\n    \"email\": \"mobile.user@reliacare.com\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": {{CURRENT_CLIENT_ID}},\n    \"phoneNumber\": \"+1-555-123-4567\",\n    \"dob\": \"1990-01-15\",\n    \"gender\": \"female\",\n    \"deviceInfo\": {\n        \"deviceType\": \"mobile\",\n        \"platform\": \"iOS\",\n        \"version\": \"16.0\",\n        \"deviceId\": \"unique-device-id-123\"\n    },\n    \"acceptedTerms\": true,\n    \"acceptedPrivacy\": true\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/mobile-register",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "mobile-register"]
+								},
+								"description": "Mobile-specific registration with device info and client validation."
+							}
+						},
+						{
+							"name": "2. Complete Mobile Onboarding",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"clientId\": {{CURRENT_CLIENT_ID}},\n    \"personalInfo\": {\n        \"firstName\": \"Mobile\",\n        \"lastName\": \"User\",\n        \"dob\": \"1990-01-15\",\n        \"gender\": \"female\",\n        \"phoneNumber\": \"+1-555-123-4567\"\n    },\n    \"medicalInfo\": {\n        \"allergies\": [\"Penicillin\"],\n        \"medications\": [],\n        \"conditions\": []\n    },\n    \"preferences\": {\n        \"notifications\": true,\n        \"reminderTime\": \"09:00\",\n        \"language\": \"en\"\n    },\n    \"completedSteps\": [\"basicInfo\", \"personalInfo\", \"medicalInfo\", \"preferences\"]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/mobile-onboarding",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "users", "mobile-onboarding"]
+								},
+								"description": "Complete mobile onboarding process with comprehensive user setup."
 							}
 						}
 					]
@@ -859,6 +994,123 @@
 							"path": ["api", "v1", "plans", "{{planId}}"]
 						}
 					}
+				},
+				{
+					"name": "🏥 Care Plans (HIPAA Secure)",
+					"item": [
+						{
+							"name": "1. Get User Care Plan",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/care-plan",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "plans", "users", "{{userId}}", "care-plan"]
+								},
+								"description": "Get care plan for a specific user. Requires client validation - only returns data if user belongs to same client as requester."
+							}
+						},
+						{
+							"name": "2. Update User Care Plan",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"currentInjuries\": [\"knee_pain\", \"back_strain\"],\n    \"priorInjuries\": [\"ankle_sprain\"],\n    \"goals\": [\"pain_reduction\", \"mobility_improvement\"],\n    \"preferences\": {\n        \"exerciseFrequency\": \"daily\",\n        \"reminderTime\": \"09:00\",\n        \"difficultyLevel\": \"beginner\"\n    },\n    \"notes\": \"Patient reports morning stiffness\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/care-plan",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "plans", "users", "{{userId}}", "care-plan"]
+								},
+								"description": "Update care plan for a specific user. Validates client access and user permissions."
+							}
+						},
+						{
+							"name": "3. Get User Injuries",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/injuries",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "plans", "users", "{{userId}}", "injuries"]
+								},
+								"description": "Get injury history for a specific user with strict client validation."
+							}
+						},
+						{
+							"name": "4. Track New Injury",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"injuryType\": \"muscle_strain\",\n    \"location\": \"lower_back\",\n    \"severity\": \"moderate\",\n    \"painLevel\": 6,\n    \"description\": \"Pain started after lifting heavy object\",\n    \"dateOccurred\": \"2025-06-18\",\n    \"symptoms\": [\"sharp_pain\", \"muscle_spasm\", \"limited_mobility\"],\n    \"treatmentActions\": [\"ice_application\", \"rest\"]\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/injuries",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "plans", "users", "{{userId}}", "injuries"]
+								},
+								"description": "Track a new injury for a specific user. Validates client access and provides care plan recommendations."
+							}
+						},
+						{
+							"name": "5. Get Learning Center Content",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/plans/learning-center?category=exercise",
+									"host": ["{{baseUrl}}"],
+									"path": ["api", "v1", "plans", "learning-center"],
+									"query": [
+										{
+											"key": "category",
+											"value": "exercise"
+										}
+									]
+								},
+								"description": "Get learning center content. Public content available to all, personalized content requires authentication."
+							}
+						}
+					]
 				}
 			]
 		},
@@ -1566,10 +1818,11 @@
 			]
 		},
 		{
-			"name": "✅ Todos",
+			"name": "✅ Todos (HIPAA Secure)",
+			"description": "TODO management with strict client isolation and multi-tenant security",
 			"item": [
 				{
-					"name": "1. Get All Todos",
+					"name": "1. Get All Todos (Client Filtered)",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1597,11 +1850,12 @@
 									"disabled": true
 								}
 							]
-						}
+						},
+						"description": "Get all todos with automatic client filtering. Only returns todos for the authenticated user's client."
 					}
 				},
 				{
-					"name": "2. Create Todo",
+					"name": "2. Create Todo (Client Assigned)",
 					"request": {
 						"method": "POST",
 						"header": [
@@ -1616,17 +1870,19 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"title\": \"Follow up with patient\",\n    \"description\": \"Call patient to check on recovery progress\",\n    \"dueDate\": \"2025-06-20T10:00:00Z\",\n    \"priority\": \"high\",\n    \"assignedToId\": 2\n}"
+							"raw": "{\n    \"title\": \"Follow up with patient\",\n    \"description\": \"Call patient to check on recovery progress\",\n    \"dueDate\": \"2025-06-20T10:00:00Z\",\n    \"priority\": \"high\",\n    \"assignedToId\": 2\n}",
+							"description": "Note: clientId is automatically assigned from authenticated user's client context"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/api/v1/todos",
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "v1", "todos"]
-						}
+						},
+						"description": "Create new todo with automatic client assignment. The todo is automatically assigned to the authenticated user's client."
 					}
 				},
 				{
-					"name": "3. Get Todo by ID",
+					"name": "3. Get Todo by ID (Client Validated)",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -1639,11 +1895,12 @@
 							"raw": "{{baseUrl}}/api/v1/todos/{{todoId}}",
 							"host": ["{{baseUrl}}"],
 							"path": ["api", "v1", "todos", "{{todoId}}"]
-						}
+						},
+						"description": "Get todo by ID with client validation. Only allows access to todos within the same client."
 					}
 				},
 				{
-					"name": "4. Update Todo",
+					"name": "4. Update Todo (Client Validated)",
 					"request": {
 						"method": "PUT",
 						"header": [
@@ -1996,6 +2253,18 @@
 			"type": "string"
 		},
 		{
+			"key": "CURRENT_USER_ID",
+			"value": "",
+			"type": "string",
+			"description": "Automatically set from authentication response"
+		},
+		{
+			"key": "CURRENT_CLIENT_ID",
+			"value": "",
+			"type": "string",
+			"description": "Automatically set from authentication response for HIPAA security"
+		},
+		{
 			"key": "exerciseId",
 			"value": "1",
 			"type": "string"
@@ -2055,6 +2324,24 @@
 			"value": "sample-reset-token-abc123",
 			"type": "string",
 			"description": "Password reset token received from forgot-password endpoint"
+		},
+		{
+			"key": "doctorId",
+			"value": "15",
+			"type": "string",
+			"description": "Doctor ID for selection and care plan assignments"
+		},
+		{
+			"key": "RELIACARE_TOKEN_TYPE",
+			"value": "",
+			"type": "string",
+			"description": "Token type from authentication"
+		},
+		{
+			"key": "RELIACARE_REFRESH_TOKEN",
+			"value": "",
+			"type": "string",
+			"description": "Refresh token for token renewal"
 		}
 	]
 }

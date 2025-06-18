@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { authenticate } from '@features/auth/middlewares';
 import { requireResourceOwner } from '@features/auth/middlewares/role.middleware';
@@ -6,8 +6,54 @@ import { ApiResponse } from '@shared/utils/api-response';
 import { registerUserController } from './controllers/registration.controller';
 import { getUsersController } from './controllers/user.controller';
 import * as profileController from './controllers/profile.controller';
+import * as userService from './services/user.service';
+import MobileRegistrationController from './controllers/mobile-registration.controller';
+import DoctorSelectionController from './controllers/doctor-selection.controller';
+import { ExtendedRequest } from './types/extended-request';
 
 const router = Router();
+
+// Initialize controllers
+const mobileRegistrationController = new MobileRegistrationController();
+const doctorSelectionController = new DoctorSelectionController();
+
+// ===================================================================
+// 🎯 MOBILE REGISTRATION & ONBOARDING ENDPOINTS
+// ===================================================================
+
+// Mobile app registration
+router.post('/register/mobile', (req, res) => 
+  mobileRegistrationController.register(req as any, res)
+);
+
+// Onboarding endpoints
+router.put('/onboarding/personal-info', authenticate, (req, res) => 
+  mobileRegistrationController.updatePersonalInfo(req as any, res)
+);
+router.get('/onboarding/status', authenticate, (req, res) => 
+  mobileRegistrationController.getOnboardingStatus(req as any, res)
+);
+router.post('/onboarding/complete', authenticate, (req, res) => 
+  mobileRegistrationController.completeOnboarding(req as any, res)
+);
+
+// ===================================================================
+// 🎯 DOCTOR SELECTION ENDPOINTS
+// ===================================================================
+
+// Get available doctors
+router.get('/doctors', authenticate, (req, res) => 
+  doctorSelectionController.getDoctors(req as any, res)
+);
+
+// Select a doctor
+router.post('/select-doctor', authenticate, (req, res) => 
+  doctorSelectionController.selectDoctor(req as any, res)
+);
+
+// ===================================================================
+// 🎯 EXISTING ENDPOINTS
+// ===================================================================
 
 // Core registration endpoints
 router.post('/register', authenticate, registerUserController as any);
@@ -39,32 +85,35 @@ router.post('/profile/upload-picture', authenticate, profileController.uploadPro
 
 /**
  * GET /users/:userId
- * View a specific user
+ * View a specific user - SECURED with multi-tenant validation
  */
-router.get('/:userId', authenticate, requireResourceOwner(), async (req, res) => {
+router.get('/:userId', authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
+    // CRITICAL: Use secure user service that enforces client validation
+    const result = await userService.getUserById(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    // TODO: Implement actual database query
-    const user = {
-      id: userId,
-      loginName: 'john.doe',
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      dob: '1990-01-15',
-      gender: 'male',
-      clientId: 1,
-      userTypeId: 5,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(user, 'User retrieved successfully')
-    );
-  } catch (error) {
     console.error('Get user error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to retrieve user')
@@ -74,37 +123,45 @@ router.get('/:userId', authenticate, requireResourceOwner(), async (req, res) =>
 
 /**
  * PUT /users/:userId
- * Edit a user
+ * Edit a user - SECURED with multi-tenant validation
  */
-router.put('/:userId', authenticate, requireResourceOwner(), async (req, res) => {
+router.put('/:userId', authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { firstName, lastName, email, dob, gender, timeZone } = req.body;
-
-    // Basic validation
-    if (!firstName && !lastName && !email) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('At least one field must be provided for update')
-      );
+    // CRITICAL: Use secure user service that enforces client validation
+    const result = await userService.updateUser(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database update
-    const updatedUser = {
-      id: userId,
-      firstName,
-      lastName,
-      email,
-      dob,
-      gender,
-      timeZone,
-      updatedAt: new Date().toISOString()
-    };
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(updatedUser, 'User updated successfully')
-    );
-  } catch (error) {
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Update user error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to update user')
@@ -114,17 +171,35 @@ router.put('/:userId', authenticate, requireResourceOwner(), async (req, res) =>
 
 /**
  * DELETE /users/:userId
- * Delete a user
+ * Delete a user - SECURED with multi-tenant validation
  */
-router.delete('/:userId', authenticate, requireResourceOwner(), async (req, res) => {
+router.delete('/:userId', authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
+    // CRITICAL: Use secure user service that enforces client validation and proper deletion authorization
+    const result = await userService.deleteUser(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    // TODO: Implement soft delete or hard delete based on business rules
-    res.status(StatusCodes.NO_CONTENT).json(
-      ApiResponse.success(null, 'User deleted successfully')
-    );
-  } catch (error) {
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions for user deletion',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Delete user error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to delete user')
@@ -134,33 +209,45 @@ router.delete('/:userId', authenticate, requireResourceOwner(), async (req, res)
 
 /**
  * PATCH /users/:userId
- * Inactivate/Activate a user
+ * Inactivate/Activate a user - SECURED with multi-tenant validation
  */
-router.patch('/:userId', authenticate, requireResourceOwner(), async (req, res) => {
+router.patch('/:userId', authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { isActive, status } = req.body;
-
-    // Validate input
-    if (typeof isActive !== 'boolean' && typeof status !== 'number') {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Either isActive (boolean) or status (number) must be provided')
-      );
+    // CRITICAL: Use secure user service that enforces client validation and status change authorization
+    const result = await userService.updateUserStatus(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database status update
-    const updatedUser = {
-      id: userId,
-      isActive: isActive !== undefined ? isActive : status === 1,
-      status: status !== undefined ? status : (isActive ? 1 : 0),
-      updatedAt: new Date().toISOString()
-    };
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions for status change',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(updatedUser, 'User status updated successfully')
-    );
-  } catch (error) {
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Update user status error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to update user status')
@@ -170,53 +257,45 @@ router.patch('/:userId', authenticate, requireResourceOwner(), async (req, res) 
 
 /**
  * PUT /users/:userId/password
- * Update user password
+ * Update user password - SECURED with multi-tenant validation
  */
-router.put('/:userId/password', authenticate, requireResourceOwner(), async (req, res) => {
+router.put('/:userId/password', authenticate, async (req, res) => {
   try {
-    const { userId } = req.params;
-    const { password, currentPassword, confirmPassword } = req.body;
-
-    // Validation
-    if (!password) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('New password is required')
-      );
+    // CRITICAL: Use secure user service that enforces client validation and password policies
+    const result = await userService.updateUserPassword(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    if (confirmPassword && password !== confirmPassword) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Password confirmation does not match')
-      );
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - You can only update passwords within your organization',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // Password strength validation (basic)
-    if (password.length < 8) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Password must be at least 8 characters long')
-      );
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual password update with proper validation
-    // - Verify current password if provided
-    // - Hash new password
-    // - Update in database
-    // - Invalidate existing tokens
-
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(
-        { 
-          userId,
-          passwordUpdated: true,
-          updatedAt: new Date().toISOString()
-        }, 
-        'Password updated successfully'
-      )
-    );
-  } catch (error) {
     console.error('Update password error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to update password')

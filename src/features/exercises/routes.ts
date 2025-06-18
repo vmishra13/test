@@ -7,11 +7,21 @@ const router = Router();
 
 /**
  * GET /exercises
- * List all exercises
+ * List all exercises with STRICT client isolation
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    // TODO: Implement actual database query
+    const user = (req as any).user;
+    
+    if (!user.clientId) {
+      res.status(StatusCodes.FORBIDDEN).json(
+        ApiResponse.error('Client context required for data access')
+      );
+      return;
+    }
+
+    // TODO: Implement actual database query with CLIENT FILTERING
+    // CRITICAL: Query must include: WHERE client_id = user.clientId
     const exercises = [
       {
         id: 1,
@@ -29,7 +39,8 @@ router.get('/', authenticate, async (req, res) => {
         frequency: 'daily',
         unit: 'Set',
         value: 3,
-        repetition: 15
+        repetition: 15,
+        clientId: user.clientId // CRITICAL: Always include client assignment
       },
       {
         id: 2,
@@ -47,7 +58,8 @@ router.get('/', authenticate, async (req, res) => {
         frequency: 'daily',
         unit: 'Set',
         value: 2,
-        repetition: 10
+        repetition: 10,
+        clientId: user.clientId // CRITICAL: Always include client assignment
       },
       {
         id: 3,
@@ -65,9 +77,10 @@ router.get('/', authenticate, async (req, res) => {
         frequency: 'daily',
         unit: 'Set',
         value: 2,
-        repetition: 12
+        repetition: 12,
+        clientId: user.clientId // CRITICAL: Always include client assignment
       }
-    ];
+    ].filter(exercise => exercise.clientId === user.clientId); // TEMP: Client filtering
 
     res.status(StatusCodes.OK).json(
       ApiResponse.success(exercises, 'Exercises retrieved successfully')
@@ -86,6 +99,23 @@ router.get('/', authenticate, async (req, res) => {
  */
 router.post('/', authenticate, async (req, res) => {
   try {
+    const user = (req as any).user;
+    
+    if (!user.clientId) {
+      res.status(StatusCodes.FORBIDDEN).json(
+        ApiResponse.error('Client context required for data creation')
+      );
+      return;
+    }
+
+    // Only CLIENT_ADMIN and SUPER_ADMIN can create exercises
+    if (!user.roles.includes('CLIENT_ADMIN') && !user.roles.includes('SUPER_ADMIN')) {
+      res.status(StatusCodes.FORBIDDEN).json(
+        ApiResponse.error('Insufficient permissions to create exercises')
+      );
+      return;
+    }
+
     const {
       name,
       description,
@@ -134,7 +164,7 @@ router.post('/', authenticate, async (req, res) => {
       return;
     }
 
-    // TODO: Implement exercise creation with database
+    // TODO: Implement exercise creation with database and CLIENT ASSIGNMENT
     const newExercise = {
       id: Date.now(), // TODO: Replace with proper ID generation
       node_type: 'Exercise',
@@ -146,7 +176,10 @@ router.post('/', authenticate, async (req, res) => {
       frequency: frequency || 'daily',
       unit: unit || 'Set',
       value: value || 1,
-      repetition: repetition || 0
+      repetition: repetition || 0,
+      clientId: user.clientId, // CRITICAL: Always assign to user's client
+      createdBy: user.userId,
+      createdAt: new Date().toISOString()
     };
 
     res.status(StatusCodes.CREATED).json(

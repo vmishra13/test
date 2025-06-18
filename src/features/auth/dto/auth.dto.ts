@@ -2,7 +2,7 @@
 // 🎯 AUTHENTICATION DTOs (Pure authentication types only)
 // ===================================================================
 
-import type { CoreRole } from '@/shared/constants';
+import type { CoreRole } from '../../../shared/constants';
 
 // Token-related DTOs
 export interface TokenPair {

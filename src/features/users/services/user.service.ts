@@ -623,3 +623,337 @@ function getNextOnboardingStep(completedSteps: any): string | null {
   if (!completedSteps.profilePicture) return 'profilePicture';
   return null; // All steps completed
 }
+
+/**
+ * Get user by ID with STRICT multi-tenant validation
+ * HIPAA/PHI Protection: Only allows access to users within same client or SuperAdmin cross-client access
+ */
+export async function getUserById(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { userId } = req.params;
+
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // Get target user first
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Create authorization request for viewing specific user
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      targetUserId,
+      targetUser.clientId, // Use target user's client
+      null,
+      null,
+      RequestUserAction.userView,
+    );
+
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} denied access to user ${targetUserId} - Client isolation enforced`,
+      );
+      throw createAuthorizationError('Access denied - You can only view users within your organization');
+    }
+
+    return {
+      success: true,
+      data: {
+        id: targetUser.id,
+        loginName: targetUser.loginName,
+        firstName: targetUser.firstName,
+        lastName: targetUser.lastName,
+        email: targetUser.email,
+        status: targetUser.status,
+        roles: targetUser.userRoles.map((userRole: any) => userRole.role.name),
+        client: {
+          id: targetUser.client.id,
+          name: targetUser.client.name,
+        },
+        userType: {
+          id: targetUser.userType.id,
+          name: targetUser.userType.name,
+        },
+        createdAt: targetUser.crDate.toISOString(),
+        updatedAt: targetUser.modDate?.toISOString() || targetUser.crDate.toISOString(),
+      },
+      message: 'User retrieved successfully',
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    logger.error('Error in getUserById service:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete user with STRICT multi-tenant validation and authorization
+ * HIPAA/PHI Protection: Only SuperAdmin and CLIENT_ADMIN can delete users within their organization
+ */
+export async function deleteUser(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { userId } = req.params;
+
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // Get target user first
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Create authorization request for deleting specific user
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      targetUserId,
+      targetUser.clientId,
+      null,
+      null,
+      RequestUserAction.userDelete, // Specific permission for deletion
+    );
+
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} denied deletion access to user ${targetUserId} - Insufficient permissions`,
+      );
+      throw createAuthorizationError('Access denied - Insufficient permissions to delete this user');
+    }
+
+    // Additional business rules for deletion
+    const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
+    
+    // Prevent SUPER_ADMIN deletion
+    const targetUserRoles = targetUser.userRoles.map((ur: any) => ur.role.name);
+    if (targetUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+      throw createAuthorizationError('SUPER_ADMIN users cannot be deleted');
+    }
+
+    // CLIENT_ADMIN can only delete users in their own client (except other CLIENT_ADMINs)
+    if (currentUserRole === CoreRole.CLIENT_ADMIN && targetUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+      throw createAuthorizationError('CLIENT_ADMIN cannot delete other CLIENT_ADMIN users');
+    }
+
+    // Perform soft delete
+    await userRepository.softDeleteUser(targetUserId, currentUser.loginName);
+
+    return {
+      success: true,
+      data: {
+        deletedUserId: targetUserId,
+        deletedAt: new Date().toISOString(),
+        deletedBy: currentUser.loginName,
+      },
+      message: 'User deleted successfully',
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    logger.error('Error in deleteUser service:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update user status with STRICT multi-tenant validation and authorization
+ * HIPAA/PHI Protection: Only authorized roles can change user status within their organization
+ */
+export async function updateUserStatus(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { userId } = req.params;
+    const { isActive, status } = req.body;
+
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    // Validate input
+    if (typeof isActive !== 'boolean' && typeof status !== 'number') {
+      throw createValidationError('Invalid status parameters', [
+        { field: 'isActive', message: 'Either isActive (boolean) or status (number) must be provided' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // Get target user first
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Create authorization request for updating user status
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      targetUserId,
+      targetUser.clientId,
+      null,
+      null,
+      RequestUserAction.userEdit, // Status change is an edit operation
+    );
+
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} denied status update access to user ${targetUserId} - Client isolation enforced`,
+      );
+      throw createAuthorizationError('Access denied - You can only update users within your organization');
+    }
+
+    // Calculate final status
+    const finalStatus = status !== undefined ? status : (isActive ? 1 : 0);
+    
+    // Perform status update
+    await userRepository.updateUserStatus(targetUserId, finalStatus, currentUser.loginName);
+
+    return {
+      success: true,
+      data: {
+        userId: targetUserId,
+        isActive: finalStatus === 1,
+        status: finalStatus,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.loginName,
+      },
+      message: 'User status updated successfully',
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    logger.error('Error in updateUserStatus service:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update user password with STRICT multi-tenant validation and password policies
+ * HIPAA/PHI Protection: Only authorized users can change passwords within their organization
+ */
+export async function updateUserPassword(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { userId } = req.params;
+    const { password, currentPassword, confirmPassword } = req.body;
+
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    // Validate password requirements
+    if (!password) {
+      throw createValidationError('Password validation failed', [
+        { field: 'password', message: 'New password is required' },
+      ]);
+    }
+
+    if (confirmPassword && password !== confirmPassword) {
+      throw createValidationError('Password validation failed', [
+        { field: 'confirmPassword', message: 'Password confirmation does not match' },
+      ]);
+    }
+
+    // Password strength validation
+    if (password.length < 8) {
+      throw createValidationError('Password validation failed', [
+        { field: 'password', message: 'Password must be at least 8 characters long' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // Get target user first
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Create authorization request for password update
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      targetUserId,
+      targetUser.clientId,
+      null,
+      null,
+      RequestUserAction.userEdit, // Password change is an edit operation
+    );
+
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} denied password update access to user ${targetUserId} - Client isolation enforced`,
+      );
+      throw createAuthorizationError('Access denied - You can only update passwords within your organization');
+    }
+
+    // Verify current password if provided (for self-update)
+    if (currentPassword && currentUser.userId === targetUserId) {
+      const isCurrentPasswordValid = await userRepository.verifyPassword(targetUserId, currentPassword);
+      if (!isCurrentPasswordValid) {
+        throw createValidationError('Password validation failed', [
+          { field: 'currentPassword', message: 'Current password is incorrect' },
+        ]);
+      }
+    }
+
+    // Update password
+    await userRepository.updatePassword(targetUserId, password, currentUser.loginName);
+
+    return {
+      success: true,
+      data: {
+        userId: targetUserId,
+        passwordUpdated: true,
+        updatedAt: new Date().toISOString(),
+        updatedBy: currentUser.loginName,
+      },
+      message: 'Password updated successfully',
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    logger.error('Error in updateUserPassword service:', error);
+    throw error;
+  }
+}

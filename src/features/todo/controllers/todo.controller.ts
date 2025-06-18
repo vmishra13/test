@@ -7,10 +7,22 @@ import type { TodoCreateInput, TodoUpdateInput } from '../models/todo.model';
 
 export const getAllTodos = async (req: Request, res: Response): Promise<void> => {
   try {
-    const todos = await todoService.getAllTodos();
+    // CRITICAL: Use secure service with client validation
+    const todos = await todoService.getAllTodos(req);
 
     res.status(StatusCodes.OK).json(ApiResponse.success(todos, 'Successfully retrieved todos'));
-  } catch (error) {
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     logger.error('Error fetching todos', {
       error: error instanceof Error ? error.message : String(error),
     });
@@ -32,7 +44,8 @@ export const getTodoById = async (req: Request, res: Response): Promise<void> =>
       return;
     }
 
-    const todo = await todoService.getTodoById(todoId);
+    // CRITICAL: Use secure service with client validation
+    const todo = await todoService.getTodoById(req, todoId);
 
     if (!todo) {
       res.status(StatusCodes.NOT_FOUND).json(ApiResponse.error('Todo not found', 'NOT_FOUND'));
@@ -40,7 +53,18 @@ export const getTodoById = async (req: Request, res: Response): Promise<void> =>
     }
 
     res.status(StatusCodes.OK).json(ApiResponse.success(todo, 'Successfully retrieved todo'));
-  } catch (error) {
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     logger.error('Error fetching todo by id', {
       id: req.params.id,
       error: error instanceof Error ? error.message : String(error),
@@ -72,10 +96,22 @@ export const createTodo = async (
       return;
     }
 
-    const newTodo = await todoService.createTodo({ title, description });
+    // CRITICAL: Use secure service with client validation
+    const newTodo = await todoService.createTodo(req, { title, description });
 
     res.status(StatusCodes.CREATED).json(ApiResponse.success(newTodo, 'Todo created successfully'));
-  } catch (error) {
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client context required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     logger.error('Error creating todo', {
       data: req.body,
       error: error instanceof Error ? error.message : String(error),
@@ -101,7 +137,7 @@ export const updateTodo = async (
       return;
     }
 
-    const updatedTodo = await todoService.updateTodo(todoId, req.body);
+    const updatedTodo = await todoService.updateTodo(req, todoId, req.body);
 
     if (!updatedTodo) {
       res
@@ -134,14 +170,14 @@ export const deleteTodo = async (req: Request, res: Response): Promise<void> => 
     }
 
     // Check if todo exists
-    const existingTodo = await todoService.getTodoById(todoId);
+    const existingTodo = await todoService.getTodoById(req, todoId);
     if (!existingTodo) {
       res
         .status(StatusCodes.NOT_FOUND)
         .json(ApiResponse.error('Todo not found', 'NOT_FOUND', StatusCodes.NOT_FOUND));
     }
 
-    await todoService.deleteTodo(todoId);
+    await todoService.deleteTodo(req, todoId);
 
     res.status(StatusCodes.OK).json(ApiResponse.success(null, 'Todo deleted successfully'));
   } catch (error) {
@@ -167,14 +203,14 @@ export const markTodoCompleted = async (req: Request, res: Response): Promise<vo
     }
 
     // Check if todo exists
-    const existingTodo = await todoService.getTodoById(todoId);
+    const existingTodo = await todoService.getTodoById(req, todoId);
     if (!existingTodo) {
       res
         .status(StatusCodes.NOT_FOUND)
         .json(ApiResponse.error('Todo not found', 'NOT_FOUND', StatusCodes.NOT_FOUND));
     }
 
-    const updatedTodo = await todoService.markTodoAsCompleted(todoId);
+    const updatedTodo = await todoService.markTodoAsCompleted(req, todoId);
 
     res.status(StatusCodes.OK).json(ApiResponse.success(updatedTodo, 'Todo marked as completed'));
   } catch (error) {
