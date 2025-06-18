@@ -7,20 +7,24 @@ import {
 import { CoreRole, RoleUtils } from '@shared/constants';
 import type { AuthenticatedUser } from '@/features/auth/dto/auth.dto';
 import { createAuthError, createAuthorizationError } from '@/shared/errors/application-error';
+import logger from '@/config/logger';
 
 export function performAuthorization(oAuthReq: AuthRequest): boolean {
   //   const currentUserRole = getCurrentUserPrimaryRole(oAuthReq.reqUserRoles);
   const currentUserRoles = oAuthReq.reqUserRoles || [];
-  const currentUserTypeId = oAuthReq.reqUserTypeId;
+  const currentUserTypeId = oAuthReq.reqUserTypeId || null;
 
-  console.log(currentUserRoles, 'currentUserRoles');
   if (currentUserRoles.length === 0) {
     throw createAuthorizationError('No roles found for current user');
   }
 
+  if (!currentUserTypeId || currentUserTypeId < 1 || currentUserTypeId > 5) {
+    throw createAuthorizationError('Current user type ID is required/incorrect for authorization');
+  }
+
   switch (oAuthReq.actionPermission) {
     case RequestUserAction.userAdd:
-      return validateUserRegistrationAccess(oAuthReq, currentUserRoles);
+      return validateUserRegistrationAccess(oAuthReq, currentUserRoles, currentUserTypeId);
     //   // SUPER_ADMIN can add users anywhere
     //   //   if (oAuthReq.reqUserRoles.includes(CoreRole.SUPER_ADMIN)) {
     //   if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
@@ -164,51 +168,221 @@ function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
 function validateUserRegistrationAccess(
   oAuthReq: AuthRequest,
   currentUserRoles: CoreRole[],
+  currentUserTypeId: number,
 ): boolean {
-  const actionUserRoles = oAuthReq.actionUserRoles || [];
+  try {
+    const actionUserRoles = oAuthReq.actionUserRoles || [];
+    const actionUserTypeId = oAuthReq.actionUserTypeId || null;
+    const actionUserClientId = oAuthReq.actionClientId || null;
 
-  if (actionUserRoles.length === 0) {
-    return false; // No roles specified for the action user
-  }
+    // actionUserTypeId = 1 stands for SUPER_ADMIN, 2 for CLIENT_ADMIN,
+    // 3 for CLINICAL_STAFF, 4 for OFFICE_STAFF, and 5 for PATIENT
+    if (
+      actionUserRoles.length === 0 ||
+      !actionUserTypeId ||
+      actionUserTypeId < 1 ||
+      actionUserTypeId > 5
+    ) {
+      logger.error(`Invalid actionUserRoles or actionUserTypeId`);
+      return false;
+    }
 
-  if (actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
-    return false; // Cannot register a SUPER_ADMIN user
-  }
+    // Step 1: Validate User Type to Role Compatibility
+    if (!isValidUserTypeRoleCombination(actionUserTypeId, actionUserRoles as CoreRole[])) {
+      logger.error('❌ Invalid user type and role combination');
+      return false;
+    }
 
-  // SUPER_ADMIN can add users anywhere except for SUPER_ADMIN
-  if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    // Step 2: Check if current user can create the target user
+    if (
+      !canCurrentUserCreateTarget(
+        currentUserTypeId,
+        actionUserTypeId,
+        actionUserRoles as CoreRole[],
+        currentUserRoles as CoreRole[],
+      )
+    ) {
+      logger.error('❌ Current user cannot create target user');
+      return false;
+    }
+
+    // Step 3: Check client boundary restrictions
+    if (!isClientAccessAllowed(currentUserTypeId, currentUserTypeId, actionUserClientId)) {
+      logger.error('❌ Client boundary violation');
+      return false;
+    }
+
+    logger.error('✅ User registration access validated successfully');
     return true;
+
+    // if (actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    //   return false; // Cannot register a SUPER_ADMIN user
+    // }
+
+    // // SUPER_ADMIN can add users anywhere except for SUPER_ADMIN
+    // if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    //   return true;
+    // }
+
+    // if (oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+    //   // If actionClientId is specified, it must match the requester's client
+    //   return false;
+    // }
+
+    // // CLIENT_ADMIN can add users within their own client
+    // if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    //   if (
+    //     actionUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
+    //     actionUserRoles.includes(CoreRole.OFFICE_STAFF) ||
+    //     actionUserRoles.includes(CoreRole.PATIENT)
+    //   ) {
+    //     return true;
+    //   } else {
+    //     return false;
+    //   }
+    // }
+
+    // if (
+    //   currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
+    //   currentUserRoles.includes(CoreRole.OFFICE_STAFF)
+    // ) {
+    //   if (actionUserRoles.includes(CoreRole.PATIENT)) {
+    //     return true;
+    //   } else {
+    //     return false;
+    //   }
+    // }
+
+    // // Other roles (CLINICAL_STAFF, OFFICE_STAFF) cannot add users
+    // return false;
+  } catch (error) {
+    logger.error(`Error validating user registration access`);
+    return false;
+  }
+}
+
+/**
+ * Simple validation for user type and role combinations
+ */
+function isValidUserTypeRoleCombination(userTypeId: number, roles: CoreRole[]): boolean {
+  // 1. actionUserTypeId 1 -> only SUPER_ADMIN role
+  if (userTypeId === 1) {
+    return roles.length === 1 && roles[0] === CoreRole.SUPER_ADMIN;
   }
 
-  if (oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-    // If actionClientId is specified, it must match the requester's client
+  // 2. actionUserTypeId 2 -> only CLIENT_ADMIN role
+  if (userTypeId === 2) {
+    return roles.length === 1 && roles[0] === CoreRole.CLIENT_ADMIN;
+  }
+
+  // 3. actionUserTypeId 5 -> only PATIENT role
+  if (userTypeId === 5) {
+    return roles.length === 1 && roles[0] === CoreRole.PATIENT;
+  }
+
+  // 4. actionUserTypeId 3 -> CLINICAL_STAFF or [CLINICAL_STAFF, CLIENT_ADMIN]
+  if (userTypeId === 3) {
+    if (roles.length === 1) {
+      return roles[0] === CoreRole.CLINICAL_STAFF;
+    }
+    if (roles.length === 2) {
+      return roles.includes(CoreRole.CLINICAL_STAFF) && roles.includes(CoreRole.CLIENT_ADMIN);
+    }
     return false;
   }
 
-  // CLIENT_ADMIN can add users within their own client
-  if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
-    if (
-      actionUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
-      actionUserRoles.includes(CoreRole.OFFICE_STAFF) ||
-      actionUserRoles.includes(CoreRole.PATIENT)
-    ) {
-      return true;
-    } else {
-      return false;
+  // 5. actionUserTypeId 4 -> OFFICE_STAFF or [OFFICE_STAFF, CLIENT_ADMIN]
+  if (userTypeId === 4) {
+    if (roles.length === 1) {
+      return roles[0] === CoreRole.OFFICE_STAFF;
     }
+    if (roles.length === 2) {
+      return roles.includes(CoreRole.OFFICE_STAFF) && roles.includes(CoreRole.CLIENT_ADMIN);
+    }
+    return false;
   }
 
-  if (
-    currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
-    currentUserRoles.includes(CoreRole.OFFICE_STAFF)
-  ) {
-    if (actionUserRoles.includes(CoreRole.PATIENT)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  // Other roles (CLINICAL_STAFF, OFFICE_STAFF) cannot add users
+  logger.error(`❌ Unknown user type ID: ${userTypeId}`);
   return false;
+}
+
+/**
+ * Simple check if current user can create target user
+ */
+function canCurrentUserCreateTarget(
+  currentUserTypeId: number,
+  actionUserTypeId: number,
+  actionUserRoles: CoreRole[],
+  currentUserRoles: CoreRole[],
+): boolean {
+  // 6. currentUserTypeId 1 (SYSTEM_ADMIN) -> can create any valid user
+  if (currentUserTypeId === 1) {
+    return true; // Already validated by isValidUserTypeRoleCombination
+  }
+
+  // 7. currentUserTypeId 2 (CLIENT_ADMIN) -> can create any valid user except SUPER_ADMIN
+  if (currentUserTypeId === 2) {
+    // Cannot create SUPER_ADMIN (userTypeId 1)
+    if (actionUserTypeId === 1 || actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+      return false;
+    }
+    return true; // Can create all other valid combinations
+  }
+
+  // 8. currentUserTypeId 3 (CLINICAL_USER) -> can create only PATIENT
+  if (currentUserTypeId === 3) {
+    if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+      // Same as rule 7: can create any valid user except SUPER_ADMIN
+      if (actionUserTypeId === 1 || actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+        return false;
+      }
+      return true; // Can create all other valid combinations
+    }
+    return (
+      actionUserTypeId === 5 &&
+      actionUserRoles.length === 1 &&
+      actionUserRoles[0] === CoreRole.PATIENT
+    );
+  }
+
+  // 9. currentUserTypeId 4 (OFFICE_USER) -> can create only PATIENT
+  if (currentUserTypeId === 4) {
+    if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+      // Same as rule 7: can create any valid user except SUPER_ADMIN
+      if (actionUserTypeId === 1 || actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+        return false;
+      }
+      return true; // Can create all other valid combinations
+    }
+    return (
+      actionUserTypeId === 5 &&
+      actionUserRoles.length === 1 &&
+      actionUserRoles[0] === CoreRole.PATIENT
+    );
+  }
+
+  // currentUserTypeId 5 (PATIENT_USER) -> cannot create anyone
+  if (currentUserTypeId === 5) {
+    return false;
+  }
+
+  logger.error(`❌ Unknown current user type: ${currentUserTypeId}`);
+  return false;
+}
+
+/**
+ * Simple client access validation
+ */
+function isClientAccessAllowed(
+  currentUserTypeId: number,
+  currentClientId: number,
+  actionClientId: number | null,
+): boolean {
+  // 6. currentUserTypeId 1 (SYSTEM_ADMIN) -> can access any client
+  if (currentUserTypeId === 1) {
+    return true;
+  }
+
+  // All other user types are restricted to their own client
+  return currentClientId === actionClientId;
 }
