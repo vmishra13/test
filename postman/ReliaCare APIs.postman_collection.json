@@ -18,7 +18,7 @@
 	},
 	"item": [
 		{
-			"name": "🔐 Authentication",
+			"name": "\ud83d\udd10 Authentication",
 			"item": [
 				{
 					"name": "1. OAuth Token (Password Grant)",
@@ -32,7 +32,7 @@
 									"    ",
 									"    if (pm.response.code === 200 && responseJson.access_token) {",
 									"        pm.collectionVariables.set(\"RELIACARE_X_AUTH_TOKEN\", responseJson.access_token);",
-									"        console.log(\"✅ Access token stored in collection variable:\", responseJson.access_token);",
+									"        console.log(\"\u2705 Access token stored in collection variable:\", responseJson.access_token);",
 									"        ",
 									"        if (responseJson.token_type) {",
 									"            pm.collectionVariables.set(\"RELIACARE_TOKEN_TYPE\", responseJson.token_type);",
@@ -53,10 +53,10 @@
 									"            pm.collectionVariables.set(\"CURRENT_CLIENT_ID\", responseJson.user.clientId);",
 									"        }",
 									"    } else {",
-									"        console.error(\"❌ Failed to extract access token from response\");",
+									"        console.error(\"\u274c Failed to extract access token from response\");",
 									"    }",
 									"} catch (error) {",
-									"    console.error(\"❌ Error processing response:\", error.message);",
+									"    console.error(\"\u274c Error processing response:\", error.message);",
 									"}",
 									"",
 									"pm.test(\"Authentication successful\", function () {",
@@ -85,9 +85,18 @@
 							"raw": "{\n    \"grant_type\": \"password\",\n    \"username\": \"superadmin\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": 1\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/token",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "token"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/token",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"token"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -109,9 +118,18 @@
 							"raw": "{\n    \"username\": \"superadmin\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": 1\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/login",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "login"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/login",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"login"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -130,9 +148,18 @@
 							"raw": "{\n    \"refresh_token\": \"{{RELIACARE_REFRESH_TOKEN}}\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/refresh",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "refresh"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/refresh",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"refresh"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -142,9 +169,18 @@
 						"method": "POST",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/logout",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "logout"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/logout",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"logout"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -163,9 +199,18 @@
 							"raw": "{\n    \"token\": \"{{RELIACARE_X_AUTH_TOKEN}}\",\n    \"tokenTypeHint\": \"access_token\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/revoke",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "revoke"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/revoke",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"revoke"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -181,12 +226,12 @@
 									"    ",
 									"    if (pm.response.code === 200 && responseJson.success && responseJson.data && responseJson.data.token) {",
 									"        pm.collectionVariables.set(\"resetToken\", responseJson.data.token);",
-									"        console.log(\"✅ Reset token stored in collection variable:\", responseJson.data.token);",
+									"        console.log(\"\u2705 Reset token stored in collection variable:\", responseJson.data.token);",
 									"    } else {",
-									"        console.log(\"ℹ️ Reset token not found in response or request failed\");",
+									"        console.log(\"\u2139\ufe0f Reset token not found in response or request failed\");",
 									"    }",
 									"} catch (error) {",
-									"    console.error(\"❌ Error processing forgot password response:\", error.message);",
+									"    console.error(\"\u274c Error processing forgot password response:\", error.message);",
 									"}",
 									"",
 									"pm.test(\"Forgot password request successful\", function () {",
@@ -215,9 +260,18 @@
 							"raw": "{\n    \"email\": \"superadmin@reliacare.com\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/forgot-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "forgot-password"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/forgot-password",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"forgot-password"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Initiate password reset process by sending reset token to user's email"
 					}
@@ -231,9 +285,19 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/verify-reset-token/{{resetToken}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "verify-reset-token", "{{resetToken}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/verify-reset-token/{{resetToken}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"verify-reset-token",
+								"{{resetToken}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Verify if a password reset token is valid and not expired"
 					}
@@ -256,9 +320,18 @@
 							"raw": "{\n    \"token\": \"{{resetToken}}\",\n    \"newPassword\": \"newPassword123!\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/auth/reset-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "auth", "reset-password"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/auth/reset-password",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"auth",
+								"reset-password"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Complete password reset using valid token and new password"
 					}
@@ -266,7 +339,7 @@
 			]
 		},
 		{
-			"name": "👥 Users",
+			"name": "\ud83d\udc65 Users",
 			"item": [
 				{
 					"name": "1. Register User (HIPAA Secure)",
@@ -289,9 +362,18 @@
 							"description": "Updated registration with mandatory clientId validation. Only SuperAdmin can create users for different clients."
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/users/register",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users", "register"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/register",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"register"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Register new user with strict client validation. The clientId must match the authenticated user's client unless the user is a SuperAdmin."
 					}
@@ -308,9 +390,15 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/users?page=1&limit=20&sort=asc",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users?page=1&limit=20&sort=asc",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -345,7 +433,9 @@
 									"value": "john",
 									"disabled": true
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get all users with automatic client filtering. Results are restricted to the authenticated user's client unless the user is a SuperAdmin."
 					}
@@ -361,9 +451,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users", "{{userId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/{{userId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{userId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get user by ID with strict client validation. Users can only access their own data or users within their client (with proper permissions)."
 					}
@@ -387,9 +486,18 @@
 							"raw": "{\n    \"firstName\": \"John\",\n    \"lastName\": \"Smith\",\n    \"email\": \"john.smith@example.com\",\n    \"dob\": \"1990-01-15\",\n    \"gender\": \"male\",\n    \"timeZone\": \"America/New_York\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users", "{{userId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/{{userId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{userId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Update user with client validation. Only allows updates to users within the same client. Validates permissions and data access rights."
 					}
@@ -405,14 +513,23 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/users/{{userId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "users", "{{userId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/{{userId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{userId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
 				{
-					"name": "📱 Mobile Profile",
+					"name": "\ud83d\udcf1 Mobile Profile",
 					"description": "Mobile app endpoints for user profile management, onboarding, and personal information updates",
 					"item": [
 						{
@@ -426,9 +543,18 @@
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/profile",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "profile"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/profile",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"profile"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Get complete user profile including personal info, onboarding status, and extraInfo fields"
 							}
@@ -452,9 +578,18 @@
 									"raw": "{\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"email\": \"sarah.johnson@reliacare.com\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"timeZone\": \"America/New_York\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/profile",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "profile"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/profile",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"profile"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Update basic user profile information (name, email, DOB, gender, timezone)"
 							}
@@ -478,9 +613,19 @@
 									"raw": "{\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"phoneNumber\": \"+1-555-123-4567\",\n    \"address\": {\n        \"street\": \"456 Healthcare Ave\",\n        \"city\": \"Boston\",\n        \"state\": \"MA\",\n        \"zipCode\": \"02101\",\n        \"country\": \"USA\"\n    },\n    \"emergencyContact\": {\n        \"name\": \"Michael Johnson\",\n        \"relationship\": \"spouse\",\n        \"phoneNumber\": \"+1-555-123-4568\",\n        \"email\": \"michael.johnson@email.com\"\n    },\n    \"insurance\": {\n        \"provider\": \"Blue Cross Blue Shield\",\n        \"memberId\": \"BC123456789\",\n        \"groupNumber\": \"GRP001\"\n    },\n    \"medicalHistory\": {\n        \"allergies\": [\"Penicillin\", \"Shellfish\"],\n        \"medications\": [\"Lisinopril 10mg daily\"],\n        \"conditions\": [\"Hypertension\"]\n    }\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/profile/personal-info",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "profile", "personal-info"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/profile/personal-info",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"profile",
+										"personal-info"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Update extended personal information including address, emergency contacts, insurance, and medical history"
 							}
@@ -504,9 +649,19 @@
 									"raw": "{\n    \"firstName\": \"Sarah\",\n    \"lastName\": \"Johnson\",\n    \"email\": \"sarah.johnson@reliacare.com\",\n    \"dob\": \"1985-03-22\",\n    \"gender\": \"female\",\n    \"timeZone\": \"America/New_York\",\n    \"onboardingStep\": \"completed\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/profile/complete-onboarding",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "profile", "complete-onboarding"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/profile/complete-onboarding",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"profile",
+										"complete-onboarding"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Mark specific onboarding steps as complete (basicInfo, personalInfo, contactInfo, preferences, profilePicture)"
 							}
@@ -522,9 +677,19 @@
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/profile/onboarding-status",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "profile", "onboarding-status"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/profile/onboarding-status",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"profile",
+										"onboarding-status"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Get current onboarding progress, completed steps, and next step to complete"
 							}
@@ -550,9 +715,19 @@
 									]
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/profile/upload-picture",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "profile", "upload-picture"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/profile/upload-picture",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"profile",
+										"upload-picture"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Upload profile picture using multipart/form-data with 'profilePicture' field"
 							}
@@ -562,11 +737,11 @@
 			]
 		},
 		{
-			"name": "📱 Mobile App Features (HIPAA Secure)",
+			"name": "\ud83d\udcf1 Mobile App Features (HIPAA Secure)",
 			"description": "Mobile app specific endpoints with strict multi-tenant security and client validation",
 			"item": [
 				{
-					"name": "🏥 Doctor Selection",
+					"name": "\ud83c\udfe5 Doctor Selection",
 					"item": [
 						{
 							"name": "1. Get Available Doctors",
@@ -579,9 +754,16 @@
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/doctors?specialty=cardiology&clientId={{CURRENT_CLIENT_ID}}",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "doctors"],
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/doctors?specialty=cardiology&clientId={{CURRENT_CLIENT_ID}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"doctors"
+									],
 									"query": [
 										{
 											"key": "specialty",
@@ -591,7 +773,9 @@
 											"key": "clientId",
 											"value": "{{CURRENT_CLIENT_ID}}"
 										}
-									]
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Get available doctors filtered by client. Only shows doctors within the user's client."
 							}
@@ -615,9 +799,19 @@
 									"raw": "{\n    \"doctorId\": 15,\n    \"clientId\": {{CURRENT_CLIENT_ID}},\n    \"isPrimary\": true,\n    \"specialtyRequired\": \"cardiology\",\n    \"reasonForSelection\": \"Previous positive experience\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/doctors/select",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "doctors", "select"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/doctors/select",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"doctors",
+										"select"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Select a doctor with client validation. Ensures doctor belongs to the same client."
 							}
@@ -625,7 +819,7 @@
 					]
 				},
 				{
-					"name": "📋 Mobile Registration",
+					"name": "\ud83d\udccb Mobile Registration",
 					"item": [
 						{
 							"name": "1. Mobile Registration",
@@ -642,9 +836,18 @@
 									"raw": "{\n    \"firstName\": \"Mobile\",\n    \"lastName\": \"User\",\n    \"email\": \"mobile.user@reliacare.com\",\n    \"password\": \"TempPass123!\",\n    \"clientId\": {{CURRENT_CLIENT_ID}},\n    \"phoneNumber\": \"+1-555-123-4567\",\n    \"dob\": \"1990-01-15\",\n    \"gender\": \"female\",\n    \"deviceInfo\": {\n        \"deviceType\": \"mobile\",\n        \"platform\": \"iOS\",\n        \"version\": \"16.0\",\n        \"deviceId\": \"unique-device-id-123\"\n    },\n    \"acceptedTerms\": true,\n    \"acceptedPrivacy\": true\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/mobile-register",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "mobile-register"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/mobile-register",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"mobile-register"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Mobile-specific registration with device info and client validation."
 							}
@@ -668,9 +871,18 @@
 									"raw": "{\n    \"clientId\": {{CURRENT_CLIENT_ID}},\n    \"personalInfo\": {\n        \"firstName\": \"Mobile\",\n        \"lastName\": \"User\",\n        \"dob\": \"1990-01-15\",\n        \"gender\": \"female\",\n        \"phoneNumber\": \"+1-555-123-4567\"\n    },\n    \"medicalInfo\": {\n        \"allergies\": [\"Penicillin\"],\n        \"medications\": [],\n        \"conditions\": []\n    },\n    \"preferences\": {\n        \"notifications\": true,\n        \"reminderTime\": \"09:00\",\n        \"language\": \"en\"\n    },\n    \"completedSteps\": [\"basicInfo\", \"personalInfo\", \"medicalInfo\", \"preferences\"]\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/users/mobile-onboarding",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "users", "mobile-onboarding"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/users/mobile-onboarding",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"mobile-onboarding"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Complete mobile onboarding process with comprehensive user setup."
 							}
@@ -680,7 +892,7 @@
 			]
 		},
 		{
-			"name": "🏢 Clients",
+			"name": "\ud83c\udfe2 Clients",
 			"item": [
 				{
 					"name": "1. Get All Clients",
@@ -693,9 +905,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/clients",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "clients"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/clients",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -710,9 +930,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/clients/{{clientId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "clients", "{{clientId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/clients/{{clientId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients",
+								"{{clientId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -735,9 +964,17 @@
 							"raw": "{\n    \"name\": \"New Healthcare Clinic\",\n    \"description\": \"A comprehensive healthcare facility\",\n    \"timeZone\": \"America/New_York\",\n    \"website\": \"https://newhealthcare.com\",\n    \"logo\": \"https://example.com/logo.png\",\n    \"status\": 1\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/clients",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "clients"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/clients",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -760,9 +997,18 @@
 							"raw": "{\n    \"name\": \"Updated Healthcare Clinic\",\n    \"description\": \"An updated comprehensive healthcare facility\",\n    \"timeZone\": \"America/Chicago\",\n    \"website\": \"https://updatedhealthcare.com\",\n    \"status\": 1\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/clients/{{clientId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "clients", "{{clientId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/clients/{{clientId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients",
+								"{{clientId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -777,16 +1023,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/clients/{{clientId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "clients", "{{clientId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/clients/{{clientId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"clients",
+								"{{clientId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "🏃‍♂️ Exercises",
+			"name": "\ud83c\udfc3\u200d\u2642\ufe0f Exercises",
 			"item": [
 				{
 					"name": "1. Get All Exercises",
@@ -799,9 +1054,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/exercises",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "exercises"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/exercises",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"exercises"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -824,9 +1087,17 @@
 							"raw": "{\n    \"name\": \"Ankle Pumps\",\n    \"description\": \"Simple ankle flexion and extension exercise for post-operative recovery\",\n    \"procedure\": [\n        \"Sit or lie down comfortably\",\n        \"Point toes away from you\",\n        \"Flex toes back toward you\",\n        \"Repeat for prescribed repetitions\"\n    ],\n    \"media_type\": \"video\",\n    \"media_url\": \"https://example.com/videos/ankle-pumps.mp4\",\n    \"frequency\": \"daily\",\n    \"unit\": \"Set\",\n    \"value\": 3,\n    \"repetition\": 15\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/exercises",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "exercises"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/exercises",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"exercises"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -841,9 +1112,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/exercises/{{exerciseId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "exercises", "{{exerciseId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/exercises/{{exerciseId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"exercises",
+								"{{exerciseId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -866,9 +1146,18 @@
 							"raw": "{\n    \"name\": \"Updated Ankle Pumps\",\n    \"description\": \"Updated ankle flexion and extension exercise\",\n    \"procedure\": [\n        \"Sit or lie down comfortably\",\n        \"Point toes away from you slowly\",\n        \"Flex toes back toward you slowly\",\n        \"Hold for 2 seconds\",\n        \"Repeat for prescribed repetitions\"\n    ],\n    \"frequency\": \"twice daily\",\n    \"value\": 4,\n    \"repetition\": 20\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/exercises/{{exerciseId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "exercises", "{{exerciseId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/exercises/{{exerciseId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"exercises",
+								"{{exerciseId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -883,16 +1172,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/exercises/{{exerciseId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "exercises", "{{exerciseId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/exercises/{{exerciseId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"exercises",
+								"{{exerciseId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "📋 Plans",
+			"name": "\ud83d\udccb Plans",
 			"item": [
 				{
 					"name": "1. Get All Plans",
@@ -905,9 +1203,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/plans",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "plans"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"plans"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -930,9 +1236,17 @@
 							"raw": "{\n    \"name\": \"Post-Surgery Recovery Plan\",\n    \"description\": \"Comprehensive recovery plan for post-operative patients\",\n    \"duration\": \"6 weeks\",\n    \"patientId\": 123,\n    \"exercises\": [1, 2, 3],\n    \"medications\": [1, 2],\n    \"procedures\": [1]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/plans",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "plans"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"plans"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -947,9 +1261,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/plans/{{planId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "plans", "{{planId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/{{planId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"plans",
+								"{{planId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -972,9 +1295,18 @@
 							"raw": "{\n    \"name\": \"Updated Recovery Plan\",\n    \"description\": \"Updated comprehensive recovery plan\",\n    \"duration\": \"8 weeks\",\n    \"exercises\": [1, 2, 3, 4],\n    \"medications\": [1, 2, 3],\n    \"status\": \"active\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/plans/{{planId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "plans", "{{planId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/{{planId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"plans",
+								"{{planId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -989,14 +1321,23 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/plans/{{planId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "plans", "{{planId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/{{planId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"plans",
+								"{{planId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
 				{
-					"name": "🏥 Care Plans (HIPAA Secure)",
+					"name": "\ud83c\udfe5 Care Plans (HIPAA Secure)",
 					"item": [
 						{
 							"name": "1. Get User Care Plan",
@@ -1009,9 +1350,20 @@
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/care-plan",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "plans", "users", "{{userId}}", "care-plan"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/users/{{userId}}/care-plan",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"users",
+										"{{userId}}",
+										"care-plan"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Get care plan for a specific user. Requires client validation - only returns data if user belongs to same client as requester."
 							}
@@ -1035,9 +1387,20 @@
 									"raw": "{\n    \"currentInjuries\": [\"knee_pain\", \"back_strain\"],\n    \"priorInjuries\": [\"ankle_sprain\"],\n    \"goals\": [\"pain_reduction\", \"mobility_improvement\"],\n    \"preferences\": {\n        \"exerciseFrequency\": \"daily\",\n        \"reminderTime\": \"09:00\",\n        \"difficultyLevel\": \"beginner\"\n    },\n    \"notes\": \"Patient reports morning stiffness\"\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/care-plan",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "plans", "users", "{{userId}}", "care-plan"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/users/{{userId}}/care-plan",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"users",
+										"{{userId}}",
+										"care-plan"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Update care plan for a specific user. Validates client access and user permissions."
 							}
@@ -1053,9 +1416,20 @@
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/injuries",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "plans", "users", "{{userId}}", "injuries"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/users/{{userId}}/injuries",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"users",
+										"{{userId}}",
+										"injuries"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Get injury history for a specific user with strict client validation."
 							}
@@ -1079,9 +1453,20 @@
 									"raw": "{\n    \"injuryType\": \"muscle_strain\",\n    \"location\": \"lower_back\",\n    \"severity\": \"moderate\",\n    \"painLevel\": 6,\n    \"description\": \"Pain started after lifting heavy object\",\n    \"dateOccurred\": \"2025-06-18\",\n    \"symptoms\": [\"sharp_pain\", \"muscle_spasm\", \"limited_mobility\"],\n    \"treatmentActions\": [\"ice_application\", \"rest\"]\n}"
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/plans/users/{{userId}}/injuries",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "plans", "users", "{{userId}}", "injuries"]
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/users/{{userId}}/injuries",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"users",
+										"{{userId}}",
+										"injuries"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Track a new injury for a specific user. Validates client access and provides care plan recommendations."
 							}
@@ -1097,15 +1482,24 @@
 									}
 								],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/plans/learning-center?category=exercise",
-									"host": ["{{baseUrl}}"],
-									"path": ["api", "v1", "plans", "learning-center"],
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/learning-center?category=exercise",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"learning-center"
+									],
 									"query": [
 										{
 											"key": "category",
 											"value": "exercise"
 										}
-									]
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
 								},
 								"description": "Get learning center content. Public content available to all, personalized content requires authentication."
 							}
@@ -1115,7 +1509,7 @@
 			]
 		},
 		{
-			"name": "💊 Medications",
+			"name": "\ud83d\udc8a Medications",
 			"item": [
 				{
 					"name": "1. Get All Medications",
@@ -1128,9 +1522,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/medications",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "medications"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/medications",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"medications"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1153,9 +1555,17 @@
 							"raw": "{\n    \"name\": \"Ibuprofen\",\n    \"genericName\": \"Ibuprofen\",\n    \"brandName\": \"Advil\",\n    \"description\": \"Anti-inflammatory pain reliever\",\n    \"dosage\": \"200mg\",\n    \"frequency\": \"Every 6 hours\",\n    \"type\": \"Tablet\",\n    \"category\": \"NSAID\",\n    \"sideEffects\": [\"Stomach upset\", \"Dizziness\"],\n    \"contraindications\": [\"Kidney disease\", \"Stomach ulcers\"]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/medications",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "medications"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/medications",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"medications"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1170,9 +1580,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/medications/{{medicationId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "medications", "{{medicationId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/medications/{{medicationId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"medications",
+								"{{medicationId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1195,9 +1614,18 @@
 							"raw": "{\n    \"description\": \"Updated anti-inflammatory pain reliever\",\n    \"dosage\": \"400mg\",\n    \"frequency\": \"Every 8 hours\",\n    \"sideEffects\": [\"Stomach upset\", \"Dizziness\", \"Headache\"]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/medications/{{medicationId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "medications", "{{medicationId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/medications/{{medicationId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"medications",
+								"{{medicationId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1212,16 +1640,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/medications/{{medicationId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "medications", "{{medicationId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/medications/{{medicationId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"medications",
+								"{{medicationId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "🏥 Procedures",
+			"name": "\ud83c\udfe5 Procedures",
 			"item": [
 				{
 					"name": "1. Get All Procedures",
@@ -1234,9 +1671,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/procedures",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procedures"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/procedures",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procedures"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1259,9 +1704,17 @@
 							"raw": "{\n    \"name\": \"Knee Replacement Surgery\",\n    \"description\": \"Total knee replacement procedure\",\n    \"category\": \"Orthopedic Surgery\",\n    \"duration\": \"2-3 hours\",\n    \"preparation\": [\"Fasting 12 hours before surgery\", \"Remove jewelry\"],\n    \"aftercare\": [\"Physical therapy\", \"Pain management\", \"Follow-up appointments\"]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/procedures",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procedures"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/procedures",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procedures"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1276,9 +1729,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/procedures/{{procedureId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procedures", "{{procedureId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/procedures/{{procedureId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procedures",
+								"{{procedureId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1301,9 +1763,18 @@
 							"raw": "{\n    \"description\": \"Updated total knee replacement procedure\",\n    \"duration\": \"2-4 hours\",\n    \"aftercare\": [\"Intensive physical therapy\", \"Pain management\", \"Regular follow-up appointments\", \"X-ray monitoring\"]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/procedures/{{procedureId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procedures", "{{procedureId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/procedures/{{procedureId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procedures",
+								"{{procedureId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1318,16 +1789,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/procedures/{{procedureId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "procedures", "{{procedureId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/procedures/{{procedureId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"procedures",
+								"{{procedureId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "📧 Email",
+			"name": "\ud83d\udce7 Email",
 			"item": [
 				{
 					"name": "1. Send Email",
@@ -1348,9 +1828,18 @@
 							"raw": "{\n    \"to\": [\"patient@example.com\"],\n    \"subject\": \"Appointment Reminder\",\n    \"body\": \"This is a reminder for your upcoming appointment.\",\n    \"isHtml\": false,\n    \"cc\": [],\n    \"bcc\": []\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/email/send",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "email", "send"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/email/send",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"email",
+								"send"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1373,16 +1862,25 @@
 							"raw": "{\n    \"to\": [\"patient@example.com\"],\n    \"templateName\": \"welcome-email\",\n    \"templateData\": {\n        \"firstName\": \"John\",\n        \"lastName\": \"Doe\",\n        \"clinicName\": \"Healthcare Clinic\"\n    }\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/email/send-template",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "email", "send-template"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/email/send-template",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"email",
+								"send-template"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "📞 Contacts",
+			"name": "\ud83d\udcde Contacts",
 			"item": [
 				{
 					"name": "1. Get All Contacts",
@@ -1395,9 +1893,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/contacts",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "contacts"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/contacts",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contacts"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1420,9 +1926,17 @@
 							"raw": "{\n    \"userId\": 1,\n    \"type\": \"phone\",\n    \"value\": \"+1-555-123-4567\",\n    \"isPrimary\": true\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/contacts",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "contacts"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/contacts",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contacts"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1437,9 +1951,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "contacts", "{{contactId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/contacts/{{contactId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contacts",
+								"{{contactId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1462,9 +1985,18 @@
 							"raw": "{\n    \"type\": \"mobile\",\n    \"value\": \"+1-555-987-6543\",\n    \"isPrimary\": false\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "contacts", "{{contactId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/contacts/{{contactId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contacts",
+								"{{contactId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1479,16 +2011,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/contacts/{{contactId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "contacts", "{{contactId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/contacts/{{contactId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"contacts",
+								"{{contactId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "🔑 Roles",
+			"name": "\ud83d\udd11 Roles",
 			"item": [
 				{
 					"name": "1. Get All Roles",
@@ -1501,9 +2042,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/roles",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1526,9 +2075,17 @@
 							"raw": "{\n    \"name\": \"THERAPIST\",\n    \"description\": \"Physical therapist role with patient interaction capabilities\",\n    \"permissions\": [\"read_patients\", \"update_exercises\", \"create_plans\"]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/roles",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1543,9 +2100,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles", "{{roleId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/roles/{{roleId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{roleId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1568,9 +2134,18 @@
 							"raw": "{\n    \"description\": \"Updated physical therapist role\",\n    \"permissions\": [\"read_patients\", \"update_exercises\", \"create_plans\", \"send_messages\"]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles", "{{roleId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/roles/{{roleId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{roleId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1585,16 +2160,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "roles", "{{roleId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/roles/{{roleId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"roles",
+								"{{roleId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "💬 Messaging",
+			"name": "\ud83d\udcac Messaging",
 			"item": [
 				{
 					"name": "1. Get Inbox Messages",
@@ -1607,9 +2191,16 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/messages/inbox?page=1&limit=20",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "messages", "inbox"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/messages/inbox?page=1&limit=20",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"messages",
+								"inbox"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1619,7 +2210,9 @@
 									"key": "limit",
 									"value": "20"
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1642,9 +2235,17 @@
 							"raw": "{\n    \"recipientIds\": [2, 3],\n    \"subject\": \"Appointment Reminder\",\n    \"content\": \"This is a reminder for your upcoming appointment tomorrow at 2 PM.\",\n    \"msgGroupId\": 1,\n    \"priority\": \"normal\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/messages",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "messages"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/messages",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"messages"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1659,9 +2260,16 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/messages/sent?page=1&limit=20",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "messages", "sent"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/messages/sent?page=1&limit=20",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"messages",
+								"sent"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1671,7 +2279,9 @@
 									"key": "limit",
 									"value": "20"
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1686,9 +2296,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/messages/{{messageId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "messages", "{{messageId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/messages/{{messageId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"messages",
+								"{{messageId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1703,16 +2322,26 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/messages/{{messageId}}/read",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "messages", "{{messageId}}", "read"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/messages/{{messageId}}/read",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"messages",
+								"{{messageId}}",
+								"read"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "👥 Message Groups",
+			"name": "\ud83d\udc65 Message Groups",
 			"item": [
 				{
 					"name": "1. Get All Message Groups",
@@ -1725,9 +2354,17 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/msg-groups",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "msg-groups"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/msg-groups",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"msg-groups"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1750,9 +2387,17 @@
 							"raw": "{\n    \"name\": \"Patient Care Team\",\n    \"description\": \"Communication group for patient care coordination\",\n    \"memberIds\": [1, 2, 3, 4],\n    \"isPrivate\": false\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/msg-groups",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "msg-groups"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/msg-groups",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"msg-groups"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1767,9 +2412,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/msg-groups/{{groupId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "msg-groups", "{{groupId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/msg-groups/{{groupId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"msg-groups",
+								"{{groupId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1792,9 +2446,18 @@
 							"raw": "{\n    \"name\": \"Updated Patient Care Team\",\n    \"description\": \"Updated communication group for enhanced patient care coordination\",\n    \"memberIds\": [1, 2, 3, 4, 5]\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/msg-groups/{{groupId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "msg-groups", "{{groupId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/msg-groups/{{groupId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"msg-groups",
+								"{{groupId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1809,16 +2472,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/msg-groups/{{groupId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "msg-groups", "{{groupId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/msg-groups/{{groupId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"msg-groups",
+								"{{groupId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "✅ Todos (HIPAA Secure)",
+			"name": "\u2705 Todos (HIPAA Secure)",
 			"description": "TODO management with strict client isolation and multi-tenant security",
 			"item": [
 				{
@@ -1832,9 +2504,15 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/todos?page=1&limit=20&status=pending",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "todos"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/todos?page=1&limit=20&status=pending",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"todos"
+							],
 							"query": [
 								{
 									"key": "page",
@@ -1849,7 +2527,9 @@
 									"value": "pending",
 									"disabled": true
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get all todos with automatic client filtering. Only returns todos for the authenticated user's client."
 					}
@@ -1874,9 +2554,17 @@
 							"description": "Note: clientId is automatically assigned from authenticated user's client context"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/todos",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "todos"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/todos",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"todos"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Create new todo with automatic client assignment. The todo is automatically assigned to the authenticated user's client."
 					}
@@ -1892,9 +2580,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/todos/{{todoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "todos", "{{todoId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/todos/{{todoId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"todos",
+								"{{todoId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get todo by ID with client validation. Only allows access to todos within the same client."
 					}
@@ -1918,9 +2615,18 @@
 							"raw": "{\n    \"title\": \"Updated follow up with patient\",\n    \"status\": \"completed\",\n    \"completedAt\": \"2025-06-18T15:30:00Z\",\n    \"notes\": \"Patient is recovering well\"\n}"
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/todos/{{todoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "todos", "{{todoId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/todos/{{todoId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"todos",
+								"{{todoId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1935,16 +2641,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/todos/{{todoId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "todos", "{{todoId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/todos/{{todoId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"todos",
+								"{{todoId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "📁 Media",
+			"name": "\ud83d\udcc1 Media",
 			"item": [
 				{
 					"name": "1. Upload Media",
@@ -1977,9 +2692,18 @@
 							]
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/media/upload",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "media", "upload"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/media/upload",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"media",
+								"upload"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -1994,9 +2718,18 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/media/{{mediaId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "media", "{{mediaId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/media/{{mediaId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"media",
+								"{{mediaId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -2011,9 +2744,15 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/media?category=exercise_video&page=1&limit=20",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "media"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/media?category=exercise_video&page=1&limit=20",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"media"
+							],
 							"query": [
 								{
 									"key": "category",
@@ -2028,7 +2767,9 @@
 									"key": "limit",
 									"value": "20"
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				},
@@ -2043,16 +2784,25 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/media/{{mediaId}}",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "media", "{{mediaId}}"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/media/{{mediaId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"media",
+								"{{mediaId}}"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						}
 					}
 				}
 			]
 		},
 		{
-			"name": "🏥 ModMed Integration",
+			"name": "\ud83c\udfe5 ModMed Integration",
 			"item": [
 				{
 					"name": "1. Test Connection",
@@ -2060,9 +2810,18 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/test",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "test"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/test",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"test"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Test the connection to ModMed API and verify authentication"
 					}
@@ -2073,9 +2832,17 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/patients/search?firstName=John&lastName=Doe&dateOfBirth=1990-01-01",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "patients", "search"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/patients/search?firstName=John&lastName=Doe&dateOfBirth=1990-01-01",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"patients",
+								"search"
+							],
 							"query": [
 								{
 									"key": "firstName",
@@ -2092,7 +2859,9 @@
 									"value": "1990-01-01",
 									"description": "Patient's date of birth (YYYY-MM-DD format)"
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Search for a specific patient in ModMed by name and date of birth"
 					}
@@ -2103,9 +2872,16 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/patients?quantity=10&page=1",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "patients"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/patients?quantity=10&page=1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"patients"
+							],
 							"query": [
 								{
 									"key": "quantity",
@@ -2117,7 +2893,9 @@
 									"value": "1",
 									"description": "Page number for pagination"
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get a paginated list of patients from ModMed"
 					}
@@ -2128,9 +2906,20 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/appointments",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "appointments"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/patients/{{modmedPatientId}}/appointments",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"patients",
+								"{{modmedPatientId}}",
+								"appointments"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get all appointments for a specific patient from ModMed"
 					}
@@ -2141,16 +2930,27 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/documents?category=labs",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "documents"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/patients/{{modmedPatientId}}/documents?category=labs",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"patients",
+								"{{modmedPatientId}}",
+								"documents"
+							],
 							"query": [
 								{
 									"key": "category",
 									"value": "labs",
 									"description": "Optional: Document category filter (e.g., labs, imaging, notes)"
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get documents for a specific patient from ModMed, optionally filtered by category"
 					}
@@ -2161,9 +2961,20 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/conditions",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "conditions"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/patients/{{modmedPatientId}}/conditions",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"patients",
+								"{{modmedPatientId}}",
+								"conditions"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get medical conditions for a specific patient from ModMed"
 					}
@@ -2174,9 +2985,20 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/patients/{{modmedPatientId}}/medications",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "patients", "{{modmedPatientId}}", "medications"]
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/patients/{{modmedPatientId}}/medications",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"patients",
+								"{{modmedPatientId}}",
+								"medications"
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Get medications and prescriptions for a specific patient from ModMed"
 					}
@@ -2187,9 +3009,17 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/modmed/documents/search?patientId={{modmedPatientId}}&date=2024-01-01&page=1&type=lab",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "v1", "modmed", "documents", "search"],
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/modmed/documents/search?patientId={{modmedPatientId}}&date=2024-01-01&page=1&type=lab",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"modmed",
+								"documents",
+								"search"
+							],
 							"query": [
 								{
 									"key": "patientId",
@@ -2223,7 +3053,9 @@
 									"description": "Identifier filter (optional)",
 									"disabled": true
 								}
-							]
+							],
+							"protocol": "{{PROTOCOL}}",
+							"port": "{{PORT}}"
 						},
 						"description": "Search for documents across ModMed with various filters"
 					}
@@ -2238,9 +3070,22 @@
 			"type": "string"
 		},
 		{
-			"key": "baseUrl",
-			"value": "http://localhost:3000",
-			"type": "string"
+			"key": "PROTOCOL",
+			"value": "http",
+			"type": "string",
+			"description": "Protocol for API requests (http or https)"
+		},
+		{
+			"key": "BASE_URL",
+			"value": "localhost",
+			"type": "string",
+			"description": "Base URL/hostname for API requests"
+		},
+		{
+			"key": "PORT",
+			"value": "3000",
+			"type": "string",
+			"description": "Port number for API requests"
 		},
 		{
 			"key": "userId",
