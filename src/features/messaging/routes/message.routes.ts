@@ -12,16 +12,19 @@ const router = Router();
  */
 router.get('/inbox', authenticate, async (req, res) => {
   try {
-    const result = await messageService.getInboxMessages(req);
-    
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await messageService.getInboxMessages(req);
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Get inbox messages error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to retrieve inbox messages')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Messaging functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to retrieve inbox messages')
+      );
+    }
   }
 });
 
@@ -31,16 +34,19 @@ router.get('/inbox', authenticate, async (req, res) => {
  */
 router.post('/', authenticate, async (req, res) => {
   try {
-    const result = await messageService.sendMessage(req);
-
-    res.status(StatusCodes.CREATED).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await messageService.sendMessage(req);
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Send message error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to send message')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Messaging functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to send message')
+      );
+    }
   }
 });
 
@@ -50,16 +56,19 @@ router.post('/', authenticate, async (req, res) => {
  */
 router.get('/sent', authenticate, async (req, res) => {
   try {
-    const result = await messageService.getSentMessages(req);
-    
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await messageService.getSentMessages(req);
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Get sent messages error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to retrieve sent messages')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Messaging functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to retrieve sent messages')
+      );
+    }
   }
 });
 
@@ -69,16 +78,19 @@ router.get('/sent', authenticate, async (req, res) => {
  */
 router.put('/:id/read', authenticate, async (req, res) => {
   try {
-    const result = await messageService.markAsRead(req);
-    
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await messageService.markAsRead(req);
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Mark message as read error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to mark message as read')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Messaging functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to mark message as read')
+      );
+    }
   }
 });
 
@@ -88,16 +100,19 @@ router.put('/:id/read', authenticate, async (req, res) => {
  */
 router.delete('/:id', authenticate, async (req, res) => {
   try {
-    const result = await messageService.deleteMessage(req);
-    
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await messageService.deleteMessage(req);
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Delete message error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to delete message')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Messaging functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to delete message')
+      );
+    }
   }
 });
 

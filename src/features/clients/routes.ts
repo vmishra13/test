@@ -24,7 +24,7 @@ router.get('/', authenticate, async (req, res) => {
 
     const clients = await prismaPostgres.client.findMany({
       include: {
-        clientLocation: {
+        locations: {
           select: {
             id: true,
             name: true,
@@ -33,7 +33,7 @@ router.get('/', authenticate, async (req, res) => {
         },
         _count: {
           select: {
-            user: true
+            users: true
           }
         }
       },
@@ -50,8 +50,8 @@ router.get('/', authenticate, async (req, res) => {
           status: client.status,
           logo: client.logo,
           website: client.website,
-          userCount: client._count.user,
-          locations: client.clientLocation,
+          userCount: client._count.users,
+          locations: client.locations,
           createdAt: client.crDate
         }))
       }, 'Clients retrieved successfully')
@@ -84,12 +84,12 @@ router.get('/:id', authenticate, async (req, res) => {
     const client = await prismaPostgres.client.findUnique({
       where: { id: Number(id) },
       include: {
-        clientLocation: true,
-        contact: true,
+        locations: true,
+        contacts: true,
         _count: {
           select: {
-            user: true,
-            msgGroup: true
+            users: true
+            // msgGroup: true // Commented out as this table doesn't exist
           }
         }
       }
@@ -114,10 +114,10 @@ router.get('/:id', authenticate, async (req, res) => {
         language: client.language,
         website: client.website,
         extraInfo: client.extraInfo,
-        userCount: client._count.user,
-        messageGroupCount: client._count.msgGroup,
-        locations: client.clientLocation,
-        contacts: client.contact,
+        userCount: client._count.users,
+        // messageGroupCount: client._count.msgGroup, // Removed - table doesn't exist
+        locations: client.locations,
+        contacts: client.contacts,
         createdAt: client.crDate,
         modifiedAt: client.modDate
       }, 'Client retrieved successfully')

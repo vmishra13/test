@@ -20,7 +20,7 @@ export const getPatientAppointmentList = async (patientId: string): Promise<Modm
                             let location = await getLocation(id);
                             
                             if (location != undefined) {
-                                appointment.resource["location"] = location;
+                                (appointment.resource as any)["location"] = location;
                             }
                         }
 
@@ -29,7 +29,7 @@ export const getPatientAppointmentList = async (patientId: string): Promise<Modm
                             let practitioner = await getPractitioner(id);
 
                             if (practitioner != undefined) {
-                                appointment.resource["practitioner"] = practitioner;
+                                (appointment.resource as any)["practitioner"] = practitioner;
                             }
                             
                         }

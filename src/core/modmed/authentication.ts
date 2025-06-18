@@ -19,8 +19,8 @@ export const getAuthenticated = async () => {
 
         return response.data || null
 
-    } catch (error) {
-        console.log('Error getAuthenticated: ', error.response.data);
+    } catch (error: any) {
+        console.log('Error getAuthenticated: ', error?.response?.data || error?.message || error);
         throw error;
     }
 }
