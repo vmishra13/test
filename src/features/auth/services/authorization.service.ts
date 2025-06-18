@@ -15,10 +15,14 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
   const currentUserTypeId = oAuthReq.reqUserTypeId || null;
 
   if (currentUserRoles.length === 0) {
+    logger.error('❌ No roles found for current user');
     throw createAuthorizationError('No roles found for current user');
   }
 
   if (!currentUserTypeId || currentUserTypeId < 1 || currentUserTypeId > 5) {
+    logger.error(
+      `❌ Current user type ID is required and must be between 1 and 5, but got: ${currentUserTypeId}`,
+    );
     throw createAuthorizationError('Current user type ID is required/incorrect for authorization');
   }
 
@@ -65,6 +69,7 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
     //   return false;
 
     default:
+      logger.error(`❌ Unknown action permission: ${oAuthReq.actionPermission}`);
       return false;
   }
 }
@@ -80,6 +85,7 @@ export function createAuthRequest(
 ): AuthRequest {
   // Validate currentUser first
   if (!currentUser) {
+    logger.error('❌ Authentication required: currentUser is null or undefined');
     throw createAuthError('Authentication required: currentUser is null or undefined');
   }
 
@@ -102,6 +108,7 @@ export function createAuthRequest(
 export function getCurrentUser(req: ExtendedRequest): AuthenticatedUser {
   const currentUser = req.user as AuthenticatedUser;
   if (!currentUser) {
+    logger.error('❌ Authentication required: currentUser is null or undefined');
     throw createAuthError('Authentication required');
   }
   return currentUser;
@@ -139,6 +146,9 @@ function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
   // CLIENT_ADMIN can view users in their client
   if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      logger.error(
+        `❌ CLIENT_ADMIN cannot view users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
+      );
       return false;
     }
     return true;
@@ -150,12 +160,16 @@ function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
     currentUserRoles.includes(CoreRole.OFFICE_STAFF)
   ) {
     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      logger.error(
+        `❌ CLINICAL_STAFF/OFFICE_STAFF cannot view users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
+      );
       return false;
     }
     // Additional check: they can only view patients (if userTypeId corresponds to patient role)
     return true;
   }
 
+  logger.error(`❌ Unauthorized user roles for viewing: ${currentUserRoles.join(', ')}`);
   return false;
 }
 
@@ -212,7 +226,6 @@ function validateUserRegistrationAccess(
       return false;
     }
 
-    logger.error('✅ User registration access validated successfully');
     return true;
 
     // if (actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
@@ -288,6 +301,7 @@ function isValidUserTypeRoleCombination(userTypeId: number, roles: CoreRole[]): 
     if (roles.length === 2) {
       return roles.includes(CoreRole.CLINICAL_STAFF) && roles.includes(CoreRole.CLIENT_ADMIN);
     }
+    logger.error(`❌ Invalid role combination for CLINICAL_STAFF: ${roles.join(', ')}`);
     return false;
   }
 
@@ -299,6 +313,7 @@ function isValidUserTypeRoleCombination(userTypeId: number, roles: CoreRole[]): 
     if (roles.length === 2) {
       return roles.includes(CoreRole.OFFICE_STAFF) && roles.includes(CoreRole.CLIENT_ADMIN);
     }
+    logger.error(`❌ Invalid role combination for OFFICE_STAFF: ${roles.join(', ')}`);
     return false;
   }
 
@@ -324,6 +339,7 @@ function canCurrentUserCreateTarget(
   if (currentUserTypeId === 2) {
     // Cannot create SUPER_ADMIN (userTypeId 1)
     if (actionUserTypeId === 1 || actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+      logger.error('❌ CLIENT_ADMIN cannot create SUPER_ADMIN user');
       return false;
     }
     return true; // Can create all other valid combinations
@@ -334,6 +350,7 @@ function canCurrentUserCreateTarget(
     if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
       // Same as rule 7: can create any valid user except SUPER_ADMIN
       if (actionUserTypeId === 1 || actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+        logger.error('❌ CLINICAL_USER cannot create SUPER_ADMIN user');
         return false;
       }
       return true; // Can create all other valid combinations
@@ -345,11 +362,12 @@ function canCurrentUserCreateTarget(
     );
   }
 
-  // 9. currentUserTypeId 4 (OFFICE_USER) -> can create only PATIENT
+  // 9. currentUserTypeId 4 (OFFICE_STAFF) -> can create only PATIENT
   if (currentUserTypeId === 4) {
     if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
       // Same as rule 7: can create any valid user except SUPER_ADMIN
       if (actionUserTypeId === 1 || actionUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+        logger.error('❌ OFFICE_STAFF cannot create SUPER_ADMIN user');
         return false;
       }
       return true; // Can create all other valid combinations
@@ -363,6 +381,7 @@ function canCurrentUserCreateTarget(
 
   // currentUserTypeId 5 (PATIENT_USER) -> cannot create anyone
   if (currentUserTypeId === 5) {
+    logger.error('❌ PATIENT_USER cannot create any users');
     return false;
   }
 
