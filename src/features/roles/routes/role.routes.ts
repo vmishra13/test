@@ -26,7 +26,7 @@ router.get('/', authenticate, async (req, res) => {
       include: {
         _count: {
           select: {
-            userRole: true
+            userRoles: true
           }
         }
       },
@@ -39,7 +39,7 @@ router.get('/', authenticate, async (req, res) => {
           id: role.id,
           name: role.name,
           description: role.description,
-          userCount: role._count.userRole,
+          userCount: role._count.userRoles,
           createdAt: role.crDate
         }))
       }, 'Roles retrieved successfully')

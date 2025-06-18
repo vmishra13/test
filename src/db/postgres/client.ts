@@ -122,11 +122,12 @@ export type {
   password,
   contact,
   client_location,
-  refresh_token,
-  msg_group,
-  msg_group_user,
-  message,
-  user_msg_box,
+  // Commented out tables that don't exist in schema:
+  // refresh_token,
+  // msg_group,
+  // msg_group_user, 
+  // message,
+  // user_msg_box,
 } from './generated/postgres-client';
 // Export useful Prisma types
 export type {

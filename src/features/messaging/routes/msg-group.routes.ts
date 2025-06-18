@@ -12,16 +12,19 @@ const router = Router();
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    const result = await msgGroupService.getMessageGroups(req);
-    
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await msgGroupService.getUserGroups(req); // Updated method name
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Get message groups error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to retrieve message groups')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Message group functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to retrieve message groups')
+      );
+    }
   }
 });
 
@@ -31,16 +34,19 @@ router.get('/', authenticate, async (req, res) => {
  */
 router.post('/', authenticate, async (req, res) => {
   try {
-    const result = await msgGroupService.createMessageGroup(req);
-
-    res.status(StatusCodes.CREATED).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await msgGroupService.createGroup(req); // Updated method name
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Create message group error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to create message group')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Message group functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to create message group')
+      );
+    }
   }
 });
 
@@ -50,16 +56,19 @@ router.post('/', authenticate, async (req, res) => {
  */
 router.get('/:id', authenticate, async (req, res) => {
   try {
-    const result = await msgGroupService.getMessageGroup(req);
-
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(result.data, result.message)
-    );
-  } catch (error) {
+    await msgGroupService.getGroupDetails(req); // Updated method name
+    // This will throw "not implemented" error until tables are added
+  } catch (error: any) {
     console.error('Get message group error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to retrieve message group')
-    );
+    if (error.message.includes('temporarily disabled')) {
+      res.status(StatusCodes.NOT_IMPLEMENTED).json(
+        ApiResponse.error('Message group functionality temporarily disabled - database tables not implemented')
+      );
+    } else {
+      res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+        ApiResponse.error('Failed to retrieve message group')
+      );
+    }
   }
 });
 

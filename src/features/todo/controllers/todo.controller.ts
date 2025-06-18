@@ -88,6 +88,7 @@ export const createTodo = async (
 ): Promise<void> => {
   try {
     const { title, description } = req.body;
+    const user = (req as any).user;
 
     if (!title) {
       res
@@ -97,7 +98,12 @@ export const createTodo = async (
     }
 
     // CRITICAL: Use secure service with client validation
-    const newTodo = await todoService.createTodo(req, { title, description });
+    const newTodo = await todoService.createTodo(req, { 
+      title, 
+      description,
+      clientId: user.clientId,
+      userId: user.id
+    });
 
     res.status(StatusCodes.CREATED).json(ApiResponse.success(newTodo, 'Todo created successfully'));
   } catch (error: any) {

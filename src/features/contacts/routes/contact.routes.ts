@@ -42,12 +42,12 @@ router.get('/', authenticate, async (req, res) => {
             name: true
           }
         },
-        clientLocation: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
+        // clientLocation: { // Removed - not a direct relation on contact
+        //   select: {
+        //     id: true,
+        //     name: true
+        //   }
+        // }
       },
       orderBy: { crDate: 'desc' }
     });
