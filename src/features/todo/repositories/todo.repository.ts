@@ -1,5 +1,5 @@
-import { prismaPostgres } from '@/db/postgres/client';
-import logger from '@config/logger';
+import { db } from '../../../db';
+import logger from '../../../config/logger';
 import { TodoCreateInput, TodoUpdateInput } from '../models/todo.model';
 
 // TODO: Create the 'todo' table in the database schema

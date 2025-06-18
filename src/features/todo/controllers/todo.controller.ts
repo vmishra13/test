@@ -167,6 +167,7 @@ export const deleteTodo = async (req: Request, res: Response): Promise<void> => 
       res
         .status(StatusCodes.BAD_REQUEST)
         .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID'));
+      return;
     }
 
     // Check if todo exists
@@ -175,6 +176,7 @@ export const deleteTodo = async (req: Request, res: Response): Promise<void> => 
       res
         .status(StatusCodes.NOT_FOUND)
         .json(ApiResponse.error('Todo not found', 'NOT_FOUND', StatusCodes.NOT_FOUND));
+      return;
     }
 
     await todoService.deleteTodo(req, todoId);
@@ -200,6 +202,7 @@ export const markTodoCompleted = async (req: Request, res: Response): Promise<vo
       res
         .status(StatusCodes.BAD_REQUEST)
         .json(ApiResponse.error('Invalid todo ID format', 'INVALID_ID'));
+      return;
     }
 
     // Check if todo exists
@@ -208,6 +211,7 @@ export const markTodoCompleted = async (req: Request, res: Response): Promise<vo
       res
         .status(StatusCodes.NOT_FOUND)
         .json(ApiResponse.error('Todo not found', 'NOT_FOUND', StatusCodes.NOT_FOUND));
+      return;
     }
 
     const updatedTodo = await todoService.markTodoAsCompleted(req, todoId);
