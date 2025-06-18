@@ -1,121 +1,103 @@
 /**
  * ModMed Service
  * Provides high-level interface for ModMed API operations
+ * DEPRECATED: Use the new services in /features/modmed/services/ instead
+ * This file is maintained for backward compatibility only
  */
 
-import { getPatientAppointmentList } from '../core/modmed/appointments';
-import { getPatient, getPatientsList } from '../core/modmed/patient';
-import { getAuthenticated } from '../core/modmed/authentication';
-import { 
-  findPatient, 
-  findPatientAppointments, 
-  getDocuments, 
-  getConditions,
-  getMedications,
-  searchDocuments 
-} from '../core/modmed/services';
+import { ModMedPatientService } from '../features/modmed/services/patient.service';
+import { ModMedAppointmentService } from '../features/modmed/services/appointment.service';
+import { ModMedAuthService } from '../features/modmed/services/auth.service';
+import { ModMedApiService } from '../features/modmed/services/api.service';
 
-export class ModMedService {
+export default class ModMedService {
+  private static patientService = new ModMedPatientService();
+  private static appointmentService = new ModMedAppointmentService();
+  private static authService = ModMedAuthService.getInstance();
+  private static apiService = new ModMedApiService();
+
   /**
    * Authenticate with ModMed API
    */
   static async authenticate() {
     try {
-      return await getAuthenticated();
+      return await this.authService.getAuthenticated();
     } catch (error) {
       console.error('ModMed authentication failed:', error);
-      throw new Error('Failed to authenticate with ModMed API');
+      return null;
     }
   }
 
   /**
-   * Search for a patient by name and date of birth
+   * Search for a patient
    */
   static async searchPatient(firstName: string, lastName: string, dateOfBirth: string) {
     try {
-      return await getPatient(firstName, lastName, dateOfBirth);
+      return await this.patientService.getPatient(firstName, lastName, dateOfBirth);
     } catch (error) {
-      console.error('Patient search failed:', error);
-      throw new Error('Failed to search for patient in ModMed');
+      console.error('Error searching patient:', error);
+      throw error;
     }
   }
 
   /**
-   * Get list of patients with pagination
+   * Get list of patients
    */
-  static async getPatients(quantity: number = 10, page: number = 1) {
+  static async getPatients(quantity = 20, page = 1) {
     try {
-      return await getPatientsList(quantity, page);
+      return await this.patientService.getPatientsList(quantity, page);
     } catch (error) {
-      console.error('Failed to get patients list:', error);
-      throw new Error('Failed to retrieve patients from ModMed');
+      console.error('Error getting patients:', error);
+      throw error;
     }
   }
 
   /**
-   * Get appointments for a specific patient
+   * Get patient appointments
    */
   static async getPatientAppointments(patientId: string) {
     try {
-      return await getPatientAppointmentList(patientId);
+      return await this.appointmentService.getPatientAppointmentList(patientId);
     } catch (error) {
-      console.error('Failed to get patient appointments:', error);
-      throw new Error('Failed to retrieve patient appointments from ModMed');
+      console.error('Error getting patient appointments:', error);
+      throw error;
     }
   }
 
   /**
-   * Get documents for a specific patient
+   * Get patient documents
    */
   static async getPatientDocuments(patientId: string, category?: string) {
     try {
-      return await getDocuments(patientId, category || '');
+      return await this.apiService.getDocuments(patientId, category || '');
     } catch (error) {
-      console.error('Failed to get patient documents:', error);
-      throw new Error('Failed to retrieve patient documents from ModMed');
+      console.error('Error getting patient documents:', error);
+      throw error;
     }
   }
 
   /**
-   * Get conditions for a specific patient
+   * Get patient conditions
    */
   static async getPatientConditions(patientId: string) {
     try {
-      return await getConditions(patientId);
+      return await this.apiService.getConditions(patientId);
     } catch (error) {
-      console.error('Failed to get patient conditions:', error);
-      throw new Error('Failed to retrieve patient conditions from ModMed');
+      console.error('Error getting patient conditions:', error);
+      throw error;
     }
   }
 
   /**
-   * Get medications for a specific patient
+   * Get patient medications (placeholder - implement if needed)
    */
   static async getPatientMedications(patientId: string) {
     try {
-      return await getMedications(patientId);
+      // This functionality needs to be implemented in the API service
+      throw new Error('Patient medications functionality not yet implemented');
     } catch (error) {
-      console.error('Failed to get patient medications:', error);
-      throw new Error('Failed to retrieve patient medications from ModMed');
-    }
-  }
-
-  /**
-   * Search documents with filters
-   */
-  static async searchDocuments(searchParams: {
-    date: string;
-    description?: string;
-    identifier?: string;
-    page: string;
-    patientId: string;
-    type?: string;
-  }) {
-    try {
-      return await searchDocuments(searchParams);
-    } catch (error) {
-      console.error('Document search failed:', error);
-      throw new Error('Failed to search documents in ModMed');
+      console.error('Error getting patient medications:', error);
+      throw error;
     }
   }
 
@@ -124,20 +106,55 @@ export class ModMedService {
    */
   static async testConnection() {
     try {
-      const authResult = await this.authenticate();
+      const auth = await this.authenticate();
       return {
-        success: true,
-        message: 'ModMed connection successful',
-        authData: authResult
+        success: !!auth,
+        message: auth ? 'ModMed connection successful' : 'ModMed connection failed',
+        data: auth
       };
     } catch (error) {
       return {
         success: false,
-        message: 'ModMed connection failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: `ModMed connection failed: ${error}`,
+        data: null
       };
     }
   }
-}
 
-export default ModMedService;
+  /**
+   * Search documents (placeholder - implement if needed)
+   */
+  static async searchDocuments(searchParams: any) {
+    try {
+      // This functionality needs to be implemented in the API service
+      throw new Error('Document search functionality not yet implemented');
+    } catch (error) {
+      console.error('Error searching documents:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get practitioner
+   */
+  static async getPractitioner(practitionerId: string) {
+    try {
+      return await this.appointmentService.getPractitioner(practitionerId);
+    } catch (error) {
+      console.error('Error getting practitioner:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get location
+   */
+  static async getLocation(locationId: string) {
+    try {
+      return await this.appointmentService.getLocation(locationId);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      throw error;
+    }
+  }
+}

@@ -28,7 +28,7 @@ export class ModMedController {
         res.status(500).json({
           success: false,
           message: result.message,
-          error: result.error
+          data: null
         });
       }
     } catch (error) {

@@ -1,8 +1,3 @@
-/**
- * ModMed Routes
- * Defines API endpoints for ModMed integration with STRICT authentication and client validation
- */
-
 import { Router } from 'express';
 import { ModMedPatientController } from './controllers/patient.controller';
 import { ModMedAppointmentController } from './controllers/appointment.controller';
@@ -17,7 +12,7 @@ const appointmentController = new ModMedAppointmentController();
 // Apply authentication middleware to all ModMed routes
 router.use(authenticate);
 
-// Patient operations - ALL require authentication and client validation
+// Patient routes
 router.get('/patients/search', patientController.searchPatient);
 router.get('/patients/:patientId', patientController.getPatientById);
 router.get('/patients', patientController.getPatientsList);
