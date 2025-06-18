@@ -21,12 +21,12 @@ import {
   createValidationError,
 } from '@/shared/errors/application-error';
 import logger from '@/config/logger';
+import { getCurrentUser, createAuthRequest, performAuthorization } from '@features/auth';
 import {
-  getCurrentUser,
-  createAuthRequest,
-  performAuthorization,
-} from '@shared/authorization';
-import { validateJsonField, userExtraInfoSchema, mergeJsonFields } from '../validators/user.validators';
+  validateJsonField,
+  userExtraInfoSchema,
+  mergeJsonFields,
+} from '../validators/user.validators';
 import type { UserExtraInfo } from '../validators/user.validators';
 import { prismaPostgres } from '@/db/postgres/client';
 
@@ -264,7 +264,9 @@ function getCurrentUserPrimaryRole(roles: string[]): string {
   throw createAuthError('User has no valid roles assigned');
 }
 
-export async function updateUser(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<{ data: any; message: string }> {
+export async function updateUser(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<{ data: any; message: string }> {
   try {
     const { userId } = req.params;
     const { extraInfo, ...otherFields } = req.body;
@@ -274,10 +276,11 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
     let sanitizedExtraInfo: UserExtraInfo | undefined = undefined;
     if (extraInfo !== undefined) {
       const validation = validateJsonField(extraInfo, userExtraInfoSchema, 'extraInfo');
-      
+
       if (!validation.success) {
-        throw createValidationError('Invalid extraInfo format', 
-          validation.errors.map(error => ({ field: 'extraInfo', message: error }))
+        throw createValidationError(
+          'Invalid extraInfo format',
+          validation.errors.map(error => ({ field: 'extraInfo', message: error })),
         );
       }
 
@@ -285,12 +288,12 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
       if (validation.data) {
         const existingUser = await prismaPostgres.user.findUnique({
           where: { id: Number(userId) },
-          select: { extraInfo: true }
+          select: { extraInfo: true },
         });
-        
+
         const mergedResult = mergeJsonFields(
-          existingUser?.extraInfo as UserExtraInfo, 
-          validation.data
+          existingUser?.extraInfo as UserExtraInfo,
+          validation.data,
         );
         sanitizedExtraInfo = mergedResult || undefined;
       } else {
@@ -302,7 +305,7 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
       ...otherFields,
       modUser: currentUser.id.toString(),
       modDate: new Date(),
-      ...(extraInfo !== undefined && { extraInfo: sanitizedExtraInfo })
+      ...(extraInfo !== undefined && { extraInfo: sanitizedExtraInfo }),
     };
 
     const updatedUser = await prismaPostgres.user.update({
@@ -313,10 +316,10 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
         userType: { select: { id: true, name: true } },
         userRoles: {
           include: {
-            role: true
-          }
-        }
-      }
+            role: true,
+          },
+        },
+      },
     });
 
     return {
@@ -339,9 +342,9 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
         client: updatedUser.client,
         userType: updatedUser.userType,
         roles: updatedUser.userRoles.map(ur => ur.role),
-        modDate: updatedUser.modDate
+        modDate: updatedUser.modDate,
       },
-      message: 'User updated successfully'
+      message: 'User updated successfully',
     };
   } catch (error) {
     logger.error('Error updating user:', error);
@@ -359,7 +362,7 @@ export async function updateUser(req: ExtendedRequest<any> & { params: { userId:
 export async function getUserProfile(userId: number) {
   try {
     const user = await userRepository.findUserById(userId);
-    
+
     if (!user) {
       throw new Error('User not found');
     }
@@ -386,7 +389,7 @@ export async function getUserProfile(userId: number) {
       emergencyContact: user.extraInfo?.emergencyContact || null,
       medicalHistory: user.extraInfo?.medicalHistory || null,
       preferences: user.extraInfo?.preferences || null,
-      onboardingCompleted: user.extraInfo?.onboardingCompleted || false
+      onboardingCompleted: user.extraInfo?.onboardingCompleted || false,
     };
   } catch (error) {
     console.error('Get user profile error:', error);
@@ -412,12 +415,13 @@ export async function updateUserProfile(userId: number, profileData: any) {
       phoneNumber: profileData.phoneNumber ?? currentExtraInfo.phoneNumber,
       address: profileData.address ?? currentExtraInfo.address,
       emergencyContact: profileData.emergencyContact ?? currentExtraInfo.emergencyContact,
-      emergencyPhoneNumber: profileData.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber,
+      emergencyPhoneNumber:
+        profileData.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber,
       preferences: profileData.preferences ?? currentExtraInfo.preferences,
       medicalHistory: profileData.medicalHistory ?? currentExtraInfo.medicalHistory,
       allergies: profileData.allergies ?? currentExtraInfo.allergies,
       medications: profileData.medications ?? currentExtraInfo.medications,
-      conditions: profileData.conditions ?? currentExtraInfo.conditions
+      conditions: profileData.conditions ?? currentExtraInfo.conditions,
     };
 
     // Prepare UserUpdateInput object (following auth service pattern)
@@ -441,7 +445,9 @@ export async function updateUserProfile(userId: number, profileData: any) {
     return await getUserProfile(userId);
   } catch (error) {
     console.error('Update user profile error:', error);
-    throw new Error(`Failed to update user profile: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to update user profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
   }
 }
 
@@ -467,7 +473,8 @@ export async function updatePersonalInfo(userId: number, personalInfo: any) {
       medications: personalInfo.medications ?? currentExtraInfo.medications,
       conditions: personalInfo.conditions ?? currentExtraInfo.conditions,
       emergencyContact: personalInfo.emergencyContact ?? currentExtraInfo.emergencyContact,
-      emergencyPhoneNumber: personalInfo.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber
+      emergencyPhoneNumber:
+        personalInfo.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber,
     };
 
     // Prepare UserUpdateInput object (following auth service pattern)
@@ -511,7 +518,7 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
     const newExtraInfo = {
       ...currentExtraInfo,
       onboardingCompleted: true,
-      onboardingCompletedAt: new Date().toISOString()
+      onboardingCompletedAt: new Date().toISOString(),
     };
 
     await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
@@ -519,7 +526,7 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
     return {
       success: true,
       message: 'Onboarding completed successfully',
-      profile: await getUserProfile(userId)
+      profile: await getUserProfile(userId),
     };
   } catch (error) {
     console.error('Complete onboarding error:', error);
@@ -533,13 +540,13 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
 export async function getOnboardingStatus(userId: number) {
   try {
     const profile = await getUserProfile(userId);
-    
+
     const completedSteps = {
       basicInfo: !!(profile.firstName && profile.lastName && profile.email),
       personalInfo: !!(profile.dob && profile.gender),
-      contactInfo: !!(profile.phoneNumber),
-      preferences: !!(profile.preferences),
-      profilePicture: !!(profile.profilePicture)
+      contactInfo: !!profile.phoneNumber,
+      preferences: !!profile.preferences,
+      profilePicture: !!profile.profilePicture,
     };
 
     const totalSteps = Object.keys(completedSteps).length;
@@ -552,9 +559,9 @@ export async function getOnboardingStatus(userId: number) {
       progress: {
         completed: completedCount,
         total: totalSteps,
-        percentage: progressPercentage
+        percentage: progressPercentage,
       },
-      nextStep: getNextOnboardingStep(completedSteps)
+      nextStep: getNextOnboardingStep(completedSteps),
     };
   } catch (error) {
     console.error('Get onboarding status error:', error);
@@ -578,7 +585,7 @@ export async function uploadProfilePicture(userId: number, file: UploadedFile) {
     const fileExtension = file.name.split('.').pop() || 'jpg';
     const fileName = `${userId}_${Date.now()}.${fileExtension}`;
     const profilePictureUrl = `/uploads/profiles/${fileName}`;
-    
+
     // Update extraInfo with profile picture
     const currentExtraInfo = currentUser.extraInfo || {};
     const newExtraInfo = {
@@ -588,8 +595,8 @@ export async function uploadProfilePicture(userId: number, file: UploadedFile) {
         originalName: file.name,
         size: file.size,
         mimeType: file.mimetype,
-        uploadedAt: new Date().toISOString()
-      }
+        uploadedAt: new Date().toISOString(),
+      },
     };
 
     await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
@@ -597,7 +604,7 @@ export async function uploadProfilePicture(userId: number, file: UploadedFile) {
     return {
       success: true,
       profilePicture: profilePictureUrl,
-      message: 'Profile picture uploaded successfully'
+      message: 'Profile picture uploaded successfully',
     };
   } catch (error) {
     console.error('Upload profile picture error:', error);
@@ -616,4 +623,3 @@ function getNextOnboardingStep(completedSteps: any): string | null {
   if (!completedSteps.profilePicture) return 'profilePicture';
   return null; // All steps completed
 }
-

@@ -15,7 +15,7 @@ import {
 import * as userRepository from '../repositories/user.repository';
 import { ExtendedRequest, RequestUserAction, type AuthRequest } from '../types/extended-request';
 import { createAuthorizationError, createValidationError } from '@/shared/errors/application-error';
-import { createAuthRequest, getCurrentUser, performAuthorization } from '@shared/authorization';
+import { createAuthRequest, getCurrentUser, performAuthorization } from '@features/auth';
 import logger from '@/config/logger';
 
 /**

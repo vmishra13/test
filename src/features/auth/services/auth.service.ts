@@ -46,14 +46,17 @@ interface ResetTokenData {
 const temporaryResetTokens = new Map<string, ResetTokenData>();
 
 // Clean up expired tokens every hour
-setInterval(() => {
-  const now = new Date();
-  for (const [token, data] of temporaryResetTokens.entries()) {
-    if (data.expiresAt < now || data.used) {
-      temporaryResetTokens.delete(token);
+setInterval(
+  () => {
+    const now = new Date();
+    for (const [token, data] of temporaryResetTokens.entries()) {
+      if (data.expiresAt < now || data.used) {
+        temporaryResetTokens.delete(token);
+      }
     }
-  }
-}, 60 * 60 * 1000);
+  },
+  60 * 60 * 1000,
+);
 
 // ===================================================================
 // 🎯 AUTHENTICATION FLOWS
@@ -135,7 +138,7 @@ export async function authenticateUser(
         name: user.userType.name,
         description: user.userType.description || undefined,
       },
-      roles: user.userRole?.map(ur => ur.role.name as CoreRole) || [],
+      roles: user.userRoles?.map(ur => ur.role.name as CoreRole) || [],
     };
 
     // Extract permissions (if available)
@@ -191,7 +194,7 @@ export async function refreshToken(
             name: user.userType.name,
             description: user.userType.description || undefined,
           },
-          roles: user.userRole?.map(ur => ur.role.name as CoreRole) || [],
+          roles: user.userRoles?.map(ur => ur.role.name as CoreRole) || [],
         };
       }
     }
@@ -556,7 +559,7 @@ export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
       event.clientId,
       event.type as 'token_rotation' | 'suspicious_activity' | 'logout_all',
       event.details,
-      'system' // modUser - could be passed as parameter or derived from context
+      'system', // modUser - could be passed as parameter or derived from context
     );
   } catch (error) {
     // Don't throw errors for logging failures
@@ -627,7 +630,7 @@ export async function initiatePasswordReset(email: string): Promise<{ requestId:
   try {
     // Check if user exists with this email
     const user = await userRepository.findUserByEmail(email);
-    
+
     if (!user) {
       // For security, we don't reveal if the email exists
       // But we still return success to prevent email enumeration
@@ -644,7 +647,7 @@ export async function initiatePasswordReset(email: string): Promise<{ requestId:
       userId: user.id,
       email: user.email || '',
       expiresAt,
-      used: false
+      used: false,
     });
 
     // TODO: Send reset email (integrate with email service)
@@ -670,11 +673,14 @@ export async function initiatePasswordReset(email: string): Promise<{ requestId:
 /**
  * Reset password using reset token
  */
-export async function resetPassword(token: string, newPassword: string): Promise<{ success: boolean }> {
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ success: boolean }> {
   try {
     // Verify reset token from temporary storage
     const resetData = temporaryResetTokens.get(token);
-    
+
     if (!resetData || resetData.expiresAt < new Date() || resetData.used) {
       throw new Error('invalid_token');
     }
@@ -719,14 +725,14 @@ export async function resetPassword(token: string, newPassword: string): Promise
 /**
  * Verify if reset token is valid
  */
-export async function verifyResetToken(token: string): Promise<{ 
-  valid: boolean; 
-  email?: string; 
-  expiresAt?: Date 
+export async function verifyResetToken(token: string): Promise<{
+  valid: boolean;
+  email?: string;
+  expiresAt?: Date;
 }> {
   try {
     const resetData = temporaryResetTokens.get(token);
-    
+
     if (!resetData || resetData.expiresAt < new Date() || resetData.used) {
       return { valid: false };
     }
@@ -740,7 +746,7 @@ export async function verifyResetToken(token: string): Promise<{
     return {
       valid: true,
       email: user.email || undefined,
-      expiresAt: resetData.expiresAt
+      expiresAt: resetData.expiresAt,
     };
   } catch (error) {
     console.error('Token verification failed:', error);
