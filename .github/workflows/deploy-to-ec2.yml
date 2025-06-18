@@ -30,7 +30,9 @@ jobs:
         run: pnpm install
 
       - name: Build TypeScript
-        run: pnpm run build      - name: Run tests
+        run: pnpm run build    
+        
+      - name: Run tests
         if: ${{ !inputs.skip_tests }}
         run: pnpm test
         continue-on-error: true
@@ -62,7 +64,9 @@ jobs:
           DATABASE_URL=${{ secrets.DATABASE_URL }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           # Add all your environment variables here
-          EOF      - name: Deploy on EC2
+          EOF      
+      
+      - name: Deploy on EC2
         env:
           DEBUG_MODE: ${{ inputs.debug_mode }}
         run: |
