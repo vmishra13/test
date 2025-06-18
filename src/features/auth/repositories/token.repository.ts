@@ -1,4 +1,4 @@
-import { prismaPostgres } from '@/db/postgres/client'; // ✅ Fixed import
+import { prismaPostgres } from '../../../db/postgres/client';
 import * as jwt from 'jsonwebtoken';
 import { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
@@ -698,12 +698,12 @@ export async function invalidatePasswordResetToken(token: string): Promise<void>
 export async function invalidateAllUserTokens(userId: number): Promise<void> {
   try {
     // Mark all password reset tokens as used for this user
-    for (const [token, tokenData] of passwordResetTokens.entries()) {
+    passwordResetTokens.forEach((tokenData, token) => {
       if (tokenData.userId === userId && !tokenData.used) {
         tokenData.used = true;
         passwordResetTokens.set(token, tokenData);
       }
-    }
+    });
     
     // Note: For stateless JWT tokens, we can't invalidate them in the DB
     // In a production system, you might want to maintain a blacklist
@@ -720,11 +720,11 @@ export async function invalidateAllUserTokens(userId: number): Promise<void> {
  */
 function cleanupExpiredTokens(): void {
   const now = new Date();
-  for (const [token, tokenData] of passwordResetTokens.entries()) {
+  passwordResetTokens.forEach((tokenData, token) => {
     if (tokenData.expiresAt < now) {
       passwordResetTokens.delete(token);
     }
-  }
+  });
 }
 
 /**

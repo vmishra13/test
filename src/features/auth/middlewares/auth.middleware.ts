@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import * as authService from '../services/auth.service';
 import { AuthenticatedUser } from '../dto/auth.dto';
-import type { CoreRole } from '@shared/constants';
+import type { CoreRole } from '../../../shared/constants';
 import logger from '@config/logger';
 
 // Extend Express Request interface to include user context

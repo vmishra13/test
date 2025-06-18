@@ -1,9 +1,9 @@
 import * as jwt from 'jsonwebtoken';
 import { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import ms from 'ms';
-import { ENV } from '@config/env';
-import { StringValue } from '@shared/types';
+import ms = require('ms');
+import { ENV } from '../../../config/env';
+import { StringValue } from '../../../shared/types';
 import {
   TokenPair,
   AccessTokenClaims,
@@ -17,10 +17,10 @@ import {
 } from '../dto/auth.dto';
 import {
   UserWithAuthData,
-} from '@features/users/validators/user.validators';
+} from '../../users/validators/user.validators';
 import * as tokenRepository from '../repositories/token.repository';
-import * as userRepository from '@features/users/repositories/user.repository';
-import type { CoreRole } from '@/shared/constants';
+import * as userRepository from '../../users/repositories/user.repository';
+import type { CoreRole } from '../../../shared/constants';
 
 // ===================================================================
 // 🎯 JWT CONFIGURATION AND CONSTANTS
