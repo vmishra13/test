@@ -2,45 +2,51 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { ApiResponse } from '@/shared/utils/api-response';
 import { authenticate } from '@/features/auth/middlewares/auth.middleware';
+import * as procedureService from './services/procedure.service';
 
 const router = Router();
 
 /**
  * GET /procedures
- * List all medical procedures
+ * List all medical procedures with STRICT multi-tenant validation
+ * HIPAA/PHI Protection: Only allows access to procedures within same client or SuperAdmin cross-client access
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    // TODO: Implement actual database query
-    const procedures = [
-      {
-        id: 1,
-        name: 'Knee Replacement Surgery',
-        description: 'Total knee replacement procedure',
-        category: 'Orthopedic',
-        duration: '2-3 hours',
-        complexity: 'High',
-        cost: 15000,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      },
-      {
-        id: 2,
-        name: 'Physical Therapy Session',
-        description: 'Individual physical therapy session',
-        category: 'Rehabilitation',
-        duration: '1 hour',
-        complexity: 'Low',
-        cost: 150,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-    ];
+    const result = await procedureService.getProcedures(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(procedures, 'Procedures retrieved successfully')
-    );
-  } catch (error) {
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Get procedures error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to retrieve procedures')
@@ -50,48 +56,45 @@ router.get('/', authenticate, async (req, res) => {
 
 /**
  * GET /procedures/:procedureId
- * Get a specific procedure
+ * Get a specific procedure with STRICT multi-tenant validation
+ * HIPAA/PHI Protection: Only allows access to procedures within same client or SuperAdmin cross-client access
  */
 router.get('/:procedureId', authenticate, async (req, res) => {
   try {
-    const { procedureId } = req.params;
-    
-    // Validate procedureId is a number
-    const id = parseInt(procedureId);
-    if (isNaN(id)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Invalid procedure ID')
-      );
+    const result = await procedureService.getProcedureById(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database query
-    const procedure = {
-      id: id,
-      name: 'Knee Replacement Surgery',
-      description: 'Total knee replacement procedure',
-      category: 'Orthopedic',
-      duration: '2-3 hours',
-      complexity: 'High',
-      cost: 15000,
-      preOperativeInstructions: [
-        'Fast for 12 hours before surgery',
-        'Stop blood thinners 7 days prior',
-        'Arrange transportation home'
-      ],
-      postOperativeInstructions: [
-        'Keep incision dry for 48 hours',
-        'Begin physical therapy in 2 weeks',
-        'Follow up in 1 week'
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(procedure, 'Procedure retrieved successfully')
-    );
-  } catch (error) {
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Get procedure error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to retrieve procedure')
@@ -101,47 +104,45 @@ router.get('/:procedureId', authenticate, async (req, res) => {
 
 /**
  * POST /procedures
- * Create a new procedure
+ * Create a new procedure with STRICT multi-tenant validation and role authorization
+ * HIPAA/PHI Protection: Only CLIENT_ADMIN and SUPER_ADMIN can create procedures
  */
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { 
-      name, 
-      description, 
-      category, 
-      duration, 
-      complexity, 
-      cost,
-      preOperativeInstructions,
-      postOperativeInstructions
-    } = req.body;
-    // Validation
-    if (!name || !description || !category) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Name, description, and category are required')
-      );
+    const result = await procedureService.createProcedure(req as any);
+    res.status(StatusCodes.CREATED).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database creation
-    const newProcedure = {
-      id: Date.now(),
-      name,
-      description,
-      category,
-      duration: duration || '1 hour',
-      complexity: complexity || 'Medium',
-      cost: cost || 0,
-      preOperativeInstructions: preOperativeInstructions || [],
-      postOperativeInstructions: postOperativeInstructions || [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions for procedure creation',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.CREATED).json(
-      ApiResponse.success(newProcedure, 'Procedure created successfully')
-    );
-  } catch (error) {
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Create procedure error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to create procedure')
@@ -151,49 +152,45 @@ router.post('/', authenticate, async (req, res) => {
 
 /**
  * PUT /procedures/:procedureId
- * Update a procedure
+ * Update a procedure with STRICT multi-tenant validation and role authorization
+ * HIPAA/PHI Protection: Only CLIENT_ADMIN and SUPER_ADMIN can update procedures
  */
 router.put('/:procedureId', authenticate, async (req, res) => {
   try {
-    const { procedureId } = req.params;
-    const { 
-      name, 
-      description, 
-      category, 
-      duration, 
-      complexity, 
-      cost,
-      preOperativeInstructions,
-      postOperativeInstructions
-    } = req.body;
-
-    // Validate procedureId is a number
-    const id = parseInt(procedureId);
-    if (isNaN(id)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Invalid procedure ID')
-      );
+    const result = await procedureService.updateProcedure(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database update
-    const updatedProcedure = {
-      id: id,
-      name: name || 'Updated Procedure',
-      description: description || 'Updated description',
-      category: category || 'General',
-      duration: duration || '1 hour',
-      complexity: complexity || 'Medium',
-      cost: cost || 0,
-      preOperativeInstructions: preOperativeInstructions || [],
-      postOperativeInstructions: postOperativeInstructions || [],
-      updatedAt: new Date().toISOString()
-    };
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions for procedure update',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(updatedProcedure, 'Procedure updated successfully')
-    );
-  } catch (error) {
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Update procedure error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to update procedure')
@@ -203,29 +200,96 @@ router.put('/:procedureId', authenticate, async (req, res) => {
 
 /**
  * DELETE /procedures/:procedureId
- * Delete a procedure
+ * Delete a procedure with STRICT multi-tenant validation and role authorization
+ * HIPAA/PHI Protection: Only CLIENT_ADMIN and SUPER_ADMIN can delete procedures
  */
 router.delete('/:procedureId', authenticate, async (req, res) => {
   try {
-    const { procedureId } = req.params;
-
-    // Validate procedureId is a number
-    const id = parseInt(procedureId);
-    if (isNaN(id)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Invalid procedure ID')
-      );
+    const result = await procedureService.deleteProcedure(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database deletion
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success({ id }, 'Procedure deleted successfully')
-    );
-  } catch (error) {
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions for procedure deletion',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
     console.error('Delete procedure error:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to delete procedure')
+    );
+  }
+});
+
+/**
+ * GET /procedures/search
+ * Search procedures with STRICT multi-tenant validation
+ * HIPAA/PHI Protection: Only allows search within same client or SuperAdmin cross-client access
+ */
+router.get('/search', authenticate, async (req, res) => {
+  try {
+    const result = await procedureService.searchProcedures(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthenticationError') {
+      res.status(StatusCodes.UNAUTHORIZED).json({
+        success: false,
+        error: 'Authentication required',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.details,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    console.error('Search procedures error:', error);
+    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
+      ApiResponse.error('Failed to search procedures')
     );
   }
 });
