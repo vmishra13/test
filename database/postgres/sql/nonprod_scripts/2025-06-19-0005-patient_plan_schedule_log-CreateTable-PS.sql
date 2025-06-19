@@ -15,20 +15,21 @@ BEGIN     -- Create ENUM types if they don't exist
         SELECT 1
         FROM information_schema.tables
         WHERE table_schema = 'reliacare'
-        AND table_name = 'user_plan_schedule'
+        AND table_name = 'user_plan_schedule_log'
     )
     THEN
 
-    CREATE TABLE "user_plan_schedule" (
+    CREATE TABLE "patient_plan_schedule_log" (
         id SERIAL PRIMARY KEY,
+        "userPlanScheduleId" integer NOT NULL,
         "patientId" integer NOT NULL,
         "clientId" integer DEFAULT 1,
-        "patientPlanID" integer NOT NULL,
+        "planID" integer NOT NULL,
         "type" schedule_type DEFAULT 'None',
-        "typeID" integer NOT NULL,        
-        "scheduleDate" timestamp NOT NULL,
+        "typeId" integer NOT NULL,        
+        "scheduleDate" timestamp,
         "frequencyUnit" frequency_unit_type DEFAULT NULL,
-        "frequencyValue" integer,        
+        "frequencyValue" integer, 
         "scheduleUnit" varchar,
         "scheduleUnitValue" decimal(10,2),
         "measurementUnit" measurement_unit_type DEFAULT NULL,
@@ -36,17 +37,20 @@ BEGIN     -- Create ENUM types if they don't exist
         "validTo" date,
         "status" boolean DEFAULT true,
         "crUser" varchar(50) NOT NULL,
-        "crDate" timestamp DEFAULT CURRENT_TIMESTAMP, 
+        "crDate" timestamp DEFAULT CURRENT_TIMESTAMP,
         "modUser" varchar(50) NOT NULL,
         "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_user_plan_schedule_user 
+        CONSTRAINT fk_user_plan_schedule_log_user_plan_schedule 
+            FOREIGN KEY ("userPlanScheduleId") REFERENCES "user_plan_schedule"(id) 
+            ON DELETE RESTRICT ON UPDATE CASCADE,
+        CONSTRAINT fk_user_plan_schedule_log_user 
             FOREIGN KEY ("patientId") REFERENCES "user"(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE,
-        CONSTRAINT fk_user_plan_schedule_client 
+        CONSTRAINT fk_user_plan_schedule_log_client 
             FOREIGN KEY ("clientId") REFERENCES client(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE,
-        CONSTRAINT fk_user_plan_schedule_user_plan 
-            FOREIGN KEY ("patientPlanID") REFERENCES "patient_plan"(id) 
+        CONSTRAINT fk_user_plan_schedule_log_user_plan 
+            FOREIGN KEY ("planID") REFERENCES "patient_plan"(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE
     );
 

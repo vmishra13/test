@@ -16,7 +16,7 @@ BEGIN
             id SERIAL PRIMARY KEY,
             "patientId" integer,
             "clientId" integer,
-            "process_flag" boolean DEFAULT false,
+            "processed" boolean DEFAULT false,
             "crUser" varchar(50) NOT NULL,
             "crDate" timestamp DEFAULT CURRENT_TIMESTAMP,
             "modUser" varchar(50) NOT NULL,

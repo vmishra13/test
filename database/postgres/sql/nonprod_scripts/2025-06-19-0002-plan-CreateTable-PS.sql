@@ -14,7 +14,9 @@ BEGIN
 
   CREATE TABLE plan (
     id SERIAL PRIMARY KEY,
-    "clientId" integer NOT NULL,    "name" varchar(100) NOT NULL,    "description" text,  
+    "clientId" integer NOT NULL,
+    "name" varchar(100) NOT NULL,
+    "description" text,  
     "diagnosisCode" integer NOT NULL,
     "diagnosisName" varchar(100) NOT NULL,
     "version" integer DEFAULT 1,

@@ -22,7 +22,7 @@ BEGIN
         "clientId" integer DEFAULT 1,
         "identifier" varchar(50),
         "code" varchar(50),
-        "doageForm" dosage_form_type DEFAULT NULL,
+        "dosageForm" dosage_form_type DEFAULT NULL,
         "strength" varchar(50),
         "manufacturer" varchar(255),
         "description" text,

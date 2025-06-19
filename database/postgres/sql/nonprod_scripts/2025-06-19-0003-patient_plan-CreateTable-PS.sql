@@ -20,10 +20,10 @@ BEGIN
             id SERIAL PRIMARY KEY,
             "patientId" integer NOT NULL,
             "clientId" integer DEFAULT 1,            
-            "locationId" integer NOT NULL,
+            "locationId" integer,
             "planId" integer,
-            "surgeonID" integer NOT NULL,
-            "diagnosisCode" integer,
+            "surgeonId" integer NOT NULL,
+            "diagnosisId" integer,
             "diagnosisName" varchar(100),
             "description" text,
             "surgeryDate" date NOT NULL,
@@ -40,17 +40,14 @@ BEGIN
             CONSTRAINT fk_patientplan_client 
                 FOREIGN KEY ("clientId") REFERENCES client(id) 
                 ON DELETE RESTRICT ON UPDATE CASCADE,
-            CONSTRAINT fk_patientplan_client_location 
-                FOREIGN KEY ("locationId") REFERENCES "client_location"(id) 
-                ON DELETE RESTRICT ON UPDATE CASCADE,            
             CONSTRAINT fk_patientplan_plan 
                 FOREIGN KEY ("planId") REFERENCES plan(id) 
                 ON DELETE RESTRICT ON UPDATE CASCADE,
             CONSTRAINT fk_patientplan_surgeon 
-                FOREIGN KEY ("surgeonID") REFERENCES "user"(id) 
+                FOREIGN KEY ("surgeonId") REFERENCES "user"(id) 
                 ON DELETE RESTRICT ON UPDATE CASCADE,
             CONSTRAINT fk_patientplan_diagnosis_master 
-                FOREIGN KEY ("diagnosisCode") REFERENCES diagnosis_master(id) 
+                FOREIGN KEY ("diagnosisId") REFERENCES diagnosis_master(id) 
                 ON DELETE RESTRICT ON UPDATE CASCADE,
             CONSTRAINT fk_patientplan_diagnosis_name 
                 FOREIGN KEY ("diagnosisName") REFERENCES diagnosis_master("name") 

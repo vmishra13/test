@@ -33,7 +33,7 @@ BEGIN
             "purpose" varchar(255),
             "media_type" media_type_enum DEFAULT NULL,
             "media_url" varchar(255),
-            "frequency" frequency_unit_type DEFAULT 'Day',
+            "frequencyPeriod" frequency_unit_type DEFAULT 'Day',
             "unit" unit_type DEFAULT 'Set',
             "value" integer DEFAULT 1,
             "setUnit" integer DEFAULT 1,
