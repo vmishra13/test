@@ -15,13 +15,13 @@ BEGIN     -- Create ENUM types if they don't exist
         SELECT 1
         FROM information_schema.tables
         WHERE table_schema = 'reliacare'
-        AND table_name = 'user_plan_schedule_log'
+        AND table_name = 'patient_plan_schedule_log'
     )
     THEN
 
     CREATE TABLE "patient_plan_schedule_log" (
         id SERIAL PRIMARY KEY,
-        "userPlanScheduleId" integer NOT NULL,
+        "patientPlanScheduleId" integer NOT NULL,
         "patientId" integer NOT NULL,
         "clientId" integer DEFAULT 1,
         "planID" integer NOT NULL,
@@ -41,7 +41,7 @@ BEGIN     -- Create ENUM types if they don't exist
         "modUser" varchar(50) NOT NULL,
         "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_user_plan_schedule_log_user_plan_schedule 
-            FOREIGN KEY ("userPlanScheduleId") REFERENCES "user_plan_schedule"(id) 
+            FOREIGN KEY ("patientPlanScheduleId") REFERENCES "patient_plan_schedule"(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE,
         CONSTRAINT fk_user_plan_schedule_log_user 
             FOREIGN KEY ("patientId") REFERENCES "user"(id) 
