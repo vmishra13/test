@@ -22,27 +22,41 @@ const mobileRegistrationController = new MobileRegistrationController();
 const doctorSelectionController = new DoctorSelectionController();
 
 // ===================================================================
-// 🎯 MOBILE REGISTRATION & ONBOARDING ENDPOINTS
+// 📚 ROUTE ORGANIZATION & ORDER
+// ===================================================================
+// 1. 🔐 Authentication & Registration (public + authenticated)
+// 2. 📋 User Lists & Search (authenticated)
+// 3. 👨‍⚕️ Healthcare Providers (authenticated)
+// 4. 👤 Current User Profile (authenticated, specific paths)
+// 5. 🎯 Onboarding (authenticated, specific paths)
+// 6. 👥 Admin User Management (authenticated, parameterized paths)
+// 7. 🔒 Security & Access Control (authenticated, parameterized paths)
+//
+// ⚠️  CRITICAL: Specific paths (e.g., /profile, /doctors) MUST come
+//     before parameterized paths (e.g., /:userId) to avoid conflicts!
 // ===================================================================
 
-// Mobile app registration
+// ===================================================================
+// 🔐 AUTHENTICATION & REGISTRATION ENDPOINTS
+// ===================================================================
+
+// Core user registration (web/admin)
+router.post('/register', authenticate, registerUserController as any);
+
+// Mobile app registration (public)
 router.post('/register/mobile', (req, res) =>
   mobileRegistrationController.register(req as any, res),
 );
 
-// Onboarding endpoints
-router.put('/onboarding/personal-info', authenticate, (req, res) =>
-  mobileRegistrationController.updatePersonalInfo(req as any, res),
-);
-router.get('/onboarding/status', authenticate, (req, res) =>
-  mobileRegistrationController.getOnboardingStatus(req as any, res),
-);
-router.post('/onboarding/complete', authenticate, (req, res) =>
-  mobileRegistrationController.completeOnboarding(req as any, res),
-);
+// ===================================================================
+// 📋 USER LIST & SEARCH ENDPOINTS
+// ===================================================================
+
+// Get all users (with filtering, pagination, search)
+router.get('/', authenticate, getUsersController as any);
 
 // ===================================================================
-// 🎯 DOCTOR SELECTION ENDPOINTS
+// 👨‍⚕️ DOCTOR & HEALTHCARE PROVIDER ENDPOINTS
 // ===================================================================
 
 // Get available doctors
@@ -56,71 +70,70 @@ router.post('/select-doctor', authenticate, (req, res) =>
 );
 
 // ===================================================================
-// 🎯 EXISTING ENDPOINTS
+// 👤 CURRENT USER PROFILE ENDPOINTS (BEFORE /:userId ROUTES)
 // ===================================================================
 
-// Core registration endpoints
-router.post('/register', authenticate, registerUserController as any);
-
-// Core user management endpoints
-router.get('/', authenticate, getUsersController as any);
-
-// ===================================================================
-// 🎯 MOBILE APP PROFILE ENDPOINTS (MUST BE BEFORE /:userId ROUTES)
-// ===================================================================
-
-// Get user profile
+// Get current user's profile
 router.get('/profile', authenticate, profileController.getUserProfile);
 
-// Update user profile
+// Update current user's profile
 router.put('/profile', authenticate, profileController.updateUserProfile);
 
-// Update personal information
+// Update current user's personal information
 router.put('/profile/personal-info', authenticate, profileController.updatePersonalInfo);
 
-// Complete onboarding
-router.post('/profile/complete-onboarding', authenticate, profileController.completeOnboarding);
-
-// Get onboarding status
-router.get('/profile/onboarding-status', authenticate, profileController.getOnboardingStatus);
-
-// Upload profile picture
+// Upload current user's profile picture
 router.post('/profile/upload-picture', authenticate, profileController.uploadProfilePicture);
 
-/**
- * GET /users/:userId
- * View a specific user - SECURED with multi-tenant validation
- */
+// ===================================================================
+// 🎯 ONBOARDING ENDPOINTS (CURRENT USER)
+// ===================================================================
+
+// Update personal info during onboarding
+router.put('/onboarding/personal-info', authenticate, (req, res) =>
+  mobileRegistrationController.updatePersonalInfo(req as any, res),
+);
+
+// Get current user's onboarding status
+router.get('/onboarding/status', authenticate, (req, res) =>
+  mobileRegistrationController.getOnboardingStatus(req as any, res),
+);
+
+// Get current user's onboarding status (alternative endpoint)
+router.get('/profile/onboarding-status', authenticate, profileController.getOnboardingStatus);
+
+// Complete current user's onboarding
+router.post('/onboarding/complete', authenticate, (req, res) =>
+  mobileRegistrationController.completeOnboarding(req as any, res),
+);
+
+// Complete current user's onboarding (alternative endpoint)
+router.post('/profile/complete-onboarding', authenticate, profileController.completeOnboarding);
+
+// ===================================================================
+// 👥 SPECIFIC USER MANAGEMENT ENDPOINTS (ADMIN OPERATIONS)
+// ===================================================================
+
+// View a specific user by ID
 router.get('/:userId', authenticate, getUserByIdController as any);
 
-/**
- * PUT /users/:userId
- * Edit a user - SECURED with multi-tenant validation
- */
+// Update a specific user by ID
 router.put('/:userId', authenticate, updateUserController as any);
 
-/**
- * DELETE /users/:userId
- * Delete a user - SECURED with multi-tenant validation
- */
+// Delete a specific user by ID
 router.delete('/:userId', authenticate, deleteUserController as any);
 
-/**
- * PATCH /users/:userId
- * Inactivate/Activate a user - SECURED with multi-tenant validation
- */
+// Update user status (activate/deactivate)
 router.patch('/:userId', authenticate, updateUserStatusController as any);
 
-/**
- * PUT /users/:userId/password
- * Update user password - SECURED with multi-tenant validation
- */
+// ===================================================================
+// 🔒 USER SECURITY & ACCESS ENDPOINTS
+// ===================================================================
+
+// Update user password
 router.put('/:userId/password', authenticate, updateUserPasswordController as any);
 
-/**
- * POST /users/:userId/link-client
- * Link user to a client
- */
+// Link user to a client (admin operation)
 router.post('/:userId/link-client', authenticate, async (req, res) => {
   try {
     const { userId } = req.params;
