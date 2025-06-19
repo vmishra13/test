@@ -80,12 +80,13 @@ export interface AuthRequest {
 // }
 
 export interface UserQuery {
-  clientId?: string;
-  role?: string;
-  status?: string;
-  page?: string;
-  limit?: string;
+  clientId?: number;
+  role?: CoreRole;
+  status?: number;
+  page?: number;
+  limit?: number;
   search?: string;
+  sort?: 'asc' | 'desc';
 }
 
 // export interface UserAction {

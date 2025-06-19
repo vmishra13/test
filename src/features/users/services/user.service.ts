@@ -1,10 +1,10 @@
-import { Request } from 'express';
 import { UploadedFile } from 'express-fileupload';
-import { CoreRole, RoleUtils } from '@shared/constants';
+import { CoreRole } from '@shared/constants';
 import type { AuthenticatedUser } from '@features/auth/dto/auth.dto';
-import type { GetUsersResponse } from '../dto/user.dto';
+import type { GetUsersResponse, UpdateUserRequest } from '../dto/user.dto';
 import {
   getUsersQuerySchema,
+  UserUpdateInputSchema,
   validateUserViewPermissions,
   type GetUsersQueryRequest,
 } from '../validators/user.validators';
@@ -23,21 +23,24 @@ import {
 import logger from '@/config/logger';
 import { getCurrentUser, createAuthRequest, performAuthorization } from '@features/auth';
 import {
-  validateJsonField,
+  validateUserExtraInfo,
   userExtraInfoSchema,
   mergeJsonFields,
 } from '../validators/user.validators';
-import type { UserExtraInfo } from '../validators/user.validators';
+import type { UserExtraInfo, UserUpdateInput } from '../validators/user.validators';
 import { prismaPostgres } from '@/db/postgres/client';
 
 export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {
   try {
     const currentUser = getCurrentUser(req);
 
+    // First validate query parameters to ensure proper type conversion
+    const queryParams = validateQueryParameters(req.query);
+
     const actionUserId = null; // No specific user ID for view action
-    const actionClientId = req.query.clientId ? parseInt(req.query.clientId) : currentUser.clientId;
+    const actionClientId = queryParams.clientId || currentUser.clientId; // Now it's properly typed as number
     const actionUserTypeId = null; // No specific user type ID for view action
-    const actionUserRoles = (req.query.role as CoreRole) || currentUser.roles; // Use roles from query or current user
+    const actionUserRoles = (queryParams.role as CoreRole) || currentUser.roles; // Cast validated role to CoreRole type
     const actionPermission = RequestUserAction.userView; // Specific permission for viewing users
 
     const oAuthReq: AuthRequest = createAuthRequest(
@@ -59,9 +62,6 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
       throw createAuthorizationError('You do not have permission to perform this action');
     }
 
-    // Validate query parameters using Zod
-    const queryParams = validateQueryParameters(req.query);
-
     // Get users list based on validated params and current user context
     return await getUsersList(queryParams, currentUser.roles, currentUser.clientId);
   } catch (error: any) {
@@ -73,7 +73,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 /**
  * Validate query parameters using Zod - replaces manual validation
  */
-function validateQueryParameters(query: any): GetUsersQueryRequest {
+function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
   try {
     // Use Zod schema for validation
     const validatedQuery = getUsersQuerySchema.parse(query);
@@ -238,10 +238,9 @@ async function getUsersList(
 }
 
 function getCurrentUserPrimaryRole(roles: string[]): string {
-  // TEMPORARY: Return SUPER_ADMIN for empty roles (superadmin user without roles)
   if (roles.length === 0) {
-    console.log('⚠️ TEMPORARY: Empty roles detected, assuming SUPER_ADMIN for compatibility');
-    return CoreRole.SUPER_ADMIN;
+    logger.error('User has no roles assigned.');
+    throw createAuthError('User has no roles assigned');
   }
 
   // Define role hierarchy (highest to lowest priority)
@@ -268,48 +267,171 @@ export async function updateUser(
   req: ExtendedRequest<any> & { params: { userId: string } },
 ): Promise<{ data: any; message: string }> {
   try {
-    const { userId } = req.params;
-    const { extraInfo, ...otherFields } = req.body;
-    const currentUser = (req as any).user;
+    // 1. Check authentication
+    const currentUser = getCurrentUser(req);
 
-    // ✅ Validate JSON field with Zod
-    let sanitizedExtraInfo: UserExtraInfo | undefined = undefined;
+    // 2. Validate userId parameter
+    const { userId } = req.params;
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // 3. Get target user to build authorization context
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Extract target user's roles for authorization
+    const targetUserRoles =
+      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+
+    // 4. Build authorization request
+    const actionUserId = targetUserId;
+    const actionClientId = targetUser.clientId; // Target user's client
+    const actionUserTypeId = targetUser.userTypeId; // Target user's type
+    const actionUserRoles = targetUserRoles; // Target user's roles
+    const actionPermission = RequestUserAction.userEdit; // Specific permission for user update
+
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      actionUserId,
+      actionClientId,
+      actionUserTypeId,
+      actionUserRoles,
+      actionPermission,
+    );
+
+    // 5. Check authorization for the specific action
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} does not have permission to update user ${targetUserId}`,
+      );
+      throw createAuthorizationError('You do not have permission to perform this action');
+    }
+
+    // 6. Validate request body
+    const validatedData = validateUpdateRequestBody(req.body);
+
+    // 7. Perform user update
+    return await performUserUpdate(targetUserId, validatedData, currentUser);
+  } catch (error: any) {
+    logger.error('Error in updateUser service:', error);
+    throw error;
+  }
+}
+
+/**
+ * Validate update request body using Zod schema - similar to registerUser pattern
+ */
+function validateUpdateRequestBody(body: UserUpdateInput): any {
+  try {
+    // Import the UserUpdateInputSchema for validation
+    const { extraInfo, ...otherFields } = body;
+
+    // Validate the main fields (excluding extraInfo)
+    const mainFieldsValidation = UserUpdateInputSchema.omit({
+      extraInfo: true,
+      modUser: true,
+    }).safeParse(otherFields);
+
+    if (!mainFieldsValidation.success) {
+      throw createValidationError(
+        'Validation failed',
+        mainFieldsValidation.error.errors.map((err: any) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        })),
+      );
+    }
+
+    // Validate extraInfo separately if provided
+    let validatedExtraInfo: UserExtraInfo;
     if (extraInfo !== undefined) {
-      const validation = validateJsonField(extraInfo, userExtraInfoSchema, 'extraInfo');
+      const validation = validateUserExtraInfo(extraInfo);
 
       if (!validation.success) {
         throw createValidationError(
           'Invalid extraInfo format',
-          validation.errors.map(error => ({ field: 'extraInfo', message: error })),
+          validation.errors.map((error: string) => ({ field: 'extraInfo', message: error })),
         );
       }
 
-      // For updates, merge with existing data
-      if (validation.data) {
-        const existingUser = await prismaPostgres.user.findUnique({
-          where: { id: Number(userId) },
-          select: { extraInfo: true },
-        });
+      validatedExtraInfo = validation.data;
+    }
 
+    return {
+      ...mainFieldsValidation.data,
+      ...(extraInfo !== undefined && { extraInfo: validatedExtraInfo }),
+    };
+  } catch (error: any) {
+    if (error.name === 'ValidationError') {
+      throw error; // Re-throw our validation errors
+    }
+    throw createValidationError('Update validation failed', [
+      { field: 'body', message: error.message },
+    ]);
+  }
+}
+
+/**
+ * Perform user update with business logic - similar to performUserRegistration pattern
+ */
+async function performUserUpdate(
+  targetUserId: number,
+  validatedData: any,
+  currentUser: AuthenticatedUser,
+): Promise<{ data: any; message: string }> {
+  try {
+    // 1. Get existing user for extraInfo merging
+    const existingUser = await userRepository.findUserById(targetUserId);
+    if (!existingUser) {
+      throw new Error('User not found during update operation');
+    }
+
+    // 2. Handle extraInfo merging if provided
+    let sanitizedExtraInfo: UserExtraInfo | undefined = undefined;
+    if (validatedData.extraInfo !== undefined) {
+      if (validatedData.extraInfo) {
+        // Merge with existing extraInfo
         const mergedResult = mergeJsonFields(
-          existingUser?.extraInfo as UserExtraInfo,
-          validation.data,
+          existingUser.extraInfo as UserExtraInfo,
+          validatedData.extraInfo,
         );
         sanitizedExtraInfo = mergedResult || undefined;
       } else {
-        sanitizedExtraInfo = null as any;
+        sanitizedExtraInfo = null as any; // Explicitly setting to null
       }
     }
 
+    // 3. Prepare update data
     const updateData = {
-      ...otherFields,
-      modUser: currentUser.id.toString(),
+      ...validatedData,
+      modUser: currentUser.loginName, // Use loginName instead of ID for consistency
       modDate: new Date(),
-      ...(extraInfo !== undefined && { extraInfo: sanitizedExtraInfo }),
+      ...(validatedData.extraInfo !== undefined && { extraInfo: sanitizedExtraInfo }),
     };
 
+    // Remove extraInfo from updateData if it was in validatedData to avoid duplication
+    delete updateData.extraInfo;
+    if (validatedData.extraInfo !== undefined) {
+      updateData.extraInfo = sanitizedExtraInfo;
+    }
+
+    // 4. Perform database update
     const updatedUser = await prismaPostgres.user.update({
-      where: { id: Number(userId) },
+      where: { id: targetUserId },
       data: updateData,
       include: {
         client: { select: { id: true, name: true } },
@@ -322,6 +444,7 @@ export async function updateUser(
       },
     });
 
+    // 5. Format response
     return {
       data: {
         id: updatedUser.id,
@@ -337,18 +460,18 @@ export async function updateUser(
         gender: updatedUser.gender,
         timeZone: updatedUser.timeZone,
         profilePicture: updatedUser.profilePicture,
-        extraInfo: updatedUser.extraInfo as UserExtraInfo, // ✅ Type-safe JSON
+        extraInfo: updatedUser.extraInfo as UserExtraInfo,
         status: updatedUser.status,
         client: updatedUser.client,
         userType: updatedUser.userType,
         roles: updatedUser.userRoles.map(ur => ur.role),
         modDate: updatedUser.modDate,
+        updatedBy: currentUser.loginName,
       },
       message: 'User updated successfully',
     };
-  } catch (error) {
-    logger.error('Error updating user:', error);
-    throw error;
+  } catch (error: any) {
+    throw new Error(`Failed to update user: ${error.message}`);
   }
 }
 

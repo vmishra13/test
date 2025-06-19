@@ -384,7 +384,7 @@ export const updateUserSchema = z.object({
   email: z.string().email().optional(),
   timeZone: z.string().optional(),
   profilePicture: z.string().url().optional(),
-  extraInfo: userExtraInfoSchema // ✅ Reuse the JSON schema
+  extraInfo: userExtraInfoSchema.optional(), // ✅ Reuse the JSON schema
 });
 
 export const createUserSchema = z.object({
@@ -395,7 +395,7 @@ export const createUserSchema = z.object({
   lastName: z.string().min(1).max(50),
   email: z.string().email(),
   password: z.string().min(8),
-  extraInfo: userExtraInfoSchema.optional()
+  extraInfo: userExtraInfoSchema.optional(),
 });
 
 // ✅ Infer types from schemas

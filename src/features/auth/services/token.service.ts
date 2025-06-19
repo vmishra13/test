@@ -1,7 +1,7 @@
 import * as jwt from 'jsonwebtoken';
 import { SignOptions } from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import ms = require('ms');
+import ms from 'ms';
 import { ENV } from '../../../config/env';
 import { StringValue } from '../../../shared/types';
 import {
@@ -15,12 +15,10 @@ import {
   type DecodedRefreshToken,
   type DecodedTokenPayload,
 } from '../dto/auth.dto';
-import {
-  UserWithAuthData,
-} from '../../users/validators/user.validators';
+import { UserWithAuthData } from '../../users/validators/user.validators';
 import * as tokenRepository from '../repositories/token.repository';
 import * as userRepository from '../../users/repositories/user.repository';
-import type { CoreRole } from '../../../shared/constants';
+import type { CoreRole } from '@shared/constants';
 
 // ===================================================================
 // 🎯 JWT CONFIGURATION AND CONSTANTS
@@ -76,7 +74,7 @@ export async function generateTokenPair(
       user.id,
       user.clientId,
       roles,
-      refreshExpiryMs
+      refreshExpiryMs,
     );
 
     // Log security event for login
@@ -90,7 +88,7 @@ export async function generateTokenPair(
         userAgent: deviceInfo?.userAgent,
         tokenFamily: tokenPair.tokenFamily,
       },
-      user.loginName
+      user.loginName,
     );
 
     return {
@@ -114,7 +112,7 @@ export async function refreshAccessToken(
   try {
     // Validate refresh token using stateless token repository
     const validation = await tokenRepository.validateRefreshToken(refreshToken);
-    
+
     if (!validation.isValid || !validation.payload) {
       throw new Error(validation.error || 'Invalid refresh token');
     }
@@ -141,7 +139,9 @@ export async function refreshAccessToken(
       clientId: oldPayload.clientId,
       jti: tokenRepository.generateJti(),
       family: oldPayload.family,
-      expiresAt: new Date(Date.now() + calculateExpiresInSeconds(ENV.jwt.refreshTokenExpiresIn) * 1000),
+      expiresAt: new Date(
+        Date.now() + calculateExpiresInSeconds(ENV.jwt.refreshTokenExpiresIn) * 1000,
+      ),
       issuedAt: new Date(),
     };
 
@@ -149,14 +149,14 @@ export async function refreshAccessToken(
     const rotationResult = await tokenRepository.rotateRefreshToken(
       refreshToken,
       newTokenData,
-      user.loginName
+      user.loginName,
     );
 
     // Create new access token
     const accessToken = tokenRepository.createAccessToken(
       oldPayload.userId,
       oldPayload.clientId,
-      roles
+      roles,
     );
 
     return {
@@ -181,7 +181,7 @@ export async function validateAccessToken(token: string): Promise<AuthenticatedU
   try {
     // Use stateless token repository validation
     const validation = await tokenRepository.validateAccessToken(token);
-    
+
     if (!validation.isValid || !validation.payload) {
       throw new Error(validation.error || 'Invalid access token');
     }
@@ -203,7 +203,7 @@ export async function validateAccessToken(token: string): Promise<AuthenticatedU
       roles: roles as CoreRole[],
       permissions: [], // Would be populated from user roles/permissions
       tokenType: 'access',
-      tokenExp: Math.floor(Date.now() / 1000) + (15 * 60), // Access tokens are 15 minutes
+      tokenExp: Math.floor(Date.now() / 1000) + 15 * 60, // Access tokens are 15 minutes
       tokenIat: Math.floor(Date.now() / 1000),
     };
   } catch (error: any) {
@@ -268,7 +268,7 @@ export async function revokeToken(
 
     // For refresh tokens, validate and get user info for global logout
     const validation = await tokenRepository.validateRefreshToken(token);
-    
+
     if (!validation.isValid || !validation.payload) {
       throw new Error('Invalid token');
     }
