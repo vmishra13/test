@@ -1,15 +1,19 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { authenticate } from '@features/auth/middlewares';
-import { requireResourceOwner } from '@features/auth/middlewares/role.middleware';
 import { ApiResponse } from '@shared/utils/api-response';
 import { registerUserController } from './controllers/registration.controller';
-import { getUsersController } from './controllers/user.controller';
+import {
+  getUsersController,
+  getUserByIdController,
+  updateUserController,
+  deleteUserController,
+  updateUserStatusController,
+  updateUserPasswordController,
+} from './controllers/user.controller';
 import * as profileController from './controllers/profile.controller';
-import * as userService from './services/user.service';
 import MobileRegistrationController from './controllers/mobile-registration.controller';
 import DoctorSelectionController from './controllers/doctor-selection.controller';
-import { ExtendedRequest } from './types/extended-request';
 
 const router = Router();
 
@@ -18,295 +22,118 @@ const mobileRegistrationController = new MobileRegistrationController();
 const doctorSelectionController = new DoctorSelectionController();
 
 // ===================================================================
-// 🎯 MOBILE REGISTRATION & ONBOARDING ENDPOINTS
+// 📚 ROUTE ORGANIZATION & ORDER
+// ===================================================================
+// 1. 🔐 Authentication & Registration (public + authenticated)
+// 2. 📋 User Lists & Search (authenticated)
+// 3. 👨‍⚕️ Healthcare Providers (authenticated)
+// 4. 👤 Current User Profile (authenticated, specific paths)
+// 5. 🎯 Onboarding (authenticated, specific paths)
+// 6. 👥 Admin User Management (authenticated, parameterized paths)
+// 7. 🔒 Security & Access Control (authenticated, parameterized paths)
+//
+// ⚠️  CRITICAL: Specific paths (e.g., /profile, /doctors) MUST come
+//     before parameterized paths (e.g., /:userId) to avoid conflicts!
 // ===================================================================
 
-// Mobile app registration
-router.post('/register/mobile', (req, res) => 
-  mobileRegistrationController.register(req as any, res)
-);
-
-// Onboarding endpoints
-router.put('/onboarding/personal-info', authenticate, (req, res) => 
-  mobileRegistrationController.updatePersonalInfo(req as any, res)
-);
-router.get('/onboarding/status', authenticate, (req, res) => 
-  mobileRegistrationController.getOnboardingStatus(req as any, res)
-);
-router.post('/onboarding/complete', authenticate, (req, res) => 
-  mobileRegistrationController.completeOnboarding(req as any, res)
-);
-
 // ===================================================================
-// 🎯 DOCTOR SELECTION ENDPOINTS
+// 🔐 AUTHENTICATION & REGISTRATION ENDPOINTS
 // ===================================================================
 
-// Get available doctors
-router.get('/doctors', authenticate, (req, res) => 
-  doctorSelectionController.getDoctors(req as any, res)
-);
-
-// Select a doctor
-router.post('/select-doctor', authenticate, (req, res) => 
-  doctorSelectionController.selectDoctor(req as any, res)
-);
-
-// ===================================================================
-// 🎯 EXISTING ENDPOINTS
-// ===================================================================
-
-// Core registration endpoints
+// Core user registration (web/admin)
 router.post('/register', authenticate, registerUserController as any);
 
-// Core user management endpoints
+// Mobile app registration (public)
+router.post('/register/mobile', (req, res) =>
+  mobileRegistrationController.register(req as any, res),
+);
+
+// ===================================================================
+// 📋 USER LIST & SEARCH ENDPOINTS
+// ===================================================================
+
+// Get all users (with filtering, pagination, search)
 router.get('/', authenticate, getUsersController as any);
 
 // ===================================================================
-// 🎯 MOBILE APP PROFILE ENDPOINTS (MUST BE BEFORE /:userId ROUTES)
+// 👨‍⚕️ DOCTOR & HEALTHCARE PROVIDER ENDPOINTS
 // ===================================================================
 
-// Get user profile
+// Get available doctors
+router.get('/doctors', authenticate, (req, res) =>
+  doctorSelectionController.getDoctors(req as any, res),
+);
+
+// Select a doctor
+router.post('/select-doctor', authenticate, (req, res) =>
+  doctorSelectionController.selectDoctor(req as any, res),
+);
+
+// ===================================================================
+// 👤 CURRENT USER PROFILE ENDPOINTS (BEFORE /:userId ROUTES)
+// ===================================================================
+
+// Get current user's profile
 router.get('/profile', authenticate, profileController.getUserProfile);
 
-// Update user profile
+// Update current user's profile
 router.put('/profile', authenticate, profileController.updateUserProfile);
 
-// Update personal information
+// Update current user's personal information
 router.put('/profile/personal-info', authenticate, profileController.updatePersonalInfo);
 
-// Complete onboarding
-router.post('/profile/complete-onboarding', authenticate, profileController.completeOnboarding);
-
-// Get onboarding status
-router.get('/profile/onboarding-status', authenticate, profileController.getOnboardingStatus);
-
-// Upload profile picture
+// Upload current user's profile picture
 router.post('/profile/upload-picture', authenticate, profileController.uploadProfilePicture);
 
-/**
- * GET /users/:userId
- * View a specific user - SECURED with multi-tenant validation
- */
-router.get('/:userId', authenticate, async (req, res) => {
-  try {
-    // CRITICAL: Use secure user service that enforces client validation
-    const result = await userService.getUserById(req as any);
-    res.status(StatusCodes.OK).json(result);
-  } catch (error: any) {
-    // Handle specific error types from secure service
-    if (error.name === 'AuthenticationError') {
-      res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        error: 'Authentication required',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// ===================================================================
+// 🎯 ONBOARDING ENDPOINTS (CURRENT USER)
+// ===================================================================
 
-    if (error.name === 'AuthorizationError') {
-      res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        error: 'Authorization failed - Client isolation enforced',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// Update personal info during onboarding
+router.put('/onboarding/personal-info', authenticate, (req, res) =>
+  mobileRegistrationController.updatePersonalInfo(req as any, res),
+);
 
-    console.error('Get user error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to retrieve user')
-    );
-  }
-});
+// Get current user's onboarding status
+router.get('/onboarding/status', authenticate, (req, res) =>
+  mobileRegistrationController.getOnboardingStatus(req as any, res),
+);
 
-/**
- * PUT /users/:userId
- * Edit a user - SECURED with multi-tenant validation
- */
-router.put('/:userId', authenticate, async (req, res) => {
-  try {
-    // CRITICAL: Use secure user service that enforces client validation
-    const result = await userService.updateUser(req as any);
-    res.status(StatusCodes.OK).json(result);
-  } catch (error: any) {
-    // Handle specific error types from secure service
-    if (error.name === 'AuthenticationError') {
-      res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        error: 'Authentication required',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// Get current user's onboarding status (alternative endpoint)
+router.get('/profile/onboarding-status', authenticate, profileController.getOnboardingStatus);
 
-    if (error.name === 'AuthorizationError') {
-      res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        error: 'Authorization failed - Client isolation enforced',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// Complete current user's onboarding
+router.post('/onboarding/complete', authenticate, (req, res) =>
+  mobileRegistrationController.completeOnboarding(req as any, res),
+);
 
-    if (error.name === 'ValidationError') {
-      res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        error: 'Validation failed',
-        details: error.details,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// Complete current user's onboarding (alternative endpoint)
+router.post('/profile/complete-onboarding', authenticate, profileController.completeOnboarding);
 
-    console.error('Update user error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to update user')
-    );
-  }
-});
+// ===================================================================
+// 👥 SPECIFIC USER MANAGEMENT ENDPOINTS (ADMIN OPERATIONS)
+// ===================================================================
 
-/**
- * DELETE /users/:userId
- * Delete a user - SECURED with multi-tenant validation
- */
-router.delete('/:userId', authenticate, async (req, res) => {
-  try {
-    // CRITICAL: Use secure user service that enforces client validation and proper deletion authorization
-    const result = await userService.deleteUser(req as any);
-    res.status(StatusCodes.OK).json(result);
-  } catch (error: any) {
-    // Handle specific error types from secure service
-    if (error.name === 'AuthenticationError') {
-      res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        error: 'Authentication required',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// View a specific user by ID
+router.get('/:userId', authenticate, getUserByIdController as any);
 
-    if (error.name === 'AuthorizationError') {
-      res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        error: 'Authorization failed - Insufficient permissions for user deletion',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// Update a specific user by ID
+router.put('/:userId', authenticate, updateUserController as any);
 
-    console.error('Delete user error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to delete user')
-    );
-  }
-});
+// Delete a specific user by ID
+router.delete('/:userId', authenticate, deleteUserController as any);
 
-/**
- * PATCH /users/:userId
- * Inactivate/Activate a user - SECURED with multi-tenant validation
- */
-router.patch('/:userId', authenticate, async (req, res) => {
-  try {
-    // CRITICAL: Use secure user service that enforces client validation and status change authorization
-    const result = await userService.updateUserStatus(req as any);
-    res.status(StatusCodes.OK).json(result);
-  } catch (error: any) {
-    // Handle specific error types from secure service
-    if (error.name === 'AuthenticationError') {
-      res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        error: 'Authentication required',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// Update user status (activate/deactivate)
+router.patch('/:userId', authenticate, updateUserStatusController as any);
 
-    if (error.name === 'AuthorizationError') {
-      res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        error: 'Authorization failed - Insufficient permissions for status change',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// ===================================================================
+// 🔒 USER SECURITY & ACCESS ENDPOINTS
+// ===================================================================
 
-    if (error.name === 'ValidationError') {
-      res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        error: 'Validation failed',
-        details: error.details,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
+// Update user password
+router.put('/:userId/password', authenticate, updateUserPasswordController as any);
 
-    console.error('Update user status error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to update user status')
-    );
-  }
-});
-
-/**
- * PUT /users/:userId/password
- * Update user password - SECURED with multi-tenant validation
- */
-router.put('/:userId/password', authenticate, async (req, res) => {
-  try {
-    // CRITICAL: Use secure user service that enforces client validation and password policies
-    const result = await userService.updateUserPassword(req as any);
-    res.status(StatusCodes.OK).json(result);
-  } catch (error: any) {
-    // Handle specific error types from secure service
-    if (error.name === 'AuthenticationError') {
-      res.status(StatusCodes.UNAUTHORIZED).json({
-        success: false,
-        error: 'Authentication required',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    if (error.name === 'AuthorizationError') {
-      res.status(StatusCodes.FORBIDDEN).json({
-        success: false,
-        error: 'Authorization failed - You can only update passwords within your organization',
-        details: error.message,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    if (error.name === 'ValidationError') {
-      res.status(StatusCodes.BAD_REQUEST).json({
-        success: false,
-        error: 'Validation failed',
-        details: error.details,
-        timestamp: new Date().toISOString(),
-      });
-      return;
-    }
-
-    console.error('Update password error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to update password')
-    );
-  }
-});
-
-/**
- * POST /users/:userId/link-client
- * Link user to a client
- */
+// Link user to a client (admin operation)
 router.post('/:userId/link-client', authenticate, async (req, res) => {
   try {
     const { userId } = req.params;
@@ -314,9 +141,7 @@ router.post('/:userId/link-client', authenticate, async (req, res) => {
 
     // Validation
     if (!clientId) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Client ID is required')
-      );
+      res.status(StatusCodes.BAD_REQUEST).json(ApiResponse.error('Client ID is required'));
       return;
     }
 
@@ -330,17 +155,17 @@ router.post('/:userId/link-client', authenticate, async (req, res) => {
       userId: parseInt(userId),
       clientId: parseInt(clientId),
       linkedAt: new Date().toISOString(),
-      linkedBy: req.user?.loginName || 'system'
+      linkedBy: req.user?.loginName || 'system',
     };
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(linkedUser, 'User linked to client successfully')
-    );
+    res
+      .status(StatusCodes.OK)
+      .json(ApiResponse.success(linkedUser, 'User linked to client successfully'));
   } catch (error) {
     console.error('Link user to client error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to link user to client')
-    );
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json(ApiResponse.error('Failed to link user to client'));
   }
 });
 
