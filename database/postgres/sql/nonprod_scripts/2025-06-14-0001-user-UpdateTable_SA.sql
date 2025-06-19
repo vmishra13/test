@@ -39,14 +39,12 @@ BEGIN
         ALTER TABLE "user" 
         ADD CONSTRAINT uk_user_login_client 
         UNIQUE ("loginName");
-    END IF;
-
-    -- Add unique constraint for email 
+    END IF;    -- Add unique index for email 
     IF NOT EXISTS (
-        SELECT 1 FROM information_schema.table_constraints 
-        WHERE table_name = 'user' 
-        AND constraint_name = 'uk_user_email_client'
-        AND table_schema = 'reliacare'
+        SELECT 1 FROM pg_indexes 
+        WHERE tablename = 'user' 
+        AND indexname = 'uk_user_email_client'
+        AND schemaname = 'reliacare'
     ) THEN
         CREATE UNIQUE INDEX uk_user_email_client 
         ON "user" ("email") 
