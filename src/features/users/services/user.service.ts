@@ -628,7 +628,9 @@ function getNextOnboardingStep(completedSteps: any): string | null {
  * Get user by ID with STRICT multi-tenant validation
  * HIPAA/PHI Protection: Only allows access to users within same client or SuperAdmin cross-client access
  */
-export async function getUserById(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+export async function getUserById(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<any> {
   try {
     const currentUser = getCurrentUser(req);
     const { userId } = req.params;
@@ -653,15 +655,16 @@ export async function getUserById(req: ExtendedRequest<any> & { params: { userId
     }
 
     // Extract target user's roles
-    const targetUserRoles = targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+    const targetUserRoles =
+      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
 
     // Create authorization request for viewing specific user with ALL required context
     const oAuthReq: AuthRequest = createAuthRequest(
       currentUser,
       targetUserId,
       targetUser.clientId, // Use target user's client
-      targetUser.userTypeId, // CRITICAL: Include target user's userType
-      targetUserRoles, // CRITICAL: Include target user's roles
+      targetUser.userTypeId,
+      targetUserRoles,
       RequestUserAction.userView,
     );
 
@@ -671,7 +674,9 @@ export async function getUserById(req: ExtendedRequest<any> & { params: { userId
       logger.error(
         `User ${currentUser.userId} denied access to user ${targetUserId} - Client isolation enforced`,
       );
-      throw createAuthorizationError('Access denied - You can only view users within your organization');
+      throw createAuthorizationError(
+        'Access denied - You can only view users within your organization',
+      );
     }
 
     return {
@@ -708,7 +713,9 @@ export async function getUserById(req: ExtendedRequest<any> & { params: { userId
  * Delete user with STRICT multi-tenant validation and authorization
  * HIPAA/PHI Protection: Only SuperAdmin and CLIENT_ADMIN can delete users within their organization
  */
-export async function deleteUser(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+export async function deleteUser(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<any> {
   try {
     const currentUser = getCurrentUser(req);
     const { userId } = req.params;
@@ -748,12 +755,14 @@ export async function deleteUser(req: ExtendedRequest<any> & { params: { userId:
       logger.error(
         `User ${currentUser.userId} denied deletion access to user ${targetUserId} - Insufficient permissions`,
       );
-      throw createAuthorizationError('Access denied - Insufficient permissions to delete this user');
+      throw createAuthorizationError(
+        'Access denied - Insufficient permissions to delete this user',
+      );
     }
 
     // Additional business rules for deletion
     const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
-    
+
     // Prevent SUPER_ADMIN deletion
     const targetUserRoles = targetUser.userRoles.map((ur: any) => ur.role.name);
     if (targetUserRoles.includes(CoreRole.SUPER_ADMIN)) {
@@ -761,7 +770,10 @@ export async function deleteUser(req: ExtendedRequest<any> & { params: { userId:
     }
 
     // CLIENT_ADMIN can only delete users in their own client (except other CLIENT_ADMINs)
-    if (currentUserRole === CoreRole.CLIENT_ADMIN && targetUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    if (
+      currentUserRole === CoreRole.CLIENT_ADMIN &&
+      targetUserRoles.includes(CoreRole.CLIENT_ADMIN)
+    ) {
       throw createAuthorizationError('CLIENT_ADMIN cannot delete other CLIENT_ADMIN users');
     }
 
@@ -788,7 +800,9 @@ export async function deleteUser(req: ExtendedRequest<any> & { params: { userId:
  * Update user status with STRICT multi-tenant validation and authorization
  * HIPAA/PHI Protection: Only authorized roles can change user status within their organization
  */
-export async function updateUserStatus(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+export async function updateUserStatus(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<any> {
   try {
     const currentUser = getCurrentUser(req);
     const { userId } = req.params;
@@ -803,7 +817,10 @@ export async function updateUserStatus(req: ExtendedRequest<any> & { params: { u
     // Validate input
     if (typeof isActive !== 'boolean' && typeof status !== 'number') {
       throw createValidationError('Invalid status parameters', [
-        { field: 'isActive', message: 'Either isActive (boolean) or status (number) must be provided' },
+        {
+          field: 'isActive',
+          message: 'Either isActive (boolean) or status (number) must be provided',
+        },
       ]);
     }
 
@@ -836,12 +853,14 @@ export async function updateUserStatus(req: ExtendedRequest<any> & { params: { u
       logger.error(
         `User ${currentUser.userId} denied status update access to user ${targetUserId} - Client isolation enforced`,
       );
-      throw createAuthorizationError('Access denied - You can only update users within your organization');
+      throw createAuthorizationError(
+        'Access denied - You can only update users within your organization',
+      );
     }
 
     // Calculate final status
-    const finalStatus = status !== undefined ? status : (isActive ? 1 : 0);
-    
+    const finalStatus = status !== undefined ? status : isActive ? 1 : 0;
+
     // Perform status update
     await userRepository.updateUserStatus(targetUserId, finalStatus, currentUser.loginName);
 
@@ -867,7 +886,9 @@ export async function updateUserStatus(req: ExtendedRequest<any> & { params: { u
  * Update user password with STRICT multi-tenant validation and password policies
  * HIPAA/PHI Protection: Only authorized users can change passwords within their organization
  */
-export async function updateUserPassword(req: ExtendedRequest<any> & { params: { userId: string } }): Promise<any> {
+export async function updateUserPassword(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<any> {
   try {
     const currentUser = getCurrentUser(req);
     const { userId } = req.params;
@@ -928,12 +949,17 @@ export async function updateUserPassword(req: ExtendedRequest<any> & { params: {
       logger.error(
         `User ${currentUser.userId} denied password update access to user ${targetUserId} - Client isolation enforced`,
       );
-      throw createAuthorizationError('Access denied - You can only update passwords within your organization');
+      throw createAuthorizationError(
+        'Access denied - You can only update passwords within your organization',
+      );
     }
 
     // Verify current password if provided (for self-update)
     if (currentPassword && currentUser.userId === targetUserId) {
-      const isCurrentPasswordValid = await userRepository.verifyPassword(targetUserId, currentPassword);
+      const isCurrentPasswordValid = await userRepository.verifyPassword(
+        targetUserId,
+        currentPassword,
+      );
       if (!isCurrentPasswordValid) {
         throw createValidationError('Password validation failed', [
           { field: 'currentPassword', message: 'Current password is incorrect' },

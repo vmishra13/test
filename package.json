@@ -43,7 +43,7 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=22.16.0 <23.0.0"
+    "node": "22.16.0"
   },
   "packageManager": "pnpm@10.12.1",
   "dependencies": {

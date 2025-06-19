@@ -13,6 +13,7 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
   //   const currentUserRole = getCurrentUserPrimaryRole(oAuthReq.reqUserRoles);
   const currentUserRoles = oAuthReq.reqUserRoles || [];
   const currentUserTypeId = oAuthReq.reqUserTypeId || null;
+  const currentUserClientId = oAuthReq.reqClientId || null;
 
   if (currentUserRoles.length === 0) {
     logger.error('❌ No roles found for current user');
@@ -28,24 +29,12 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
 
   switch (oAuthReq.actionPermission) {
     case RequestUserAction.userAdd:
-      return validateUserRegistrationAccess(oAuthReq, currentUserRoles, currentUserTypeId);
-    //   // SUPER_ADMIN can add users anywhere
-    //   //   if (oAuthReq.reqUserRoles.includes(CoreRole.SUPER_ADMIN)) {
-    //   if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
-    //     return true;
-    //   }
-
-    //   // CLIENT_ADMIN can add users within their own client
-    //   if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
-    //     // If actionClientID is specified, it must match the requester's client
-    //     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-    //       return false;
-    //     }
-    //     return true;
-    //   }
-
-    //   // Other roles cannot add users
-    //   return false;
+      return validateUserRegistrationAccess(
+        oAuthReq,
+        currentUserRoles,
+        currentUserTypeId,
+        currentUserClientId,
+      );
 
     case RequestUserAction.userView:
       return validateUserViewAccess(oAuthReq, currentUserRoles);
@@ -138,12 +127,21 @@ export function getCurrentUserPrimaryRole(userRoles: string[]): CoreRole {
  * @returns true if the user can view the specified user, false otherwise
  */
 function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRole[]): boolean {
-  // SUPER_ADMIN can view any user
+  const targetUserRoles = Array.isArray(oAuthReq.actionUserRoles)
+    ? (oAuthReq.actionUserRoles as CoreRole[])
+    : oAuthReq.actionUserRoles
+      ? [oAuthReq.actionUserRoles as CoreRole]
+      : [];
+
+  const isListView = !oAuthReq.actionUserId; // If no specific user ID, this is a list view
+  const isIndividualView = !!oAuthReq.actionUserId; // If specific user ID, this is individual view
+
+  // SUPER_ADMIN can view any user or user list
   if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
     return true;
   }
 
-  // CLIENT_ADMIN can view users in their client
+  // CLIENT_ADMIN can view users in their client, but NOT SUPER_ADMIN users
   if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
       logger.error(
@@ -151,10 +149,19 @@ function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
       );
       return false;
     }
+
+    // For individual user view, check if target user has SUPER_ADMIN role
+    if (isIndividualView) {
+      if (targetUserRoles.includes(CoreRole.SUPER_ADMIN) || oAuthReq.actionUserTypeId === 1) {
+        logger.error(`❌ CLIENT_ADMIN cannot view SUPER_ADMIN users`);
+        return false;
+      }
+    }
+
     return true;
   }
 
-  // CLINICAL_STAFF and OFFICE_STAFF can view patients in their client
+  // CLINICAL_STAFF and OFFICE_STAFF can only view PATIENT users in their client
   if (
     currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
     currentUserRoles.includes(CoreRole.OFFICE_STAFF)
@@ -166,42 +173,57 @@ function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
       );
       return false;
     }
-    
-    // CRITICAL: They can ONLY view PATIENT accounts (userTypeId = 5)
-    if (oAuthReq.actionUserTypeId && oAuthReq.actionUserTypeId !== 5) {
-      logger.error(
-        `❌ CLINICAL_STAFF/OFFICE_STAFF can only view PATIENT accounts, attempted to view userTypeId: ${oAuthReq.actionUserTypeId}`,
-      );
-      return false;
-    }
-    
-    // If no userTypeId provided, check actionUserRoles for PATIENT role
-    if (oAuthReq.actionUserRoles) {
-      const rolesArray = Array.isArray(oAuthReq.actionUserRoles) ? oAuthReq.actionUserRoles : [oAuthReq.actionUserRoles];
-      if (!rolesArray.includes(CoreRole.PATIENT)) {
+
+    // For individual user view, strict PATIENT-only checking
+    if (isIndividualView) {
+      // CRITICAL: They can ONLY view PATIENT accounts (userTypeId = 5)
+      if (oAuthReq.actionUserTypeId && oAuthReq.actionUserTypeId !== 5) {
         logger.error(
-          `❌ CLINICAL_STAFF/OFFICE_STAFF can only view users with PATIENT role, attempted roles: ${rolesArray.join(', ')}`,
+          `❌ CLINICAL_STAFF/OFFICE_STAFF can only view PATIENT accounts, attempted to view userTypeId: ${oAuthReq.actionUserTypeId}`,
         );
         return false;
       }
+
+      // Also check roles - must have PATIENT role
+      if (targetUserRoles.length > 0 && !targetUserRoles.includes(CoreRole.PATIENT)) {
+        logger.error(`❌ CLINICAL_STAFF/OFFICE_STAFF can only view users with PATIENT role`);
+        return false;
+      }
     }
-    
+
+    // For list view, allow but service layer will filter to patients only
+    if (isListView) {
+      logger.info(
+        `✅ CLINICAL_STAFF/OFFICE_STAFF authorized for patient list view in client ${oAuthReq.reqClientId}`,
+      );
+      return true;
+    }
+
     return true;
   }
 
-  // PATIENT users can only view their own profile
+  // PATIENT users can only view their own profile (NO list access)
   if (currentUserRoles.includes(CoreRole.PATIENT)) {
-    // Patients can only view themselves
-    if (oAuthReq.actionUserId !== oAuthReq.reqUserId) {
-      logger.error(
-        `❌ PATIENT can only view their own profile: ${oAuthReq.actionUserId} !== ${oAuthReq.reqUserId}`,
-      );
+    // Block all list access for PATIENT users
+    if (isListView) {
+      logger.error(`❌ PATIENT users cannot access user lists`);
       return false;
     }
-    return true;
+
+    // For individual view, patients can only view themselves
+    if (isIndividualView) {
+      if (oAuthReq.actionUserId !== oAuthReq.reqUserId) {
+        logger.error(
+          `❌ PATIENT can only view their own profile: ${oAuthReq.actionUserId} !== ${oAuthReq.reqUserId}`,
+        );
+        return false;
+      }
+      return true;
+    }
   }
 
-  logger.error(`❌ Unauthorized user roles for viewing: ${currentUserRoles.join(', ')}`);
+  // Default: deny access for unknown roles
+  logger.error(`❌ Unknown or invalid role combination: ${currentUserRoles.join(', ')}`);
   return false;
 }
 
@@ -215,6 +237,7 @@ function validateUserRegistrationAccess(
   oAuthReq: AuthRequest,
   currentUserRoles: CoreRole[],
   currentUserTypeId: number,
+  currentUserClientId: number | null,
 ): boolean {
   try {
     const actionUserRoles = oAuthReq.actionUserRoles || [];
@@ -253,7 +276,7 @@ function validateUserRegistrationAccess(
     }
 
     // Step 3: Check client boundary restrictions
-    if (!isClientAccessAllowed(currentUserTypeId, currentUserTypeId, actionUserClientId)) {
+    if (!isClientAccessAllowed(currentUserTypeId, currentUserClientId, actionUserClientId)) {
       logger.error('❌ Client boundary violation');
       return false;
     }
@@ -426,12 +449,17 @@ function canCurrentUserCreateTarget(
  */
 function isClientAccessAllowed(
   currentUserTypeId: number,
-  currentClientId: number,
+  currentClientId: number | null,
   actionClientId: number | null,
 ): boolean {
   // 6. currentUserTypeId 1 (SYSTEM_ADMIN) -> can access any client
   if (currentUserTypeId === 1) {
     return true;
+  }
+
+  if (!currentClientId || !actionClientId) {
+    logger.error('❌ Client ID is required for authorization');
+    return false;
   }
 
   // All other user types are restricted to their own client
