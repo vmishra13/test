@@ -17,15 +17,22 @@ BEGIN
     "clientId" integer NOT NULL,
     "name" varchar(100) NOT NULL,
     "description" text,  
-    "diagnosisCode" varchar(100),
+    "diagnosisCode" integer NOT NULL,
+    "diagnosisName" varchar(100) NOT NULL,
     "version" integer DEFAULT 1,
     "model" json,
     "crUser" varchar(50) NOT NULL,
     "crDate" timestamp DEFAULT CURRENT_TIMESTAMP,
-    "modUser" varchar(50),   
-    "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
+    "modUser" varchar(50) NOT NULL,     
+    "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,    
     CONSTRAINT fk_plan_client 
         FOREIGN KEY ("clientId") REFERENCES client(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,    
+    CONSTRAINT fk_plan_diagnosis_master 
+        FOREIGN KEY ("diagnosisCode") REFERENCES diagnosis_master(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_plan_diagnosis_name 
+        FOREIGN KEY ("diagnosisName") REFERENCES diagnosis_master("name") 
         ON DELETE RESTRICT ON UPDATE CASCADE
 );
 END IF;

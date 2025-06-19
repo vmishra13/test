@@ -28,12 +28,12 @@ BEGIN
 
         CREATE TABLE "exercise_master" (
             id SERIAL PRIMARY KEY,
-            "title" varchar(100),
+            "title" varchar(100) NOT NULL,
             "description" text,
             "purpose" varchar(255),
             "media_type" media_type_enum DEFAULT NULL,
             "media_url" varchar(255),
-            "frequency" frequency_unit_type DEFAULT 'Day',
+            "frequencyPeriod" frequency_unit_type DEFAULT 'Day',
             "unit" unit_type DEFAULT 'Set',
             "value" integer DEFAULT 1,
             "setUnit" integer DEFAULT 1,
@@ -41,12 +41,9 @@ BEGIN
             "procedures" varchar,
             "notes" text,
             "show_checkbox" boolean,
-            "SelectionValue" boolean,
-            "SelectionUser" varchar,
-            "SelectionDate" timestamp,
-            "crUser" varchar(50),
+            "crUser" varchar(50) NOT NULL,
             "crDate" timestamp DEFAULT CURRENT_TIMESTAMP,
-            "modUser" varchar(50),
+            "modUser" varchar(50) NOT NULL,
             "modDate" timestamp DEFAULT CURRENT_TIMESTAMP
         );
 

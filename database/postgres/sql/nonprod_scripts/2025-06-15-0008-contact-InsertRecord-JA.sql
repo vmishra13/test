@@ -9,8 +9,8 @@ BEGIN
     THEN
 
    INSERT INTO "contact"
-("type", value, "userId", "clientId", "locationId", "default", status, "crUser", "crDate", "modUser", "modDate")
-VALUES('Email', '{"address": "admin@reliacare.com", "verified": true}', 1, NULL, NULL, true, 'A', 'Admin', CURRENT_TIMESTAMP, 'Admin', CURRENT_TIMESTAMP);
+("type", value, "userId", "clientId",  "default", status, "crUser", "crDate", "modUser", "modDate")
+VALUES('Email', '{"address": "admin@reliacare.com", "verified": true}', 1, 1,  true, 'A', 'Admin', CURRENT_TIMESTAMP, 'Admin', CURRENT_TIMESTAMP);
  
 END IF;
 

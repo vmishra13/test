@@ -18,17 +18,17 @@ BEGIN
 
     CREATE TABLE "medication_master" (
         id SERIAL PRIMARY KEY,
-        "name" varchar(255),
+        "name" varchar(255) NOT NULL,
         "clientId" integer DEFAULT 1,
         "identifier" varchar(50),
         "code" varchar(50),
-        "doageForm" dosage_form_type DEFAULT NULL,
+        "dosageForm" dosage_form_type DEFAULT NULL,
         "strength" varchar(50),
         "manufacturer" varchar(255),
         "description" text,
-        "crUser" varchar(50),
+        "crUser" varchar(50) NOT NULL,
         "crDate" timestamp DEFAULT CURRENT_TIMESTAMP,
-        "modUser" varchar(50),
+        "modUser" varchar(50) NOT NULL,
         "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
         CONSTRAINT fk_medication_master_client 
             FOREIGN KEY ("clientId") REFERENCES client(id) 

@@ -16,11 +16,19 @@ BEGIN
     id SERIAL PRIMARY KEY,
     "userId" integer NOT NULL,
     "clientId" integer NOT NULL,
-    "roleId" integer NOT NULL,
-    "crUser" varchar(50) NOT NULL,
+    "roleId" integer NOT NULL,    "crUser" varchar(50) NOT NULL,
     "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "modUser" varchar(50),
-    "modDate" timestamp DEFAULT CURRENT_TIMESTAMP
+    "modUser" varchar(50) NOT NULL,
+    "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_user_role_user 
+        FOREIGN KEY ("userId") REFERENCES "user"(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_user_role_client 
+        FOREIGN KEY ("clientId") REFERENCES client(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_user_role_role 
+        FOREIGN KEY ("roleId") REFERENCES role(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE
 
 );
 
