@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { authenticate } from '@features/auth/middlewares';
 import { ApiResponse } from '@shared/utils/api-response';
+import * as exerciseService from './services/exercise.service';
+import logger from '@config/logger';
 
 const router = Router();
 
@@ -11,82 +13,33 @@ const router = Router();
  */
 router.get('/', authenticate, async (req, res) => {
   try {
-    const user = (req as any).user;
-    
-    if (!user.clientId) {
-      res.status(StatusCodes.FORBIDDEN).json(
-        ApiResponse.error('Client context required for data access')
-      );
+    // Use secure service with client validation
+    const result = await exerciseService.getExercises(req as any);
+
+    res.status(StatusCodes.OK).json(ApiResponse.success(result.data, result.message));
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database query with CLIENT FILTERING
-    // CRITICAL: Query must include: WHERE client_id = user.clientId
-    const exercises = [
-      {
-        id: 1,
-        node_type: 'Exercise',
-        name: 'Ankle Pumps',
-        description: 'Simple ankle flexion and extension exercise for post-operative recovery',
-        procedure: [
-          'Sit or lie down comfortably',
-          'Point toes away from you',
-          'Flex toes back toward you',
-          'Repeat for prescribed repetitions'
-        ],
-        media_type: 'video',
-        media_url: 'https://example.com/videos/ankle-pumps.mp4',
-        frequency: 'daily',
-        unit: 'Set',
-        value: 3,
-        repetition: 15,
-        clientId: user.clientId // CRITICAL: Always include client assignment
-      },
-      {
-        id: 2,
-        node_type: 'Exercise',
-        name: 'Quad Sets',
-        description: 'Quadriceps strengthening exercise for muscle activation',
-        procedure: [
-          'Lie flat with leg extended',
-          'Tighten thigh muscles',
-          'Hold for 5 seconds',
-          'Relax and repeat'
-        ],
-        media_type: 'video',
-        media_url: 'https://example.com/videos/quad-sets.mp4',
-        frequency: 'daily',
-        unit: 'Set',
-        value: 2,
-        repetition: 10,
-        clientId: user.clientId // CRITICAL: Always include client assignment
-      },
-      {
-        id: 3,
-        node_type: 'Exercise',
-        name: 'Heel Slides',
-        description: 'Knee flexion exercise to improve range of motion',
-        procedure: [
-          'Lie on your back',
-          'Slowly slide heel toward buttocks',
-          'Hold briefly at maximum comfortable bend',
-          'Slowly return to starting position'
-        ],
-        media_type: 'video',
-        media_url: 'https://example.com/videos/heel-slides.mp4',
-        frequency: 'daily',
-        unit: 'Set',
-        value: 2,
-        repetition: 12,
-        clientId: user.clientId // CRITICAL: Always include client assignment
-      }
-    ].filter(exercise => exercise.clientId === user.clientId); // TEMP: Client filtering
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(exercises, 'Exercises retrieved successfully')
-    );
-  } catch (error) {
-    console.error('Get exercises error:', error);
+    logger.error('Error in GET /exercises:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to retrieve exercises')
     );
@@ -95,98 +48,37 @@ router.get('/', authenticate, async (req, res) => {
 
 /**
  * POST /exercises
- * Create a new exercise
+ * Create a new exercise with STRICT role authorization
  */
 router.post('/', authenticate, async (req, res) => {
   try {
-    const user = (req as any).user;
-    
-    if (!user.clientId) {
-      res.status(StatusCodes.FORBIDDEN).json(
-        ApiResponse.error('Client context required for data creation')
-      );
+    // Use secure service with role and client validation
+    const result = await exerciseService.createExercise(req as any);
+
+    res.status(StatusCodes.CREATED).json(ApiResponse.success(result.data, result.message));
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // Only CLIENT_ADMIN and SUPER_ADMIN can create exercises
-    if (!user.roles.includes('CLIENT_ADMIN') && !user.roles.includes('SUPER_ADMIN')) {
-      res.status(StatusCodes.FORBIDDEN).json(
-        ApiResponse.error('Insufficient permissions to create exercises')
-      );
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    const {
-      name,
-      description,
-      procedure,
-      media_type,
-      media_url,
-      frequency,
-      unit,
-      value,
-      repetition
-    } = req.body;
-
-    // Validation
-    if (!name || !description) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Name and description are required fields')
-      );
-      return;
-    }
-
-    if (name.length > 100) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Name must be 100 characters or less')
-      );
-      return;
-    }
-
-    if (description.length > 100) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Description must be 100 characters or less')
-      );
-      return;
-    }
-
-    if (media_url && media_url.length > 100) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Media URL must be 100 characters or less')
-      );
-      return;
-    }
-
-    if (procedure && !Array.isArray(procedure)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Procedure must be an array of strings')
-      );
-      return;
-    }
-
-    // TODO: Implement exercise creation with database and CLIENT ASSIGNMENT
-    const newExercise = {
-      id: Date.now(), // TODO: Replace with proper ID generation
-      node_type: 'Exercise',
-      name,
-      description,
-      procedure: procedure || [],
-      media_type: media_type || 'video',
-      media_url: media_url || null,
-      frequency: frequency || 'daily',
-      unit: unit || 'Set',
-      value: value || 1,
-      repetition: repetition || 0,
-      clientId: user.clientId, // CRITICAL: Always assign to user's client
-      createdBy: user.userId,
-      createdAt: new Date().toISOString()
-    };
-
-    res.status(StatusCodes.CREATED).json(
-      ApiResponse.success(newExercise, 'Exercise created successfully')
-    );
-  } catch (error) {
-    console.error('Create exercise error:', error);
+    logger.error('Error in POST /exercises:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to create exercise')
     );
@@ -195,45 +87,37 @@ router.post('/', authenticate, async (req, res) => {
 
 /**
  * GET /exercises/:exerciseId
- * Get a specific exercise
+ * Get a specific exercise with STRICT client validation
  */
 router.get('/:exerciseId', authenticate, async (req, res) => {
   try {
-    const { exerciseId } = req.params;
+    // Use secure service with client validation
+    const result = await exerciseService.getExerciseById(req as any);
 
-    // Validate exerciseId is a number
-    const id = parseInt(exerciseId);
-    if (isNaN(id)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Invalid exercise ID')
-      );
+    res.status(StatusCodes.OK).json(ApiResponse.success(result.data, result.message));
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Exercise not found or access denied',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database query
-    const exercise = {
-      id: id,
-      node_type: 'Exercise',
-      name: 'Sample Exercise',
-      description: 'Sample exercise description for demonstration',
-      procedure: [
-        'Step 1: Prepare for the exercise',
-        'Step 2: Execute the movement',
-        'Step 3: Return to starting position'
-      ],
-      media_type: 'video',
-      media_url: 'https://example.com/videos/sample-exercise.mp4',
-      frequency: 'daily',
-      unit: 'Set',
-      value: 2,
-      repetition: 10
-    };
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(exercise, 'Exercise retrieved successfully')
-    );
-  } catch (error) {
-    console.error('Get exercise error:', error);
+    logger.error('Error in GET /exercises/:exerciseId:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to retrieve exercise')
     );
@@ -242,81 +126,37 @@ router.get('/:exerciseId', authenticate, async (req, res) => {
 
 /**
  * PUT /exercises/:exerciseId
- * Update a specific exercise
+ * Update a specific exercise with STRICT role and client validation
  */
 router.put('/:exerciseId', authenticate, async (req, res) => {
   try {
-    const { exerciseId } = req.params;
-    const {
-      name,
-      description,
-      procedure,
-      media_type,
-      media_url,
-      frequency,
-      unit,
-      value,
-      repetition
-    } = req.body;
+    // Use secure service with role and client validation
+    const result = await exerciseService.updateExercise(req as any);
 
-    // Validate exerciseId is a number
-    const id = parseInt(exerciseId);
-    if (isNaN(id)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Invalid exercise ID')
-      );
+    res.status(StatusCodes.OK).json(ApiResponse.success(result.data, result.message));
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions or exercise not found',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // Validation
-    if (name && name.length > 100) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Name must be 100 characters or less')
-      );
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    if (description && description.length > 100) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Description must be 100 characters or less')
-      );
-      return;
-    }
-
-    if (media_url && media_url.length > 100) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Media URL must be 100 characters or less')
-      );
-      return;
-    }
-
-    if (procedure && !Array.isArray(procedure)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Procedure must be an array of strings')
-      );
-      return;
-    }
-
-    // TODO: Implement exercise update with database
-    const updatedExercise = {
-      id: id,
-      node_type: 'Exercise',
-      name: name || 'Updated Exercise',
-      description: description || 'Updated description',
-      procedure: procedure || ['Updated step 1', 'Updated step 2'],
-      media_type: media_type || 'video',
-      media_url: media_url || null,
-      frequency: frequency || 'daily',
-      unit: unit || 'Set',
-      value: value || 1,
-      repetition: repetition || 0
-    };
-
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(updatedExercise, 'Exercise updated successfully')
-    );
-  } catch (error) {
-    console.error('Update exercise error:', error);
+    logger.error('Error in PUT /exercises/:exerciseId:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to update exercise')
     );
@@ -325,27 +165,37 @@ router.put('/:exerciseId', authenticate, async (req, res) => {
 
 /**
  * DELETE /exercises/:exerciseId
- * Delete a specific exercise
+ * Delete a specific exercise with STRICT role and client validation
  */
 router.delete('/:exerciseId', authenticate, async (req, res) => {
   try {
-    const { exerciseId } = req.params;
+    // Use secure service with role and client validation
+    const result = await exerciseService.deleteExercise(req as any);
 
-    // Validate exerciseId is a number
-    const id = parseInt(exerciseId);
-    if (isNaN(id)) {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Invalid exercise ID')
-      );
+    res.status(StatusCodes.OK).json(ApiResponse.success(result.data, result.message));
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Insufficient permissions or exercise not found',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement exercise deletion with database
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success({ id }, 'Exercise deleted successfully')
-    );
-  } catch (error) {
-    console.error('Delete exercise error:', error);
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
+
+    logger.error('Error in DELETE /exercises/:exerciseId:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to delete exercise')
     );
@@ -353,78 +203,38 @@ router.delete('/:exerciseId', authenticate, async (req, res) => {
 });
 
 /**
- * GET /exercises/by-frequency/:frequency
- * Get exercises by frequency (daily, weekly, etc.)
- */
-router.get('/by-frequency/:frequency', authenticate, async (req, res) => {
-  try {
-    const { frequency } = req.params;
-
-    // TODO: Implement actual database query with frequency filter
-    const exercises = [
-      {
-        id: 1,
-        node_type: 'Exercise',
-        name: 'Daily Ankle Pumps',
-        description: 'Daily ankle exercise for circulation',
-        procedure: ['Flex ankles up and down', 'Hold for 2 seconds each direction'],
-        media_type: 'video',
-        media_url: 'https://example.com/videos/daily-ankle-pumps.mp4',
-        frequency: frequency,
-        unit: 'Set',
-        value: 3,
-        repetition: 20
-      }
-    ];
-
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(exercises, `Exercises with ${frequency} frequency retrieved successfully`)
-    );
-  } catch (error) {
-    console.error('Get exercises by frequency error:', error);
-    res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
-      ApiResponse.error('Failed to retrieve exercises by frequency')
-    );
-  }
-});
-
-/**
  * GET /exercises/search
- * Search exercises by name or description
+ * Search exercises by name or description with STRICT client isolation
  */
 router.get('/search', authenticate, async (req, res) => {
   try {
-    const { q } = req.query;
+    // Use secure service with client validation
+    const result = await exerciseService.searchExercises(req as any);
 
-    if (!q || typeof q !== 'string') {
-      res.status(StatusCodes.BAD_REQUEST).json(
-        ApiResponse.error('Search query parameter "q" is required')
-      );
+    res.status(StatusCodes.OK).json(ApiResponse.success(result.data, result.message));
+  } catch (error: any) {
+    // Handle specific error types from secure service
+    if (error.name === 'AuthorizationError') {
+      res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        error: 'Authorization failed - Client isolation enforced',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
       return;
     }
 
-    // TODO: Implement actual database search
-    const exercises = [
-      {
-        id: 1,
-        node_type: 'Exercise',
-        name: 'Ankle Pumps',
-        description: 'Simple ankle flexion and extension exercise',
-        procedure: ['Flex ankles', 'Point toes', 'Repeat motion'],
-        media_type: 'video',
-        media_url: 'https://example.com/videos/ankle-pumps.mp4',
-        frequency: 'daily',
-        unit: 'Set',
-        value: 3,
-        repetition: 15
-      }
-    ];
+    if (error.name === 'ValidationError') {
+      res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        error: 'Validation failed',
+        details: error.message,
+        timestamp: new Date().toISOString(),
+      });
+      return;
+    }
 
-    res.status(StatusCodes.OK).json(
-      ApiResponse.success(exercises, `Search results for "${q}"`)
-    );
-  } catch (error) {
-    console.error('Search exercises error:', error);
+    logger.error('Error in GET /exercises/search:', error);
     res.status(StatusCodes.INTERNAL_SERVER_ERROR).json(
       ApiResponse.error('Failed to search exercises')
     );

@@ -159,13 +159,45 @@ function validateUserViewAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
     currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
     currentUserRoles.includes(CoreRole.OFFICE_STAFF)
   ) {
+    // First check client boundary
     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
       logger.error(
         `❌ CLINICAL_STAFF/OFFICE_STAFF cannot view users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
       );
       return false;
     }
-    // Additional check: they can only view patients (if userTypeId corresponds to patient role)
+    
+    // CRITICAL: They can ONLY view PATIENT accounts (userTypeId = 5)
+    if (oAuthReq.actionUserTypeId && oAuthReq.actionUserTypeId !== 5) {
+      logger.error(
+        `❌ CLINICAL_STAFF/OFFICE_STAFF can only view PATIENT accounts, attempted to view userTypeId: ${oAuthReq.actionUserTypeId}`,
+      );
+      return false;
+    }
+    
+    // If no userTypeId provided, check actionUserRoles for PATIENT role
+    if (oAuthReq.actionUserRoles) {
+      const rolesArray = Array.isArray(oAuthReq.actionUserRoles) ? oAuthReq.actionUserRoles : [oAuthReq.actionUserRoles];
+      if (!rolesArray.includes(CoreRole.PATIENT)) {
+        logger.error(
+          `❌ CLINICAL_STAFF/OFFICE_STAFF can only view users with PATIENT role, attempted roles: ${rolesArray.join(', ')}`,
+        );
+        return false;
+      }
+    }
+    
+    return true;
+  }
+
+  // PATIENT users can only view their own profile
+  if (currentUserRoles.includes(CoreRole.PATIENT)) {
+    // Patients can only view themselves
+    if (oAuthReq.actionUserId !== oAuthReq.reqUserId) {
+      logger.error(
+        `❌ PATIENT can only view their own profile: ${oAuthReq.actionUserId} !== ${oAuthReq.reqUserId}`,
+      );
+      return false;
+    }
     return true;
   }
 

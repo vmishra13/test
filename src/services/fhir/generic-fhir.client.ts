@@ -43,7 +43,9 @@ export class GenericFHIRClient implements IFHIRClient {
       (config) => {
         // Add authentication token if available
         if (this.authToken) {
-          config.headers = config.headers || {};
+          if (!config.headers) {
+            config.headers = {} as any;
+          }
           config.headers['Authorization'] = `Bearer ${this.authToken}`;
         }
 

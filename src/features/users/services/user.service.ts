@@ -652,13 +652,16 @@ export async function getUserById(req: ExtendedRequest<any> & { params: { userId
       throw createAuthorizationError('User not found');
     }
 
-    // Create authorization request for viewing specific user
+    // Extract target user's roles
+    const targetUserRoles = targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+
+    // Create authorization request for viewing specific user with ALL required context
     const oAuthReq: AuthRequest = createAuthRequest(
       currentUser,
       targetUserId,
       targetUser.clientId, // Use target user's client
-      null,
-      null,
+      targetUser.userTypeId, // CRITICAL: Include target user's userType
+      targetUserRoles, // CRITICAL: Include target user's roles
       RequestUserAction.userView,
     );
 

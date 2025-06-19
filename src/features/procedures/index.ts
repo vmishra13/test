@@ -2,6 +2,6 @@
  * Procedures module exports
  */
 
-import procedureRoutes from './routes';
+import router from './routes';
 
-export { procedureRoutes };
+export const procedureRoutes = router;

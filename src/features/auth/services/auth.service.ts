@@ -1,4 +1,4 @@
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
 import {
   LoginResponse,
   PublicUserData,
@@ -16,8 +16,8 @@ import {
   UserProfile,
   UserUpdateRequest,
   UserUpdateResponse,
-} from '@features/users/dto/user.dto';
-import * as userRepository from '@features/users/repositories/user.repository';
+} from '../../users/dto/user.dto';
+import * as userRepository from '../../users/repositories/user.repository';
 import * as tokenService from './token.service';
 import * as tokenRepository from '../repositories/token.repository';
 import {
@@ -27,8 +27,8 @@ import {
   type PasswordChangeRequest,
   type LoginCredentials,
 } from '../validators/auth.validators';
-import type { UserUpdateInput } from '@features/users/validators/user.validators';
-import type { CoreRole } from '@/shared/constants';
+import type { UserUpdateInput } from '../../users/validators/user.validators';
+import type { CoreRole } from '../../../shared/constants';
 
 // ===================================================================
 // 🔒 TEMPORARY PASSWORD RESET STORAGE (IN-MEMORY)
@@ -49,11 +49,11 @@ const temporaryResetTokens = new Map<string, ResetTokenData>();
 setInterval(
   () => {
     const now = new Date();
-    for (const [token, data] of temporaryResetTokens.entries()) {
+    temporaryResetTokens.forEach((data, token) => {
       if (data.expiresAt < now || data.used) {
         temporaryResetTokens.delete(token);
       }
-    }
+    });
   },
   60 * 60 * 1000,
 );
