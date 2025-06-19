@@ -16,16 +16,19 @@ BEGIN
     id SERIAL PRIMARY KEY,
     "type" varchar(50) NOT NULL,
     "value" json NOT NULL,
-    "userId" integer,
-    "clientId" integer,
-    "locationId" integer,
+    "userId" integer NOT NULL,
+    "clientId" integer NOT NULL,
     "default" boolean DEFAULT false,
     "status" varchar(5),
     "crUser" varchar(50) NOT NULL,
-    "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "modUser" varchar(50),
+    "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,    "modUser" varchar(50) NOT NULL,
     "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT contact_entity_check CHECK (((((("userId" IS NOT NULL))::integer + (("clientId" IS NOT NULL))::integer) + (("locationId" IS NOT NULL))::integer) = 1)),
+    CONSTRAINT fk_contact_user 
+        FOREIGN KEY ("userId") REFERENCES "user"(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_contact_client 
+        FOREIGN KEY ("clientId") REFERENCES client(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT contact_type_check CHECK (((type)::text = ANY ((ARRAY['Home'::character varying, 'Work'::character varying, 'Other'::character varying, 'Mobile'::character varying, 'Fax'::character varying, 'Email'::character varying])::text[]))),
     CONSTRAINT contact_value_check CHECK (((value IS NOT NULL) AND ((value)::text <> '{}'::text)))
 );

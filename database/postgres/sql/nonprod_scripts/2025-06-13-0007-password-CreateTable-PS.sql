@@ -19,9 +19,11 @@ BEGIN
     "expiryDate" date,
     "status" integer,
     "crUser" varchar(50) NOT NULL,
-    "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "modUser" varchar(50),
+    "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,    "modUser" varchar(50) NOT NULL,
     "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_password_user 
+        FOREIGN KEY ("userId") REFERENCES "user"(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT password_expiry_check CHECK ((("expiryDate" IS NULL) OR ("expiryDate" > CURRENT_DATE))),
     CONSTRAINT password_password_check CHECK ((length((password)::text) >= 8))
 );

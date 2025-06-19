@@ -18,7 +18,7 @@ BEGIN
     "description" varchar(100),
     "crUser" varchar(50) NOT NULL,
     "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "modUser" varchar(50),
+    "modUser" varchar(50) NOT NULL,
     "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT user_type_name_check CHECK ((length(TRIM(BOTH FROM "name")) > 0))
 );
