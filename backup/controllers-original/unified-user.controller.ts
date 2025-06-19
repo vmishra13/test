@@ -1,5 +1,5 @@
 /**
- * USER CONTROLLER - HIPAA COMPLIANT & MULTI-TENANT
+ * UNIFIED USER CONTROLLER - HIPAA COMPLIANT & MULTI-TENANT
  * 
  * This controller consolidates all user-related operations while maintaining:
  * - Strict multi-tenant security isolation
@@ -33,16 +33,16 @@ import {
   updateUserStatus,
   updateUserPassword,
   getUserProfile as getUserProfileService,
-  registerUser,
-  UserRegistrationService,
-  DoctorSelectionService,
 } from '../services/user.service';
+import { registerUser } from '../services/registration.service';
+import { UserRegistrationService } from '../services/user-registration.service';
+import DoctorSelectionService from '../services/doctor-selection.service';
 
 /**
- * User Controller Class
+ * Unified User Controller Class
  * Handles all user-related operations with consistent security patterns
  */
-export class UserController {
+export class UnifiedUserController {
   private registrationService: UserRegistrationService;
   private doctorService: DoctorSelectionService;
 
@@ -546,23 +546,23 @@ export class UserController {
 }
 
 // Export both class and individual functions for backward compatibility
-export const userController = new UserController();
+export const unifiedUserController = new UnifiedUserController();
 
 // Individual function exports for existing route compatibility
-export const getUsersController = userController.getUsers.bind(userController);
-export const getUserByIdController = userController.getUserById.bind(userController);
-export const updateUserController = userController.updateUser.bind(userController);
-export const deleteUserController = userController.deleteUser.bind(userController);
-export const updateUserStatusController = userController.updateUserStatus.bind(userController);
-export const updateUserPasswordController = userController.updateUserPassword.bind(userController);
-export const registerUserController = userController.registerUser.bind(userController);
+export const getUsersController = unifiedUserController.getUsers.bind(unifiedUserController);
+export const getUserByIdController = unifiedUserController.getUserById.bind(unifiedUserController);
+export const updateUserController = unifiedUserController.updateUser.bind(unifiedUserController);
+export const deleteUserController = unifiedUserController.deleteUser.bind(unifiedUserController);
+export const updateUserStatusController = unifiedUserController.updateUserStatus.bind(unifiedUserController);
+export const updateUserPasswordController = unifiedUserController.updateUserPassword.bind(unifiedUserController);
+export const registerUserController = unifiedUserController.registerUser.bind(unifiedUserController);
 
 // Profile operations
-export const getUserProfile = userController.getCurrentUserProfile.bind(userController);
-export const updateUserProfile = userController.updateCurrentUserProfile.bind(userController);
-export const updatePersonalInfo = userController.updatePersonalInfo.bind(userController);
-export const completeOnboarding = userController.completeOnboarding.bind(userController);
-export const getOnboardingStatus = userController.getOnboardingStatus.bind(userController);
-export const uploadProfilePicture = userController.uploadProfilePicture.bind(userController);
+export const getUserProfile = unifiedUserController.getCurrentUserProfile.bind(unifiedUserController);
+export const updateUserProfile = unifiedUserController.updateCurrentUserProfile.bind(unifiedUserController);
+export const updatePersonalInfo = unifiedUserController.updatePersonalInfo.bind(unifiedUserController);
+export const completeOnboarding = unifiedUserController.completeOnboarding.bind(unifiedUserController);
+export const getOnboardingStatus = unifiedUserController.getOnboardingStatus.bind(unifiedUserController);
+export const uploadProfilePicture = unifiedUserController.uploadProfilePicture.bind(unifiedUserController);
 
-export default userController;
+export default unifiedUserController;

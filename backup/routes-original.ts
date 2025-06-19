@@ -2,9 +2,24 @@ import { Router } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import { authenticate } from '@features/auth/middlewares';
 import { ApiResponse } from '@shared/utils/api-response';
-import { userController } from './controllers/user.controller';
+import { registerUserController } from './controllers/registration.controller';
+import {
+  getUsersController,
+  getUserByIdController,
+  updateUserController,
+  deleteUserController,
+  updateUserStatusController,
+  updateUserPasswordController,
+} from './controllers/user.controller';
+import * as profileController from './controllers/profile.controller';
+import MobileRegistrationController from './controllers/mobile-registration.controller';
+import DoctorSelectionController from './controllers/doctor-selection.controller';
 
 const router = Router();
+
+// Initialize controllers
+const mobileRegistrationController = new MobileRegistrationController();
+const doctorSelectionController = new DoctorSelectionController();
 
 // ===================================================================
 // 📚 ROUTE ORGANIZATION & ORDER
@@ -26,13 +41,11 @@ const router = Router();
 // ===================================================================
 
 // Core user registration (web/admin)
-router.post('/register', authenticate, (req, res) =>
-  userController.registerUser(req as any, res)
-);
+router.post('/register', authenticate, registerUserController as any);
 
 // Mobile app registration (public)
 router.post('/register/mobile', (req, res) =>
-  userController.registerMobileUser(req as any, res)
+  mobileRegistrationController.register(req as any, res),
 );
 
 // ===================================================================
@@ -40,9 +53,7 @@ router.post('/register/mobile', (req, res) =>
 // ===================================================================
 
 // Get all users (with filtering, pagination, search)
-router.get('/', authenticate, (req, res) =>
-  userController.getUsers(req as any, res)
-);
+router.get('/', authenticate, getUsersController as any);
 
 // ===================================================================
 // 👨‍⚕️ DOCTOR & HEALTHCARE PROVIDER ENDPOINTS
@@ -50,12 +61,12 @@ router.get('/', authenticate, (req, res) =>
 
 // Get available doctors
 router.get('/doctors', authenticate, (req, res) =>
-  userController.getDoctors(req as any, res)
+  doctorSelectionController.getDoctors(req as any, res),
 );
 
 // Select a doctor
 router.post('/select-doctor', authenticate, (req, res) =>
-  userController.selectDoctor(req as any, res)
+  doctorSelectionController.selectDoctor(req as any, res),
 );
 
 // ===================================================================
@@ -63,24 +74,16 @@ router.post('/select-doctor', authenticate, (req, res) =>
 // ===================================================================
 
 // Get current user's profile
-router.get('/profile', authenticate, (req, res) =>
-  userController.getCurrentUserProfile(req, res)
-);
+router.get('/profile', authenticate, profileController.getUserProfile);
 
 // Update current user's profile
-router.put('/profile', authenticate, (req, res) =>
-  userController.updateCurrentUserProfile(req, res)
-);
+router.put('/profile', authenticate, profileController.updateUserProfile);
 
 // Update current user's personal information
-router.put('/profile/personal-info', authenticate, (req, res) =>
-  userController.updatePersonalInfo(req, res)
-);
+router.put('/profile/personal-info', authenticate, profileController.updatePersonalInfo);
 
 // Upload current user's profile picture
-router.post('/profile/upload-picture', authenticate, (req, res) =>
-  userController.uploadProfilePicture(req, res)
-);
+router.post('/profile/upload-picture', authenticate, profileController.uploadProfilePicture);
 
 // ===================================================================
 // 🎯 ONBOARDING ENDPOINTS (CURRENT USER)
@@ -88,65 +91,82 @@ router.post('/profile/upload-picture', authenticate, (req, res) =>
 
 // Update personal info during onboarding
 router.put('/onboarding/personal-info', authenticate, (req, res) =>
-  userController.updatePersonalInfo(req, res)
+  mobileRegistrationController.updatePersonalInfo(req as any, res),
 );
 
 // Get current user's onboarding status
 router.get('/onboarding/status', authenticate, (req, res) =>
-  userController.getOnboardingStatus(req, res)
+  mobileRegistrationController.getOnboardingStatus(req as any, res),
 );
 
 // Get current user's onboarding status (alternative endpoint)
-router.get('/profile/onboarding-status', authenticate, (req, res) =>
-  userController.getOnboardingStatus(req, res)
-);
+router.get('/profile/onboarding-status', authenticate, profileController.getOnboardingStatus);
 
 // Complete current user's onboarding
 router.post('/onboarding/complete', authenticate, (req, res) =>
-  userController.completeOnboarding(req, res)
+  mobileRegistrationController.completeOnboarding(req as any, res),
 );
 
 // Complete current user's onboarding (alternative endpoint)
-router.post('/profile/complete-onboarding', authenticate, (req, res) =>
-  userController.completeOnboarding(req, res)
-);
+router.post('/profile/complete-onboarding', authenticate, profileController.completeOnboarding);
 
 // ===================================================================
 // 👥 SPECIFIC USER MANAGEMENT ENDPOINTS (ADMIN OPERATIONS)
 // ===================================================================
 
 // View a specific user by ID
-router.get('/:userId', authenticate, (req, res) =>
-  userController.getUserById(req as any, res)
-);
+router.get('/:userId', authenticate, getUserByIdController as any);
 
 // Update a specific user by ID
-router.put('/:userId', authenticate, (req, res) =>
-  userController.updateUser(req as any, res)
-);
+router.put('/:userId', authenticate, updateUserController as any);
 
 // Delete a specific user by ID
-router.delete('/:userId', authenticate, (req, res) =>
-  userController.deleteUser(req as any, res)
-);
+router.delete('/:userId', authenticate, deleteUserController as any);
 
 // Update user status (activate/deactivate)
-router.patch('/:userId', authenticate, (req, res) =>
-  userController.updateUserStatus(req as any, res)
-);
+router.patch('/:userId', authenticate, updateUserStatusController as any);
 
 // ===================================================================
 // 🔒 USER SECURITY & ACCESS ENDPOINTS
 // ===================================================================
 
 // Update user password
-router.put('/:userId/password', authenticate, (req, res) =>
-  userController.updateUserPassword(req as any, res)
-);
+router.put('/:userId/password', authenticate, updateUserPasswordController as any);
 
 // Link user to a client (admin operation)
-router.post('/:userId/link-client', authenticate, (req, res) =>
-  userController.linkUserToClient(req as any, res)
-);
+router.post('/:userId/link-client', authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { clientId } = req.body;
+
+    // Validation
+    if (!clientId) {
+      res.status(StatusCodes.BAD_REQUEST).json(ApiResponse.error('Client ID is required'));
+      return;
+    }
+
+    // TODO: Implement actual client linking logic
+    // - Validate client exists
+    // - Check permissions (only admins can link users to clients)
+    // - Update user's clientId
+    // - Log the action
+
+    const linkedUser = {
+      userId: parseInt(userId),
+      clientId: parseInt(clientId),
+      linkedAt: new Date().toISOString(),
+      linkedBy: req.user?.loginName || 'system',
+    };
+
+    res
+      .status(StatusCodes.OK)
+      .json(ApiResponse.success(linkedUser, 'User linked to client successfully'));
+  } catch (error) {
+    console.error('Link user to client error:', error);
+    res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json(ApiResponse.error('Failed to link user to client'));
+  }
+});
 
 export default router;
