@@ -110,3 +110,43 @@ export function mergeJsonFields<T>(existing: T | null, updates: Partial<T> | nul
 
   return merge(existing, updates);
 }
+
+/**
+ * Create Client validation schema
+ */
+export const createClientSchema = z.object({
+  name: z.string().min(1, 'Client name is required').max(255, 'Client name too long'),
+  description: z.string().max(1000, 'Description too long').optional(),
+  timeZone: z.string().max(50, 'Time zone too long').optional(),
+  language: z.string().max(10, 'Language code too long').optional(),
+  website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  logo: z.string().url('Invalid logo URL').optional().or(z.literal('')),
+  favIcon: z.string().url('Invalid favicon URL').optional().or(z.literal('')),
+  extraInfo: clientExtraInfoSchema.optional()
+});
+
+/**
+ * Update Client validation schema
+ */
+export const updateClientSchema = z.object({
+  name: z.string().min(1, 'Client name is required').max(255, 'Client name too long').optional(),
+  description: z.string().max(1000, 'Description too long').optional(),
+  timeZone: z.string().max(50, 'Time zone too long').optional(),
+  language: z.string().max(10, 'Language code too long').optional(),
+  website: z.string().url('Invalid website URL').optional().or(z.literal('')),
+  logo: z.string().url('Invalid logo URL').optional().or(z.literal('')),
+  favIcon: z.string().url('Invalid favicon URL').optional().or(z.literal('')),
+  status: z.number().int().min(0).max(2).optional(),
+  extraInfo: clientExtraInfoSchema.optional()
+});
+
+/**
+ * Get Clients Query validation schema
+ */
+export const getClientsQuerySchema = z.object({
+  page: z.string().optional().transform(val => val ? parseInt(val, 10) : 1),
+  limit: z.string().optional().transform(val => val ? parseInt(val, 10) : 10),
+  search: z.string().optional(),
+  status: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
+  sort: z.enum(['asc', 'desc']).optional().default('asc')
+});
