@@ -1,4 +1,5 @@
 import * as bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import {
   LoginResponse,
   PublicUserData,
@@ -762,7 +763,6 @@ export async function verifyResetToken(token: string): Promise<{
  * Generate a secure random token
  */
 function generateSecureToken(): string {
-  const crypto = require('crypto');
   return crypto.randomBytes(32).toString('hex');
 }
 
@@ -770,7 +770,6 @@ function generateSecureToken(): string {
  * Generate a request ID for tracking
  */
 function generateRequestId(): string {
-  const crypto = require('crypto');
   return crypto.randomBytes(16).toString('hex');
 }
 

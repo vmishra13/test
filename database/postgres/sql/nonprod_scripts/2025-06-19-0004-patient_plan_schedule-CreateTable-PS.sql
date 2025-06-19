@@ -15,7 +15,7 @@ BEGIN     -- Create ENUM types if they don't exist
         SELECT 1
         FROM information_schema.tables
         WHERE table_schema = 'reliacare'
-        AND table_name = 'user_plan_schedule'
+        AND table_name = 'patient_plan_schedule'
     )
     THEN
 

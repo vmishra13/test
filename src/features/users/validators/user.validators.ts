@@ -604,38 +604,52 @@ export function validateUserViewPermissions(
 /**
  * User extraInfo Zod schema
  */
-export const userExtraInfoSchema = z.object({
-  preferences: z.object({
-    theme: z.enum(['light', 'dark']).optional(),
-    language: z.string().min(2).max(5).optional(),
-    notifications: z.object({
-      email: z.boolean().optional(),
-      sms: z.boolean().optional(),
-      push: z.boolean().optional()
-    }).optional(),
-    timezone: z.string().optional()
-  }).optional(),
-  
-  medical: z.object({
-    allergies: z.array(z.string()).optional(),
-    conditions: z.array(z.string()).optional(),
-    emergencyContact: z.object({
-      name: z.string().optional(),
-      phone: z.string().optional(),
-      relationship: z.string().optional()
-    }).optional()
-  }).optional(),
-  
-  profile: z.object({
-    bio: z.string().max(500).optional(),
-    socialLinks: z.object({
-      linkedin: z.string().url().optional(),
-      twitter: z.string().url().optional()
-    }).optional()
-  }).optional(),
-  
-  custom: z.record(z.string(), z.any()).optional()
-}).optional();
+export const userExtraInfoSchema = z
+  .object({
+    preferences: z
+      .object({
+        theme: z.enum(['light', 'dark']).optional(),
+        language: z.string().min(2).max(5).optional(),
+        notifications: z
+          .object({
+            email: z.boolean().optional(),
+            sms: z.boolean().optional(),
+            push: z.boolean().optional(),
+          })
+          .optional(),
+        timezone: z.string().optional(),
+      })
+      .optional(),
+
+    medical: z
+      .object({
+        allergies: z.array(z.string()).optional(),
+        conditions: z.array(z.string()).optional(),
+        emergencyContact: z
+          .object({
+            name: z.string().optional(),
+            phone: z.string().optional(),
+            relationship: z.string().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+
+    profile: z
+      .object({
+        bio: z.string().max(500).optional(),
+        socialLinks: z
+          .object({
+            linkedin: z.string().url().optional(),
+            twitter: z.string().url().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+
+    custom: z.record(z.string(), z.any()).optional(),
+  })
+  .optional();
 
 // ✅ Infer TypeScript types from Zod schemas
 export type UserExtraInfo = z.infer<typeof userExtraInfoSchema>;
@@ -646,11 +660,11 @@ export type UserExtraInfo = z.infer<typeof userExtraInfoSchema>;
 export function validateJsonField<T>(
   data: any,
   schema: z.ZodSchema<T>,
-  fieldName: string = 'extraInfo'
+  fieldName: string = 'extraInfo',
 ): { success: true; data: T } | { success: false; errors: string[] } {
   if (data === null || data === undefined) {
     const result = schema.safeParse(undefined);
-    return result.success 
+    return result.success
       ? { success: true, data: result.data }
       : { success: false, errors: result.error.errors.map(e => `${fieldName}: ${e.message}`) };
   }
@@ -662,24 +676,68 @@ export function validateJsonField<T>(
     } catch (error) {
       return {
         success: false,
-        errors: [`${fieldName} must be valid JSON`]
+        errors: [`${fieldName} must be valid JSON`],
       };
     }
   }
 
   // Validate with Zod
   const result = schema.safeParse(data);
-  
+
   if (!result.success) {
     return {
       success: false,
-      errors: result.error.errors.map(e => `${fieldName}.${e.path.join('.')}: ${e.message}`)
+      errors: result.error.errors.map(e => `${fieldName}.${e.path.join('.')}: ${e.message}`),
     };
   }
 
   return {
     success: true,
-    data: result.data
+    data: result.data,
+  };
+}
+
+/**
+ * Simplified validation function specifically for user extraInfo
+ * Since we know the schema (userExtraInfoSchema) and field name ('extraInfo'),
+ * we only need the data parameter
+ */
+export function validateUserExtraInfo(
+  extraInfo: any,
+): { success: true; data: UserExtraInfo } | { success: false; errors: string[] } {
+  if (extraInfo === null || extraInfo === undefined) {
+    const result = userExtraInfoSchema.safeParse(undefined);
+    return result.success
+      ? { success: true, data: result.data }
+      : { success: false, errors: result.error.errors.map(e => `extraInfo: ${e.message}`) };
+  }
+
+  // Handle string JSON
+  let parsedData = extraInfo;
+  if (typeof extraInfo === 'string') {
+    try {
+      parsedData = JSON.parse(extraInfo);
+    } catch (error) {
+      return {
+        success: false,
+        errors: ['extraInfo must be valid JSON'],
+      };
+    }
+  }
+
+  // Validate with Zod
+  const result = userExtraInfoSchema.safeParse(parsedData);
+
+  if (!result.success) {
+    return {
+      success: false,
+      errors: result.error.errors.map(e => `extraInfo.${e.path.join('.')}: ${e.message}`),
+    };
+  }
+
+  return {
+    success: true,
+    data: result.data,
   };
 }
 
@@ -694,9 +752,9 @@ export function mergeJsonFields<T>(existing: T | null, updates: Partial<T> | nul
   // Deep merge for nested objects
   const merge = (target: any, source: any): any => {
     if (!target || !source) return source || target;
-    
+
     const result = { ...target };
-    
+
     for (const key in source) {
       if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
         result[key] = merge(target[key] || {}, source[key]);
@@ -704,7 +762,7 @@ export function mergeJsonFields<T>(existing: T | null, updates: Partial<T> | nul
         result[key] = source[key];
       }
     }
-    
+
     return result;
   };
 

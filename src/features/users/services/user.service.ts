@@ -1,10 +1,10 @@
-import { Request } from 'express';
 import { UploadedFile } from 'express-fileupload';
-import { CoreRole, RoleUtils, UserStatus } from '@shared/constants';
+import { CoreRole } from '@shared/constants';
 import type { AuthenticatedUser } from '@features/auth/dto/auth.dto';
-import type { GetUsersResponse } from '../dto/user.dto';
+import type { GetUsersResponse, UpdateUserRequest } from '../dto/user.dto';
 import {
   getUsersQuerySchema,
+  UserUpdateInputSchema,
   validateUserViewPermissions,
   type GetUsersQueryRequest,
 } from '../validators/user.validators';
@@ -23,16 +23,11 @@ import {
 import logger from '@/config/logger';
 import { getCurrentUser, createAuthRequest, performAuthorization } from '@features/auth';
 import {
-  validateJsonField,
+  validateUserExtraInfo,
   userExtraInfoSchema,
   mergeJsonFields,
 } from '../validators/user.validators';
-import {
-  validateRoleCombinations,
-  validateEmailDomain,
-  registerUserSchema,
-} from '../validators/registration.validators';
-import type { UserExtraInfo } from '../validators/user.validators';
+import type { UserExtraInfo, UserUpdateInput } from '../validators/user.validators';
 import { prismaPostgres } from '@/db/postgres/client';
 import bcrypt from 'bcrypt';
 import type {
@@ -61,10 +56,13 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
   try {
     const currentUser = getCurrentUser(req);
 
+    // First validate query parameters to ensure proper type conversion
+    const queryParams = validateQueryParameters(req.query);
+
     const actionUserId = null; // No specific user ID for view action
-    const actionClientId = req.query.clientId ? parseInt(req.query.clientId) : currentUser.clientId;
+    const actionClientId = queryParams.clientId || currentUser.clientId; // Now it's properly typed as number
     const actionUserTypeId = null; // No specific user type ID for view action
-    const actionUserRoles = (req.query.role as CoreRole) || currentUser.roles; // Use roles from query or current user
+    const actionUserRoles = (queryParams.role as CoreRole) || currentUser.roles; // Cast validated role to CoreRole type
     const actionPermission = RequestUserAction.userView; // Specific permission for viewing users
 
     const oAuthReq: AuthRequest = createAuthRequest(
@@ -86,9 +84,6 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
       throw createAuthorizationError('You do not have permission to perform this action');
     }
 
-    // Validate query parameters using Zod
-    const queryParams = validateQueryParameters(req.query);
-
     // Get users list based on validated params and current user context
     return await getUsersList(queryParams, currentUser.roles, currentUser.clientId);
   } catch (error: any) {
@@ -100,7 +95,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 /**
  * Validate query parameters using Zod - replaces manual validation
  */
-function validateQueryParameters(query: any): GetUsersQueryRequest {
+function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
   try {
     // Use Zod schema for validation
     const validatedQuery = getUsersQuerySchema.parse(query);
@@ -965,10 +960,9 @@ async function getUsersList(
 }
 
 function getCurrentUserPrimaryRole(roles: string[]): string {
-  // TEMPORARY: Return SUPER_ADMIN for empty roles (superadmin user without roles)
   if (roles.length === 0) {
-    console.log('⚠️ TEMPORARY: Empty roles detected, assuming SUPER_ADMIN for compatibility');
-    return CoreRole.SUPER_ADMIN;
+    logger.error('User has no roles assigned.');
+    throw createAuthError('User has no roles assigned');
   }
 
   // Define role hierarchy (highest to lowest priority)
@@ -1076,48 +1070,171 @@ export async function updateUser(
   req: ExtendedRequest<any> & { params: { userId: string } },
 ): Promise<{ data: any; message: string }> {
   try {
-    const { userId } = req.params;
-    const { extraInfo, ...otherFields } = req.body;
-    const currentUser = (req as any).user;
+    // 1. Check authentication
+    const currentUser = getCurrentUser(req);
 
-    // ✅ Validate JSON field with Zod
-    let sanitizedExtraInfo: UserExtraInfo | undefined = undefined;
+    // 2. Validate userId parameter
+    const { userId } = req.params;
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // 3. Get target user to build authorization context
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Extract target user's roles for authorization
+    const targetUserRoles =
+      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+
+    // 4. Build authorization request
+    const actionUserId = targetUserId;
+    const actionClientId = targetUser.clientId; // Target user's client
+    const actionUserTypeId = targetUser.userTypeId; // Target user's type
+    const actionUserRoles = targetUserRoles; // Target user's roles
+    const actionPermission = RequestUserAction.userEdit; // Specific permission for user update
+
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      actionUserId,
+      actionClientId,
+      actionUserTypeId,
+      actionUserRoles,
+      actionPermission,
+    );
+
+    // 5. Check authorization for the specific action
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} does not have permission to update user ${targetUserId}`,
+      );
+      throw createAuthorizationError('You do not have permission to perform this action');
+    }
+
+    // 6. Validate request body
+    const validatedData = validateUpdateRequestBody(req.body);
+
+    // 7. Perform user update
+    return await performUserUpdate(targetUserId, validatedData, currentUser);
+  } catch (error: any) {
+    logger.error('Error in updateUser service:', error);
+    throw error;
+  }
+}
+
+/**
+ * Validate update request body using Zod schema - similar to registerUser pattern
+ */
+function validateUpdateRequestBody(body: UserUpdateInput): any {
+  try {
+    // Import the UserUpdateInputSchema for validation
+    const { extraInfo, ...otherFields } = body;
+
+    // Validate the main fields (excluding extraInfo)
+    const mainFieldsValidation = UserUpdateInputSchema.omit({
+      extraInfo: true,
+      modUser: true,
+    }).safeParse(otherFields);
+
+    if (!mainFieldsValidation.success) {
+      throw createValidationError(
+        'Validation failed',
+        mainFieldsValidation.error.errors.map((err: any) => ({
+          field: err.path.join('.'),
+          message: err.message,
+        })),
+      );
+    }
+
+    // Validate extraInfo separately if provided
+    let validatedExtraInfo: UserExtraInfo;
     if (extraInfo !== undefined) {
-      const validation = validateJsonField(extraInfo, userExtraInfoSchema, 'extraInfo');
+      const validation = validateUserExtraInfo(extraInfo);
 
       if (!validation.success) {
         throw createValidationError(
           'Invalid extraInfo format',
-          validation.errors.map(error => ({ field: 'extraInfo', message: error })),
+          validation.errors.map((error: string) => ({ field: 'extraInfo', message: error })),
         );
       }
 
-      // For updates, merge with existing data
-      if (validation.data) {
-        const existingUser = await prismaPostgres.user.findUnique({
-          where: { id: Number(userId) },
-          select: { extraInfo: true },
-        });
+      validatedExtraInfo = validation.data;
+    }
 
+    return {
+      ...mainFieldsValidation.data,
+      ...(extraInfo !== undefined && { extraInfo: validatedExtraInfo }),
+    };
+  } catch (error: any) {
+    if (error.name === 'ValidationError') {
+      throw error; // Re-throw our validation errors
+    }
+    throw createValidationError('Update validation failed', [
+      { field: 'body', message: error.message },
+    ]);
+  }
+}
+
+/**
+ * Perform user update with business logic - similar to performUserRegistration pattern
+ */
+async function performUserUpdate(
+  targetUserId: number,
+  validatedData: any,
+  currentUser: AuthenticatedUser,
+): Promise<{ data: any; message: string }> {
+  try {
+    // 1. Get existing user for extraInfo merging
+    const existingUser = await userRepository.findUserById(targetUserId);
+    if (!existingUser) {
+      throw new Error('User not found during update operation');
+    }
+
+    // 2. Handle extraInfo merging if provided
+    let sanitizedExtraInfo: UserExtraInfo | undefined = undefined;
+    if (validatedData.extraInfo !== undefined) {
+      if (validatedData.extraInfo) {
+        // Merge with existing extraInfo
         const mergedResult = mergeJsonFields(
-          existingUser?.extraInfo as UserExtraInfo,
-          validation.data,
+          existingUser.extraInfo as UserExtraInfo,
+          validatedData.extraInfo,
         );
         sanitizedExtraInfo = mergedResult || undefined;
       } else {
-        sanitizedExtraInfo = null as any;
+        sanitizedExtraInfo = null as any; // Explicitly setting to null
       }
     }
 
+    // 3. Prepare update data
     const updateData = {
-      ...otherFields,
-      modUser: currentUser.id.toString(),
+      ...validatedData,
+      modUser: currentUser.loginName, // Use loginName instead of ID for consistency
       modDate: new Date(),
-      ...(extraInfo !== undefined && { extraInfo: sanitizedExtraInfo }),
+      ...(validatedData.extraInfo !== undefined && { extraInfo: sanitizedExtraInfo }),
     };
 
+    // Remove extraInfo from updateData if it was in validatedData to avoid duplication
+    delete updateData.extraInfo;
+    if (validatedData.extraInfo !== undefined) {
+      updateData.extraInfo = sanitizedExtraInfo;
+    }
+
+    // 4. Perform database update
     const updatedUser = await prismaPostgres.user.update({
-      where: { id: Number(userId) },
+      where: { id: targetUserId },
       data: updateData,
       include: {
         client: { select: { id: true, name: true } },
@@ -1130,6 +1247,7 @@ export async function updateUser(
       },
     });
 
+    // 5. Format response
     return {
       data: {
         id: updatedUser.id,
@@ -1145,17 +1263,461 @@ export async function updateUser(
         gender: updatedUser.gender,
         timeZone: updatedUser.timeZone,
         profilePicture: updatedUser.profilePicture,
-        extraInfo: updatedUser.extraInfo as UserExtraInfo, // ✅ Type-safe JSON
+        extraInfo: updatedUser.extraInfo as UserExtraInfo,
         status: updatedUser.status,
         client: updatedUser.client,
         userType: updatedUser.userType,
         roles: updatedUser.userRoles.map(ur => ur.role),
         modDate: updatedUser.modDate,
+        updatedBy: currentUser.loginName,
       },
       message: 'User updated successfully',
     };
+  } catch (error: any) {
+    throw new Error(`Failed to update user: ${error.message}`);
+  }
+}
+
+// ===================================================================
+// 📱 MOBILE APP USER PROFILE FUNCTIONS
+// ===================================================================
+
+/**
+ * Get user profile for mobile app
+ */
+export async function getUserProfile(userId: number) {
+  try {
+    const user = await userRepository.findUserById(userId);
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    return {
+      id: user.id,
+      loginName: user.loginName,
+      firstName: user.firstName,
+      middleName: user.middleName,
+      lastName: user.lastName,
+      email: user.email,
+      dob: user.dob,
+      gender: user.gender,
+      timeZone: user.timeZone,
+      mrn: user.mrn,
+      clientId: user.clientId,
+      userTypeId: user.userTypeId,
+      status: user.status,
+      extraInfo: user.extraInfo,
+      // Default values for mobile app
+      profilePicture: user.extraInfo?.profilePicture || null,
+      phoneNumber: user.extraInfo?.phoneNumber || null,
+      address: user.extraInfo?.address || null,
+      emergencyContact: user.extraInfo?.emergencyContact || null,
+      medicalHistory: user.extraInfo?.medicalHistory || null,
+      preferences: user.extraInfo?.preferences || null,
+      onboardingCompleted: user.extraInfo?.onboardingCompleted || false,
+    };
   } catch (error) {
-    logger.error('Error updating user:', error);
+    console.error('Get user profile error:', error);
+    throw new Error('Failed to retrieve user profile');
+  }
+}
+
+/**
+ * Update user profile
+ */
+export async function updateUserProfile(userId: number, profileData: any) {
+  try {
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Merge existing extraInfo with new data
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      phoneNumber: profileData.phoneNumber ?? currentExtraInfo.phoneNumber,
+      address: profileData.address ?? currentExtraInfo.address,
+      emergencyContact: profileData.emergencyContact ?? currentExtraInfo.emergencyContact,
+      emergencyPhoneNumber:
+        profileData.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber,
+      preferences: profileData.preferences ?? currentExtraInfo.preferences,
+      medicalHistory: profileData.medicalHistory ?? currentExtraInfo.medicalHistory,
+      allergies: profileData.allergies ?? currentExtraInfo.allergies,
+      medications: profileData.medications ?? currentExtraInfo.medications,
+      conditions: profileData.conditions ?? currentExtraInfo.conditions,
+    };
+
+    // Prepare UserUpdateInput object (following auth service pattern)
+    const userUpdateInput = {
+      firstName: profileData.firstName ?? undefined,
+      middleName: profileData.middleName ?? undefined,
+      lastName: profileData.lastName ?? undefined,
+      email: profileData.email ?? undefined,
+      dob: profileData.dob ? new Date(profileData.dob) : undefined,
+      mrn: profileData.mrn ?? undefined,
+      gender: profileData.gender ?? undefined,
+      timeZone: profileData.timeZone ?? undefined,
+      profilePicture: profileData.profilePicture ?? undefined,
+      extraInfo: newExtraInfo,
+      modUser: 'mobile-app', // Required field
+    };
+
+    // Update user with properly formatted UserUpdateInput
+    await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
+
+    return await getUserProfile(userId);
+  } catch (error) {
+    console.error('Update user profile error:', error);
+    throw new Error(
+      `Failed to update user profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
+    );
+  }
+}
+
+/**
+ * Update personal information
+ */
+export async function updatePersonalInfo(userId: number, personalInfo: any) {
+  try {
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Merge existing extraInfo with new personal info
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      phoneNumber: personalInfo.phoneNumber ?? currentExtraInfo.phoneNumber,
+      address: personalInfo.address ?? currentExtraInfo.address,
+      medicalHistory: personalInfo.medicalHistory ?? currentExtraInfo.medicalHistory,
+      allergies: personalInfo.allergies ?? currentExtraInfo.allergies,
+      medications: personalInfo.medications ?? currentExtraInfo.medications,
+      conditions: personalInfo.conditions ?? currentExtraInfo.conditions,
+      emergencyContact: personalInfo.emergencyContact ?? currentExtraInfo.emergencyContact,
+      emergencyPhoneNumber:
+        personalInfo.emergencyPhoneNumber ?? currentExtraInfo.emergencyPhoneNumber,
+    };
+
+    // Prepare UserUpdateInput object (following auth service pattern)
+    const userUpdateInput = {
+      firstName: personalInfo.firstName ?? undefined,
+      middleName: personalInfo.middleName ?? undefined,
+      lastName: personalInfo.lastName ?? undefined,
+      email: personalInfo.email ?? undefined,
+      dob: personalInfo.dob ? new Date(personalInfo.dob) : undefined,
+      gender: personalInfo.gender ?? undefined,
+      extraInfo: newExtraInfo,
+      modUser: 'mobile-app', // Required field
+    };
+
+    // Update user with properly formatted UserUpdateInput
+    await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
+
+    return await getUserProfile(userId);
+  } catch (error) {
+    console.error('Update personal info error:', error);
+    throw new Error('Failed to update personal information');
+  }
+}
+
+/**
+ * Complete user onboarding
+ */
+export async function completeOnboarding(userId: number, onboardingData: any) {
+  try {
+    // Update user profile with onboarding data
+    await updateUserProfile(userId, onboardingData);
+
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Mark onboarding as completed
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      onboardingCompleted: true,
+      onboardingCompletedAt: new Date().toISOString(),
+    };
+
+    await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
+
+    return {
+      success: true,
+      message: 'Onboarding completed successfully',
+      profile: await getUserProfile(userId),
+    };
+  } catch (error) {
+    console.error('Complete onboarding error:', error);
+    throw new Error('Failed to complete onboarding');
+  }
+}
+
+/**
+ * Get onboarding status
+ */
+export async function getOnboardingStatus(userId: number) {
+  try {
+    const profile = await getUserProfile(userId);
+
+    const completedSteps = {
+      basicInfo: !!(profile.firstName && profile.lastName && profile.email),
+      personalInfo: !!(profile.dob && profile.gender),
+      contactInfo: !!profile.phoneNumber,
+      preferences: !!profile.preferences,
+      profilePicture: !!profile.profilePicture,
+    };
+
+    const totalSteps = Object.keys(completedSteps).length;
+    const completedCount = Object.values(completedSteps).filter(Boolean).length;
+    const progressPercentage = Math.round((completedCount / totalSteps) * 100);
+
+    return {
+      isCompleted: profile.onboardingCompleted || false,
+      steps: completedSteps,
+      progress: {
+        completed: completedCount,
+        total: totalSteps,
+        percentage: progressPercentage,
+      },
+      nextStep: getNextOnboardingStep(completedSteps),
+    };
+  } catch (error) {
+    console.error('Get onboarding status error:', error);
+    throw new Error('Failed to retrieve onboarding status');
+  }
+}
+
+/**
+ * Upload profile picture
+ */
+export async function uploadProfilePicture(userId: number, file: UploadedFile) {
+  try {
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // TODO: Implement file upload to cloud storage (AWS S3, etc.)
+    // For now, just generate a URL based on file info
+    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileName = `${userId}_${Date.now()}.${fileExtension}`;
+    const profilePictureUrl = `/uploads/profiles/${fileName}`;
+
+    // Update extraInfo with profile picture
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      profilePicture: profilePictureUrl,
+      profilePictureInfo: {
+        originalName: file.name,
+        size: file.size,
+        mimeType: file.mimetype,
+        uploadedAt: new Date().toISOString(),
+      },
+    };
+
+    await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
+
+    return {
+      success: true,
+      profilePicture: profilePictureUrl,
+      message: 'Profile picture uploaded successfully',
+    };
+  } catch (error) {
+    console.error('Upload profile picture error:', error);
+    throw new Error('Failed to upload profile picture');
+  }
+}
+
+/**
+ * Helper function to determine next onboarding step
+ */
+function getNextOnboardingStep(completedSteps: any): string | null {
+  if (!completedSteps.basicInfo) return 'basicInfo';
+  if (!completedSteps.personalInfo) return 'personalInfo';
+  if (!completedSteps.contactInfo) return 'contactInfo';
+  if (!completedSteps.preferences) return 'preferences';
+  if (!completedSteps.profilePicture) return 'profilePicture';
+  return null; // All steps completed
+}
+
+/**
+ * Get user by ID with STRICT multi-tenant validation
+ * HIPAA/PHI Protection: Only allows access to users within same client or SuperAdmin cross-client access
+ */
+export async function getUserById(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<any> {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { userId } = req.params;
+
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // Get target user first
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Extract target user's roles
+    const targetUserRoles =
+      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+
+    // Create authorization request for viewing specific user with ALL required context
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      targetUserId,
+      targetUser.clientId, // Use target user's client
+      targetUser.userTypeId,
+      targetUserRoles,
+      RequestUserAction.userView,
+    );
+
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} denied access to user ${targetUserId} - Client isolation enforced`,
+      );
+      throw createAuthorizationError(
+        'Access denied - You can only view users within your organization',
+      );
+    }
+
+    return {
+      success: true,
+      data: {
+        id: targetUser.id,
+        loginName: targetUser.loginName,
+        firstName: targetUser.firstName,
+        lastName: targetUser.lastName,
+        email: targetUser.email,
+        status: targetUser.status,
+        roles: targetUser.userRoles.map((userRole: any) => userRole.role.name),
+        client: {
+          id: targetUser.client.id,
+          name: targetUser.client.name,
+        },
+        userType: {
+          id: targetUser.userType.id,
+          name: targetUser.userType.name,
+        },
+        createdAt: targetUser.crDate.toISOString(),
+        updatedAt: targetUser.modDate?.toISOString() || targetUser.crDate.toISOString(),
+      },
+      message: 'User retrieved successfully',
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    logger.error('Error in getUserById service:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete user with STRICT multi-tenant validation and authorization
+ * HIPAA/PHI Protection: Only SuperAdmin and CLIENT_ADMIN can delete users within their organization
+ */
+export async function deleteUser(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<any> {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { userId } = req.params;
+
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // Get target user first
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Create authorization request for deleting specific user
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      targetUserId,
+      targetUser.clientId,
+      null,
+      null,
+      RequestUserAction.userDelete, // Specific permission for deletion
+    );
+
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} denied deletion access to user ${targetUserId} - Insufficient permissions`,
+      );
+      throw createAuthorizationError(
+        'Access denied - Insufficient permissions to delete this user',
+      );
+    }
+
+    // Additional business rules for deletion
+    const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
+
+    // Prevent SUPER_ADMIN deletion
+    const targetUserRoles = targetUser.userRoles.map((ur: any) => ur.role.name);
+    if (targetUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+      throw createAuthorizationError('SUPER_ADMIN users cannot be deleted');
+    }
+
+    // CLIENT_ADMIN can only delete users in their own client (except other CLIENT_ADMINs)
+    if (
+      currentUserRole === CoreRole.CLIENT_ADMIN &&
+      targetUserRoles.includes(CoreRole.CLIENT_ADMIN)
+    ) {
+      throw createAuthorizationError('CLIENT_ADMIN cannot delete other CLIENT_ADMIN users');
+    }
+
+    // Perform soft delete
+    await userRepository.softDeleteUser(targetUserId, currentUser.loginName);
+
+    return {
+      success: true,
+      data: {
+        deletedUserId: targetUserId,
+        deletedAt: new Date().toISOString(),
+        deletedBy: currentUser.loginName,
+      },
+      message: 'User deleted successfully',
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    logger.error('Error in deleteUser service:', error);
     throw error;
   }
 }

@@ -39,7 +39,9 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
     case RequestUserAction.userView:
       return validateUserViewAccess(oAuthReq, currentUserRoles);
 
-    // case RequestUserAction.userEdit:
+    case RequestUserAction.userEdit:
+      return validateUserEditAccess(oAuthReq, currentUserRoles);
+
     // case RequestUserAction.userDelete:
     //   // SUPER_ADMIN can edit/delete any user
     //   if (currentUserRole === CoreRole.SUPER_ADMIN) {
@@ -464,4 +466,89 @@ function isClientAccessAllowed(
 
   // All other user types are restricted to their own client
   return currentClientId === actionClientId;
+}
+
+/**
+ * Validate if the current user can edit the specified user based on their roles
+ * @param oAuthReq The OAuth request containing action and client information
+ * @param currentUserRoles The roles of the current user
+ * @returns true if the user can edit the specified user, false otherwise
+ */
+function validateUserEditAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRole[]): boolean {
+  const targetUserRoles = Array.isArray(oAuthReq.actionUserRoles)
+    ? (oAuthReq.actionUserRoles as CoreRole[])
+    : oAuthReq.actionUserRoles
+      ? [oAuthReq.actionUserRoles as CoreRole]
+      : [];
+
+  // SUPER_ADMIN can edit any user
+  if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    return true;
+  }
+
+  // CLIENT_ADMIN can edit users in their client, but NOT SUPER_ADMIN users
+  if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    // Check client boundary
+    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      logger.error(
+        `❌ CLIENT_ADMIN cannot edit users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
+      );
+      return false;
+    }
+
+    // Cannot edit SUPER_ADMIN users
+    if (targetUserRoles.includes(CoreRole.SUPER_ADMIN) || oAuthReq.actionUserTypeId === 1) {
+      logger.error(`❌ CLIENT_ADMIN cannot edit SUPER_ADMIN users`);
+      return false;
+    }
+
+    return true;
+  }
+
+  // CLINICAL_STAFF and OFFICE_STAFF can only edit PATIENT users in their client
+  if (
+    currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
+    currentUserRoles.includes(CoreRole.OFFICE_STAFF)
+  ) {
+    // Check client boundary
+    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      logger.error(
+        `❌ CLINICAL_STAFF/OFFICE_STAFF cannot edit users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
+      );
+      return false;
+    }
+
+    // Can only edit PATIENT accounts (userTypeId = 5)
+    if (oAuthReq.actionUserTypeId && oAuthReq.actionUserTypeId !== 5) {
+      logger.error(
+        `❌ CLINICAL_STAFF/OFFICE_STAFF can only edit PATIENT accounts, attempted to edit userTypeId: ${oAuthReq.actionUserTypeId}`,
+      );
+      return false;
+    }
+
+    // Also check roles - must have PATIENT role
+    if (targetUserRoles.length > 0 && !targetUserRoles.includes(CoreRole.PATIENT)) {
+      logger.error(`❌ CLINICAL_STAFF/OFFICE_STAFF can only edit users with PATIENT role`);
+      return false;
+    }
+
+    return true;
+  }
+
+  // PATIENT users can only edit their own profile
+  if (currentUserRoles.includes(CoreRole.PATIENT)) {
+    if (oAuthReq.actionUserId !== oAuthReq.reqUserId) {
+      logger.error(
+        `❌ PATIENT can only edit their own profile: ${oAuthReq.actionUserId} !== ${oAuthReq.reqUserId}`,
+      );
+      return false;
+    }
+    return true;
+  }
+
+  // Default: deny access for unknown roles
+  logger.error(
+    `❌ Unknown or invalid role combination for edit access: ${currentUserRoles.join(', ')}`,
+  );
+  return false;
 }
