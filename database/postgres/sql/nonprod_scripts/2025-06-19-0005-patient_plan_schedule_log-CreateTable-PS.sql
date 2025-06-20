@@ -50,7 +50,7 @@ BEGIN     -- Create ENUM types if they don't exist
             FOREIGN KEY ("clientId") REFERENCES client(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE,
         CONSTRAINT fk_patient_plan_schedule_log_user_plan 
-            FOREIGN KEY ("planID") REFERENCES "patient_plan"(id) 
+            FOREIGN KEY ("planId") REFERENCES "patient_plan"(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE
     );
 
