@@ -8,8 +8,7 @@ BEGIN
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_name = 'form_master'
-    ) THEN
-        -- Create the form_master table
+    ) THEN        -- Create the form_master table
         CREATE TABLE form_master (
             id SERIAL PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
@@ -18,7 +17,8 @@ BEGIN
             crUser VARCHAR(50) NOT NULL,
             crDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             modUser VARCHAR(50) NOT NULL,
-            modDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            modDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_form_master_client FOREIGN KEY (clientId) REFERENCES client(id)
         );
     END IF;
 
