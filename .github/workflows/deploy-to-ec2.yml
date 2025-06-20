@@ -71,6 +71,7 @@ jobs:
             tar -xzf app.tar.gz
             pnpm install
             pnpm generate
+            pnpm build
             pnpm start
 
 
