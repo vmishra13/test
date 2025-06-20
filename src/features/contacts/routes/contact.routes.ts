@@ -85,10 +85,10 @@ router.post('/', authenticate, async (req, res) => {
         value,
         userId: user.id,
         clientId: user.clientId,
-        locationId: locationId || null,
         default: isDefault || false,
         status: 'active',
-        crUser: user.id.toString()
+        crUser: user.id.toString(),
+        modUser: user.id.toString(), // Add required modUser field
       }
     });
 

@@ -149,6 +149,7 @@ export async function createUser(
           timeZone: userData.timeZone || null,
           status: 1, // Active status
           crUser,
+          modUser: crUser, // ✅ Added required field
         },
       });
 
@@ -162,6 +163,7 @@ export async function createUser(
           password: hashedPassword,
           status: 1, // ✅ Added status field
           crUser,
+          modUser: crUser, // ✅ Added required field
         },
       });
 
@@ -172,6 +174,7 @@ export async function createUser(
           roleId,
           clientId: userData.clientId,
           crUser,
+          modUser: crUser, // ✅ Added required field
         }));
 
         await tx.user_role.createMany({
@@ -525,7 +528,10 @@ export async function searchUsers(
 export async function assignRole(assignment: UserRoleAssignment): Promise<void> {
   try {
     await prismaPostgres.user_role.create({
-      data: assignment,
+      data: {
+        ...assignment,
+        modUser: assignment.crUser, // ✅ Added required field
+      },
     });
   } catch (error: any) {
     if (error.code === 'P2002') {
@@ -597,6 +603,7 @@ export async function updatePassword(
         password: hashedPassword,
         status: 1, // ✅ Added required status field
         crUser,
+        modUser: crUser, // ✅ Added required field
       },
     });
   } catch (error: any) {
@@ -753,6 +760,7 @@ export async function createUserWithRoles(
           firstName: data.userData.firstName || null, // ✅ Handle nullable
           lastName: data.userData.lastName || null,
           email: data.userData.email || null,
+          modUser: data.userData.crUser || data.userData.modUser || 'system', // ✅ Ensure modUser is set
         },
         include: {
           client: {
@@ -779,6 +787,7 @@ export async function createUserWithRoles(
           password: data.password,
           status: 1, // Active
           crUser: data.createdBy,
+          modUser: data.createdBy, // ✅ Added required field
         },
       });
 
@@ -788,6 +797,7 @@ export async function createUserWithRoles(
         clientId: data.userData.clientId,
         roleId: roleId,
         crUser: data.createdBy,
+        modUser: data.createdBy, // ✅ Added required field
       }));
 
       await tx.user_role.createMany({
