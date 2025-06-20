@@ -64,14 +64,14 @@ jobs:
             echo "Creating production environment variables..."
             cat << EOF > .env
             NODE_ENV=production
-            PORT=${{ secrets.PORT }}
+            PORT=3000
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}  
             EOF
             tar -xzf app.tar.gz
             pnpm install
             pnpm generate
-            pnpm dev
+            pnpm start
 
 
       # - name: create empty tar
