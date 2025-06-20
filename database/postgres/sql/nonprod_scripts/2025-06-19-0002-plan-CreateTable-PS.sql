@@ -17,7 +17,7 @@ BEGIN
     "clientId" integer NOT NULL,
     "name" varchar(100) NOT NULL,
     "description" text,  
-    "diagnosisCode" integer NOT NULL,
+    "diagnosisId" integer NOT NULL,
     "diagnosisName" varchar(100) NOT NULL,
     "version" integer DEFAULT 1,
     "model" json,
@@ -29,7 +29,7 @@ BEGIN
         FOREIGN KEY ("clientId") REFERENCES client(id) 
         ON DELETE RESTRICT ON UPDATE CASCADE,    
     CONSTRAINT fk_plan_diagnosis_master 
-        FOREIGN KEY ("diagnosisCode") REFERENCES diagnosis_master(id) 
+        FOREIGN KEY ("diagnosisId") REFERENCES diagnosis_master(id) 
         ON DELETE RESTRICT ON UPDATE CASCADE,
     CONSTRAINT fk_plan_diagnosis_name 
         FOREIGN KEY ("diagnosisName") REFERENCES diagnosis_master("name") 

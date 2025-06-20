@@ -1,15 +1,15 @@
 /**
- * Plans module exports
+ * PLANS FEATURE INDEX
+ * 
+ * This file exports the plans feature routes for integration into the main API router.
+ * It provides comprehensive CRUD operations for:
+ * - Plans (treatment plans)
+ * - Patient Plans (assigned plans)
+ * - Patient Plan Schedules (scheduled activities)
+ * - Patient Plan Schedule Logs (activity tracking)
  */
 
-import { Router } from 'express';
-import planRoutes from './routes';
+import plansRoutes from './routes/plans.routes';
 
-const router = Router();
-
-// Add your plan routes here
-// router.get('/', getPlanController);
-// router.post('/', createPlanController);
-
-export default router;
-export { planRoutes };
+export { plansRoutes };
+export default plansRoutes;
