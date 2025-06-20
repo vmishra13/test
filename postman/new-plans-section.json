@@ -1,0 +1,704 @@
+		{
+			"name": "📋 Treatment Plans",
+			"item": [
+				{
+					"name": "1. Plans CRUD",
+					"item": [
+						{
+							"name": "1. Get All Plans",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/plans?page=1&limit=20&search={{search_term}}&sort=asc",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"plans"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "20"
+										},
+										{
+											"key": "search",
+											"value": "{{search_term}}",
+											"disabled": true
+										},
+										{
+											"key": "sort",
+											"value": "asc"
+										}
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get all treatment plans with pagination and search."
+							}
+						},
+						{
+							"name": "2. Create Plan",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Post-Knee Surgery Recovery Plan\",\n    \"description\": \"Comprehensive rehabilitation plan for patients recovering from knee arthroscopy\",\n    \"diagnosisId\": 1,\n    \"diagnosisName\": \"Knee Osteoarthritis\",\n    \"version\": 1,\n    \"model\": {\n        \"phases\": [\n            {\n                \"name\": \"Phase 1: Initial Recovery\",\n                \"duration\": \"2 weeks\",\n                \"goals\": [\"Pain management\", \"Swelling reduction\"]\n            },\n            {\n                \"name\": \"Phase 2: Mobility Restoration\",\n                \"duration\": \"4 weeks\",\n                \"goals\": [\"Range of motion improvement\", \"Basic strengthening\"]\n            }\n        ]\n    }\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/plans",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"plans"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Create a new treatment plan template."
+							}
+						},
+						{
+							"name": "3. Get Plan by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/plans/{{planId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"plans",
+										"{{planId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get a specific treatment plan by ID."
+							}
+						},
+						{
+							"name": "4. Update Plan",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"Updated Post-Knee Surgery Recovery Plan\",\n    \"description\": \"Enhanced rehabilitation plan with updated protocols\",\n    \"version\": 2,\n    \"model\": {\n        \"phases\": [\n            {\n                \"name\": \"Phase 1: Initial Recovery\",\n                \"duration\": \"3 weeks\",\n                \"goals\": [\"Pain management\", \"Swelling reduction\", \"Basic mobility\"]\n            }\n        ]\n    }\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/plans/{{planId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"plans",
+										"{{planId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Update an existing treatment plan."
+							}
+						},
+						{
+							"name": "5. Delete Plan",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/plans/{{planId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"plans",
+										"{{planId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Delete a treatment plan by ID."
+							}
+						}
+					]
+				},
+				{
+					"name": "2. Patient Plans CRUD",
+					"item": [
+						{
+							"name": "1. Get All Patient Plans",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plans?page=1&limit=20&patientId={{patientId}}&surgeonId={{surgeonId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plans"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "limit",
+											"value": "20"
+										},
+										{
+											"key": "patientId",
+											"value": "{{patientId}}",
+											"disabled": true
+										},
+										{
+											"key": "surgeonId",
+											"value": "{{surgeonId}}",
+											"disabled": true
+										}
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get patient plans with optional filters."
+							}
+						},
+						{
+							"name": "2. Create Patient Plan",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"patientId\": 123,\n    \"locationId\": 1,\n    \"planId\": 1,\n    \"surgeonId\": 456,\n    \"diagnosisId\": 1,\n    \"diagnosisName\": \"Knee Osteoarthritis\",\n    \"description\": \"Patient-specific recovery plan for John Doe's knee surgery\",\n    \"surgeryDate\": \"2024-02-15T10:00:00.000Z\",\n    \"surgeryTime\": \"2024-02-15T10:00:00.000Z\",\n    \"literality\": \"Left\",\n    \"model\": {\n        \"customizedPhases\": [\n            {\n                \"name\": \"Phase 1: Immediate Post-Op\",\n                \"startDate\": \"2024-02-15\",\n                \"endDate\": \"2024-03-01\",\n                \"specialInstructions\": \"Patient has diabetes - monitor healing carefully\"\n            }\n        ]\n    }\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plans",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plans"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Create a patient-specific treatment plan."
+							}
+						},
+						{
+							"name": "3. Get Patient Plan by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plans/{{patientPlanId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plans",
+										"{{patientPlanId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get a specific patient plan by ID."
+							}
+						},
+						{
+							"name": "4. Update Patient Plan",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"description\": \"Updated patient-specific recovery plan\",\n    \"literality\": \"Right\",\n    \"model\": {\n        \"customizedPhases\": [\n            {\n                \"name\": \"Phase 1: Extended Post-Op\",\n                \"startDate\": \"2024-02-15\",\n                \"endDate\": \"2024-03-15\",\n                \"specialInstructions\": \"Patient showing good progress - extend phase duration\"\n            }\n        ]\n    }\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plans/{{patientPlanId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plans",
+										"{{patientPlanId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Update a patient-specific treatment plan."
+							}
+						},
+						{
+							"name": "5. Delete Patient Plan",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plans/{{patientPlanId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plans",
+										"{{patientPlanId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Delete a patient plan by ID."
+							}
+						}
+					]
+				},
+				{
+					"name": "3. Patient Plan Schedules CRUD",
+					"item": [
+						{
+							"name": "1. Get Patient Plan Schedules",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plan-schedules?patientPlanId={{patientPlanId}}&status={{status}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plan-schedules"
+									],
+									"query": [
+										{
+											"key": "patientPlanId",
+											"value": "{{patientPlanId}}",
+											"disabled": true
+										},
+										{
+											"key": "status",
+											"value": "{{status}}",
+											"disabled": true
+										}
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get scheduled sessions for patient plans."
+							}
+						},
+						{
+							"name": "2. Create Patient Plan Schedule",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"patientPlanId\": 1,\n    \"scheduleDate\": \"2024-02-20T09:00:00.000Z\",\n    \"scheduleTime\": \"2024-02-20T09:00:00.000Z\",\n    \"sessionName\": \"Initial Physical Therapy Assessment\",\n    \"sessionType\": \"PT\",\n    \"duration\": 60,\n    \"status\": \"Scheduled\",\n    \"notes\": \"First session - focus on range of motion assessment\",\n    \"remindBefore\": 24\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plan-schedules",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plan-schedules"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Schedule a new session for a patient plan."
+							}
+						},
+						{
+							"name": "3. Get Schedule by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plan-schedules/{{scheduleId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plan-schedules",
+										"{{scheduleId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get a specific schedule by ID."
+							}
+						},
+						{
+							"name": "4. Update Schedule",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"scheduleDate\": \"2024-02-21T10:00:00.000Z\",\n    \"scheduleTime\": \"2024-02-21T10:00:00.000Z\",\n    \"status\": \"Rescheduled\",\n    \"notes\": \"Rescheduled due to patient availability\"\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plan-schedules/{{scheduleId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plan-schedules",
+										"{{scheduleId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Update a scheduled session."
+							}
+						},
+						{
+							"name": "5. Delete Schedule",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/patient-plan-schedules/{{scheduleId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"patient-plan-schedules",
+										"{{scheduleId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Delete a scheduled session."
+							}
+						}
+					]
+				},
+				{
+					"name": "4. Schedule Logs CRUD",
+					"item": [
+						{
+							"name": "1. Get Schedule Logs",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/schedule-logs?scheduleId={{scheduleId}}&logType={{logType}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"schedule-logs"
+									],
+									"query": [
+										{
+											"key": "scheduleId",
+											"value": "{{scheduleId}}",
+											"disabled": true
+										},
+										{
+											"key": "logType",
+											"value": "{{logType}}",
+											"disabled": true
+										}
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get logs for scheduled sessions."
+							}
+						},
+						{
+							"name": "2. Create Schedule Log",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"scheduleId\": 1,\n    \"logType\": \"Session_Completed\",\n    \"logMessage\": \"Patient completed initial PT assessment successfully\",\n    \"logData\": {\n        \"exercisesCompleted\": 5,\n        \"painLevel\": 3,\n        \"rangeOfMotion\": {\n            \"flexion\": 85,\n            \"extension\": 5\n        },\n        \"therapistNotes\": \"Good progress, patient motivated\"\n    },\n    \"severity\": \"Info\"\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/schedule-logs",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"schedule-logs"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Create a new log entry for a scheduled session."
+							}
+						},
+						{
+							"name": "3. Get Log by ID",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/schedule-logs/{{logId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"schedule-logs",
+										"{{logId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Get a specific log entry by ID."
+							}
+						},
+						{
+							"name": "4. Update Schedule Log",
+							"request": {
+								"method": "PUT",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"logMessage\": \"Updated: Patient completed initial PT assessment with excellent progress\",\n    \"logData\": {\n        \"exercisesCompleted\": 7,\n        \"painLevel\": 2,\n        \"rangeOfMotion\": {\n            \"flexion\": 90,\n            \"extension\": 0\n        },\n        \"therapistNotes\": \"Excellent progress, patient very motivated and following instructions well\"\n    }\n}"
+								},
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/schedule-logs/{{logId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"schedule-logs",
+										"{{logId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Update an existing log entry."
+							}
+						},
+						{
+							"name": "5. Delete Schedule Log",
+							"request": {
+								"method": "DELETE",
+								"header": [
+									{
+										"key": "Authorization",
+										"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+									}
+								],
+								"url": {
+									"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/plans/schedule-logs/{{logId}}",
+									"host": [
+										"{{BASE_URL}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"plans",
+										"schedule-logs",
+										"{{logId}}"
+									],
+									"protocol": "{{PROTOCOL}}",
+									"port": "{{PORT}}"
+								},
+								"description": "Delete a log entry by ID."
+							}
+						}
+					]
+				}
+			]
+		}

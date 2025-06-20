@@ -1,17 +1,27 @@
 /**
- * Medication routes
+ * MEDICATION FEATURE ENTRY POINT
+ * 
+ * This file serves as the main entry point for the medication feature.
+ * It exports all public APIs and components from the medication feature.
  */
 
-import { Router } from 'express';
+// Export routes
+export { default as medicationRoutes } from './routes';
 
-const router = Router();
+// Export DTOs
+export * from './dto/medication.dto';
 
-// Add your medication routes here
-// router.get('/', getMedications);
-// router.post('/', createMedication);
-// router.put('/:id', updateMedication);
-// router.delete('/:id', deleteMedication);
+// Export types
+export * from './types/extended-request';
 
-export const medicationRoutes = router;
+// Export validators
+export * from './validators/medication.validators';
 
-export default router;
+// Export controllers (for potential direct use)
+export * as medicationController from './controllers/medication.controller';
+
+// Export services (for potential direct use)
+export * as medicationService from './services/medication.service';
+
+// Export repository functions (for potential direct use)
+export * as medicationRepository from './repositories/medication.repository';

@@ -10,7 +10,8 @@ BEGIN
         WHERE table_schema = 'reliacare'
         AND table_name = 'diagnosis_master'
     )
-    THEN        CREATE TABLE "diagnosis_master" (
+    THEN        
+        CREATE TABLE "diagnosis_master" (
             id SERIAL PRIMARY KEY,
             "name" varchar(100) UNIQUE,
             "bodyArea" varchar(100) NOT NULL,

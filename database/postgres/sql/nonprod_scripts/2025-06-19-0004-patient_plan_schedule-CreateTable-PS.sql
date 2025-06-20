@@ -29,7 +29,7 @@ BEGIN     -- Create ENUM types if they don't exist
         "scheduleDate" timestamp NOT NULL,
         "frequencyUnit" frequency_unit_type DEFAULT NULL,
         "frequencyValue" integer,        
-        "scheduleUnit" varchar,
+        "scheduleUnit" varchar(50),
         "scheduleUnitValue" decimal(10,2),
         "measurementUnit" measurement_unit_type DEFAULT NULL,
         "validFrom" date,
@@ -39,13 +39,13 @@ BEGIN     -- Create ENUM types if they don't exist
         "crDate" timestamp DEFAULT CURRENT_TIMESTAMP, 
         "modUser" varchar(50) NOT NULL,
         "modDate" timestamp DEFAULT CURRENT_TIMESTAMP,
-        CONSTRAINT fk_user_plan_schedule_user 
+        CONSTRAINT fk_patient_plan_schedule_user 
             FOREIGN KEY ("patientId") REFERENCES "user"(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE,
-        CONSTRAINT fk_user_plan_schedule_client 
+        CONSTRAINT fk_patient_plan_schedule_client 
             FOREIGN KEY ("clientId") REFERENCES client(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE,
-        CONSTRAINT fk_user_plan_schedule_user_plan 
+        CONSTRAINT fk_patient_plan_schedule_user_plan 
             FOREIGN KEY ("planID") REFERENCES "patient_plan"(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE
     );
