@@ -24,7 +24,7 @@ BEGIN     -- Create ENUM types if they don't exist
         "patientPlanScheduleId" integer NOT NULL,
         "patientId" integer NOT NULL,
         "clientId" integer DEFAULT 1,
-        "planID" integer NOT NULL,
+        "planId" integer NOT NULL,
         "type" schedule_type DEFAULT 'None',
         "typeId" integer NOT NULL,        
         "scheduleDate" timestamp,

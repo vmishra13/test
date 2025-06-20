@@ -11,9 +11,9 @@ BEGIN
     ) THEN        -- Create the form_master table
         CREATE TABLE form_master (
             id SERIAL PRIMARY KEY,
+            clientId INTEGER DEFAULT 1,
             name VARCHAR(255) NOT NULL,
             description TEXT,
-            clientId INTEGER DEFAULT 1,
             crUser VARCHAR(50) NOT NULL,
             crDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             modUser VARCHAR(50) NOT NULL,

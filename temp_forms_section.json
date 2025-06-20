@@ -1,0 +1,367 @@
+{
+			"name": "📋 Forms",
+			"item": [
+				{
+					"name": "1. Get All Forms",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms?page=1&limit=20&search={{search_term}}&sortBy=name&sortOrder=asc",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Number of items per page"
+								},
+								{
+									"key": "search",
+									"value": "{{search_term}}",
+									"description": "Search term for form name",
+									"disabled": true
+								},
+								{
+									"key": "sortBy",
+									"value": "name",
+									"description": "Sort by field (name, crDate, modDate)"
+								},
+								{
+									"key": "sortOrder",
+									"value": "asc",
+									"description": "Sort order (asc/desc)"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get Form by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/{{formId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"{{formId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3. Create Form",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Patient Intake Form\",\n    \"description\": \"Comprehensive patient intake form for new patients\",\n    \"formType\": \"INTAKE\",\n    \"category\": \"PATIENT_REGISTRATION\",\n    \"isActive\": true,\n    \"formStructure\": {\n        \"version\": \"1.0\",\n        \"sections\": [\n            {\n                \"id\": \"personal_info\",\n                \"title\": \"Personal Information\",\n                \"fields\": [\n                    {\n                        \"id\": \"first_name\",\n                        \"type\": \"text\",\n                        \"label\": \"First Name\",\n                        \"required\": true,\n                        \"validation\": {\n                            \"minLength\": 2,\n                            \"maxLength\": 50\n                        }\n                    },\n                    {\n                        \"id\": \"last_name\",\n                        \"type\": \"text\",\n                        \"label\": \"Last Name\",\n                        \"required\": true,\n                        \"validation\": {\n                            \"minLength\": 2,\n                            \"maxLength\": 50\n                        }\n                    },\n                    {\n                        \"id\": \"dob\",\n                        \"type\": \"date\",\n                        \"label\": \"Date of Birth\",\n                        \"required\": true\n                    }\n                ]\n            },\n            {\n                \"id\": \"medical_history\",\n                \"title\": \"Medical History\",\n                \"fields\": [\n                    {\n                        \"id\": \"allergies\",\n                        \"type\": \"textarea\",\n                        \"label\": \"Known Allergies\",\n                        \"required\": false,\n                        \"validation\": {\n                            \"maxLength\": 1000\n                        }\n                    },\n                    {\n                        \"id\": \"current_medications\",\n                        \"type\": \"textarea\",\n                        \"label\": \"Current Medications\",\n                        \"required\": false,\n                        \"validation\": {\n                            \"maxLength\": 1000\n                        }\n                    }\n                ]\n            }\n        ]\n    },\n    \"complianceSettings\": {\n        \"hipaaCompliant\": true,\n        \"auditTrail\": true,\n        \"dataRetentionDays\": 2555,\n        \"encryptionRequired\": true\n    },\n    \"accessLevel\": \"STANDARD\",\n    \"tags\": [\"intake\", \"patient\", \"registration\"]\n}"
+						},
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "4. Update Form",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Patient Intake Form\",\n    \"description\": \"Updated comprehensive patient intake form for new patients\",\n    \"formType\": \"INTAKE\",\n    \"category\": \"PATIENT_REGISTRATION\",\n    \"isActive\": true,\n    \"formStructure\": {\n        \"version\": \"1.1\",\n        \"sections\": [\n            {\n                \"id\": \"personal_info\",\n                \"title\": \"Personal Information\",\n                \"fields\": [\n                    {\n                        \"id\": \"first_name\",\n                        \"type\": \"text\",\n                        \"label\": \"First Name\",\n                        \"required\": true,\n                        \"validation\": {\n                            \"minLength\": 2,\n                            \"maxLength\": 50\n                        }\n                    },\n                    {\n                        \"id\": \"last_name\",\n                        \"type\": \"text\",\n                        \"label\": \"Last Name\",\n                        \"required\": true,\n                        \"validation\": {\n                            \"minLength\": 2,\n                            \"maxLength\": 50\n                        }\n                    },\n                    {\n                        \"id\": \"dob\",\n                        \"type\": \"date\",\n                        \"label\": \"Date of Birth\",\n                        \"required\": true\n                    },\n                    {\n                        \"id\": \"email\",\n                        \"type\": \"email\",\n                        \"label\": \"Email Address\",\n                        \"required\": true\n                    }\n                ]\n            }\n        ]\n    },\n    \"accessLevel\": \"STANDARD\",\n    \"tags\": [\"intake\", \"patient\", \"registration\", \"updated\"]\n}"
+						},
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/{{formId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"{{formId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "5. Delete Form",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/{{formId}}",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"{{formId}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "6. Search Forms",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/search?q={{search_query}}&page=1&limit=20&sortBy=name&sortOrder=asc",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "{{search_query}}",
+									"description": "Search query term"
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Number of items per page"
+								},
+								{
+									"key": "sortBy",
+									"value": "name",
+									"description": "Sort by field"
+								},
+								{
+									"key": "sortOrder",
+									"value": "asc",
+									"description": "Sort order (asc/desc)"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "7. Export Forms",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/export?format=csv",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"export"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "csv",
+									"description": "Export format (csv, json, excel)"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "8. Get Form Statistics",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/stats",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"stats"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "9. Create Bulk Forms",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"forms\": [\n        {\n            \"name\": \"Patient Consent Form\",\n            \"description\": \"General patient consent for treatment\",\n            \"formType\": \"CONSENT\",\n            \"category\": \"LEGAL\",\n            \"isActive\": true,\n            \"formStructure\": {\n                \"version\": \"1.0\",\n                \"sections\": [\n                    {\n                        \"id\": \"consent\",\n                        \"title\": \"Treatment Consent\",\n                        \"fields\": [\n                            {\n                                \"id\": \"patient_signature\",\n                                \"type\": \"signature\",\n                                \"label\": \"Patient Signature\",\n                                \"required\": true\n                            },\n                            {\n                                \"id\": \"consent_date\",\n                                \"type\": \"date\",\n                                \"label\": \"Date of Consent\",\n                                \"required\": true\n                            }\n                        ]\n                    }\n                ]\n            },\n            \"complianceSettings\": {\n                \"hipaaCompliant\": true,\n                \"auditTrail\": true,\n                \"dataRetentionDays\": 2555,\n                \"encryptionRequired\": true\n            },\n            \"accessLevel\": \"STANDARD\",\n            \"tags\": [\"consent\", \"legal\"]\n        },\n        {\n            \"name\": \"Emergency Contact Form\",\n            \"description\": \"Emergency contact information form\",\n            \"formType\": \"INFORMATION\",\n            \"category\": \"PATIENT_REGISTRATION\",\n            \"isActive\": true,\n            \"formStructure\": {\n                \"version\": \"1.0\",\n                \"sections\": [\n                    {\n                        \"id\": \"emergency_contact\",\n                        \"title\": \"Emergency Contact Information\",\n                        \"fields\": [\n                            {\n                                \"id\": \"contact_name\",\n                                \"type\": \"text\",\n                                \"label\": \"Emergency Contact Name\",\n                                \"required\": true\n                            },\n                            {\n                                \"id\": \"contact_phone\",\n                                \"type\": \"tel\",\n                                \"label\": \"Phone Number\",\n                                \"required\": true\n                            }\n                        ]\n                    }\n                ]\n            },\n            \"accessLevel\": \"STANDARD\",\n            \"tags\": [\"emergency\", \"contact\"]\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/bulk",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"bulk"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "10. Delete Bulk Forms",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"formIds\": [1, 2, 3, 4, 5]\n}"
+						},
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/bulk",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"bulk"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "11. Forms Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/health",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
