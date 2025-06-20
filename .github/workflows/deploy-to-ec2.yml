@@ -62,7 +62,7 @@ jobs:
           script: |
             cd ${{ secrets.EC2_PATH }}
             echo "Creating production environment variables..."
-            cat << EOF > .env.production
+            cat << EOF > .env
             NODE_ENV=production
             PORT=${{ secrets.PORT }}
             DATABASE_URL=${{ secrets.DATABASE_URL }}
