@@ -3,9 +3,9 @@
 # Default values
 DEFAULT_HOST="localhost"
 DEFAULT_PORT="5432"
-DEFAULT_DB="defaultdb"
-DEFAULT_USER="defaultuser"
-DEFAULT_PASSWORD="defaultpass"
+DEFAULT_DB="reliacare"
+DEFAULT_USER="root"
+DEFAULT_PASSWORD="biddiaSQL"
 DEFAULT_SCHEMAS="reliacare"
 
 # Usage instructions
