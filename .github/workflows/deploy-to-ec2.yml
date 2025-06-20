@@ -65,7 +65,7 @@ jobs:
             pnpm install
             pnpm generate
             pnpm build
-            pnpm start
+            pnpm start -y
 
 
       # - name: create empty tar
