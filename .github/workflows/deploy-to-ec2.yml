@@ -62,7 +62,9 @@ jobs:
           script: |
             cd ${{ secrets.EC2_PATH }}
             tar -xzf app.tar.gz
-            pnpm production
+            pnpm build
+            pnpm start
+
 
       # - name: create empty tar
       #   run: touch app.tar.gz
