@@ -49,7 +49,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           source: "app.tar.gz"
           target: "${{ secrets.EC2_PATH }}"
 
@@ -58,7 +58,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ${{ secrets.EC2_PATH }}
             tar -xzf app.tar.gz
@@ -75,7 +75,7 @@ jobs:
       #   with:
       #     host: ${{ secrets.EC2_HOST }}
       #     username: ${{ secrets.EC2_USER }}
-      #     key: ${{ secrets.EC2_KEY }}
+      #     key: ${{ secrets.EC2_SSH_KEY }}
       #     source: "app.tar.gz"
       #     target: "${{ secrets.EC2_PATH }}"
 
@@ -84,7 +84,7 @@ jobs:
       #   with:
       #     host: ${{ secrets.EC2_HOST }}
       #     username: ${{ secrets.EC2_USER }}
-      #     key: ${{ secrets.EC2_KEY }}
+      #     key: ${{ secrets.EC2_SSH_KEY }}
       #     script: |
       #       cd ${{ secrets.EC2_PATH }}
       #       tar -xzf app.tar.gz
