@@ -247,6 +247,101 @@ pnpm studio:postgres
 pnpm studio:mongodb
 ```
 
+## 🗄️ **Database Schema Management Guide**
+
+Understanding when and how to use database scripts is crucial for maintaining consistency across development environments.
+
+### **When to Use `pnpm pull:postgres`**
+
+Use this command when you need to synchronize your local Prisma schema with the actual database structure:
+
+✅ **Required scenarios:**
+
+- **After database migrations** (when someone else has modified the database structure)
+- **When switching between branches** that may have different database schemas
+- **When joining the project** for the first time
+- **After manual database changes** made directly in the database
+- **When you see schema drift warnings** in Prisma operations
+
+```bash
+# Pull latest schema from PostgreSQL database
+pnpm pull:postgres
+
+# Then regenerate the client
+pnpm generate:postgres
+```
+
+### **When to Use `pnpm generate:postgres`**
+
+Use this command to regenerate the Prisma client after schema changes:
+
+✅ **Required scenarios:**
+
+- **After `pnpm pull:postgres`** (always follow pull with generate)
+- **After modifying** `src/db/postgres/schema.prisma` manually
+- **When TypeScript shows** Prisma client type errors
+- **After installing dependencies** (especially in CI/CD environments)
+- **When Prisma client is missing** or corrupted
+
+```bash
+# Generate PostgreSQL Prisma client
+pnpm generate:postgres
+```
+
+### **Common Workflow Patterns**
+
+#### **🔄 Daily Development Workflow**
+
+```bash
+# 1. Pull latest code
+git pull origin main
+
+# 2. Install any new dependencies
+pnpm install
+
+# 3. Sync database schema (if database was modified)
+pnpm pull:postgres && pnpm generate:postgres
+
+# 4. Start development
+pnpm dev
+```
+
+#### **🆕 New Developer Setup**
+
+```bash
+# 1. Clone and install
+git clone <repo-url>
+cd reliacare-backend
+pnpm install
+
+# 2. Setup environment
+cp .env.example .env  # Configure database URLs
+
+# 3. Pull schema and generate clients
+pnpm db:sync
+
+# 4. Start development
+pnpm dev
+```
+
+#### **🔧 After Database Changes**
+
+```bash
+# If someone modified the database structure:
+pnpm pull:postgres    # Get latest schema
+pnpm generate:postgres # Regenerate client
+
+# If you see "Schema drift detected" errors:
+pnpm db:sync          # Full sync (pull + generate)
+```
+
+### **⚠️ Important Notes**
+
+- **Always run `generate` after `pull`** - pulling updates the schema file, but doesn't update the TypeScript client
+- **Check `.env` file** - ensure database URLs are correct before pulling
+- **Commit schema changes** - if `pull` modifies your schema file, commit those changes
+- **CI/CD environments** - always run `pnpm generate` in build pipelines
+
 ## ⚡ **Quick Start**
 
 ```bash
