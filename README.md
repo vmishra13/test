@@ -151,6 +151,9 @@ scoop install pnpm
 
 ## 🚀 **Project Setup**
 
+Install Node.js version 22.16.0
+Install Postgres 17.x
+
 ### **1. Clone Repository**
 
 ```bash
@@ -162,6 +165,10 @@ cd reliacare-backend
 ```
 
 ### **2. Install Dependencies**
+
+1) Create a DB with the name reliacare, with the owner name as 'root' and password 'biddiaSQL'
+2) Withing realicare DB, create a schema by name reliacare.
+3) Open terminal, change directory to '<Project Dir>\database\postgres\sql' and execute 'sh nonprod_postgres_runscript.sh reliacare root biddiaSQL'
 
 ```bash
 # Install all project dependencies
