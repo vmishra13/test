@@ -32,11 +32,11 @@ jobs:
           echo "Buildtools version node: $(node -v)"
           echo "Buildtools version npm : $(npm -v)"
 
-      - name: Install dependencies
-        run: pnpm install
+      # - name: Install dependencies
+      #   run: pnpm install
 
-      - name: Generate Prisma Clients
-        run: pnpm generate
+      # - name: Generate Prisma Clients
+      #   run: pnpm generate
 
       - name: create empty tar
         run: touch app.tar.gz
@@ -62,6 +62,8 @@ jobs:
           script: |
             cd ${{ secrets.EC2_PATH }}
             tar -xzf app.tar.gz
+            pnpm install
+            pnpm generate
             pnpm build
             pnpm start
 
