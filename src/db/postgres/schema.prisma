@@ -266,7 +266,7 @@ model patient_plan_schedule {
   scheduleDate              DateTime                    @postgresDb.Timestamp(6)
   frequencyUnit             frequency_unit_type?
   frequencyValue            Int?
-  scheduleUnit              String?                     @postgresDb.VarChar
+  scheduleUnit              String?                     @postgresDb.VarChar(50)
   scheduleUnitValue         Decimal?                    @postgresDb.Decimal(10, 2)
   measurementUnit           measurement_unit_type?
   validFrom                 DateTime?                   @postgresDb.Date
