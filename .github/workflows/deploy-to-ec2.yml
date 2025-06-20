@@ -26,11 +26,17 @@ jobs:
         with:
           version: 10
 
+      - name: Get buildtools version
+        run: |
+          echo "Buildtools version pnpm: $(pnpm -v)"
+          echo "Buildtools version node: $(node -v)"
+          echo "Buildtools version npm : $(npm -v)"
+
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build TypeScript
-        run: pnpm run build    
+      # - name: Build TypeScript
+      #   run: pnpm run build    
 
       # - name: create empty tar
       #   run: touch app.tar.gz
