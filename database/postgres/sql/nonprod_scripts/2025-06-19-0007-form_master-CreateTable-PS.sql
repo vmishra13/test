@@ -6,7 +6,7 @@ BEGIN
     -- Check if the form_master table exists
     IF NOT EXISTS (
         SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
+        WHERE table_schema = 'reliacare' 
         AND table_name = 'form_master'
     ) THEN        -- Create the form_master table
         CREATE TABLE form_master (
