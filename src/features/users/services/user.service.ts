@@ -1,3 +1,25 @@
+/**
+ * UNIFIED USER SERVICE - HIPAA COMPLIANT & MULTI-TENANT
+ *
+ * This service consolidates all user-related business logic while maintaining:
+ * - Strict multi-tenant security isolation
+ * - HIPAA/PHI compliance
+ * - Role-based access control
+ * - Comprehensive validation and authorization
+ *
+ * FUNCTION ORDER:
+ * 1. 🔐 Authentication & Registration
+ * 2. 📋 User Management (Admin Operations)
+ * 3. 👤 Current User Profile Operations
+ * 4. 🎯 Onboarding Operations
+ * 5. 👨‍⚕️ Healthcare Provider Operations
+ * 6. 🔍 Validation Functions
+ * 7. 🔧 Core Business Logic Functions
+ * 8. 🔐 Security & Password Utilities
+ * 9. 🗃️ Data Repository Utilities
+ * 10. 📧 Communication Utilities
+ */
+
 import bcrypt from 'bcrypt';
 import { UserStatus } from '@shared/constants';
 import { CoreRole } from '@shared/constants';
@@ -44,12 +66,17 @@ import type {
 } from '../dto/doctor.dto';
 
 // ===================================================================
-// 🔥 MAIN PUBLIC FUNCTIONS - WEB/ADMIN REGISTRATION
+// 🔐 AUTHENTICATION & REGISTRATION
 // ===================================================================
 
 /**
- * Enhanced registerUser function that handles authentication, authorization, and validation
- * Used for web/admin user registration with full authorization flow
+ * Register a new user (Admin/Web Registration)
+ *
+ * Creates a new user account with role-based authorization.
+ * Enforces multi-tenant security and comprehensive validation.
+ *
+ * @param req - Extended request with RegisterUserRequest body and auth context
+ * @returns Promise<RegisterUserResponse> - Registration result with user details
  */
 export async function registerUser(
   req: ExtendedRequest<any, RegisterUserRequest>,
@@ -89,13 +116,14 @@ export async function registerUser(
   return await performUserRegistration(requestData, currentUser);
 }
 
-// ===================================================================
-// 🔥 MAIN PUBLIC FUNCTIONS - MOBILE APP REGISTRATION
-// ===================================================================
-
 /**
- * Register a new user via mobile app with client validation
- * Simplified registration flow for mobile applications
+ * Register a new user via mobile app
+ *
+ * Handles mobile app user registration with simplified flow.
+ * Validates client ID and creates user with default settings.
+ *
+ * @param data - Mobile registration request data
+ * @returns Promise<MobileRegistrationResponse> - Registration result with tokens
  */
 export async function registerMobileUser(
   data: MobileRegistrationRequest,
@@ -149,12 +177,17 @@ export async function registerMobileUser(
 }
 
 // ===================================================================
-// 🔥 MAIN PUBLIC FUNCTIONS - USER MANAGEMENT (ADMIN OPERATIONS)
+// 📋 USER MANAGEMENT (ADMIN OPERATIONS)
 // ===================================================================
 
 /**
- * Get users with enhanced authentication and authorization
- * Supports role-based filtering and client isolation
+ * Get all users with filtering and pagination
+ *
+ * Retrieves users based on role permissions and client isolation.
+ * Supports filtering by status, role, and client with HIPAA compliance.
+ *
+ * @param req - Extended request with UserQuery parameters and auth context
+ * @returns Promise<GetUsersResponse> - Paginated list of users with metadata
  */
 export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {
   try {
@@ -197,8 +230,13 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
 }
 
 /**
- * Get user by ID with STRICT multi-tenant validation
- * HIPAA/PHI Protection: Only allows access to users within same client or SuperAdmin cross-client access
+ * Get specific user by ID
+ *
+ * Retrieves detailed user information with role-based access control.
+ * Enforces strict client isolation and multi-tenant security.
+ *
+ * @param req - Extended request with userId parameter and auth context
+ * @returns Promise<any> - Detailed user information with relationships
  */
 export async function getUserById(
   req: ExtendedRequest<any> & { params: { userId: string } },
@@ -282,8 +320,13 @@ export async function getUserById(
 }
 
 /**
- * Update user with enhanced authorization
- * Supports partial updates with proper validation and authorization
+ * Update specific user by ID (Admin operation)
+ *
+ * Updates user information with proper authorization checks.
+ * Supports partial updates and maintains comprehensive audit trail.
+ *
+ * @param req - Extended request with userId parameter, update data, and auth context
+ * @returns Promise<{data: any; message: string}> - Updated user information
  */
 export async function updateUser(
   req: ExtendedRequest<any> & { params: { userId: string } },
@@ -355,95 +398,13 @@ export async function updateUser(
 }
 
 /**
- * Delete user with STRICT multi-tenant validation and authorization
- * HIPAA/PHI Protection: Only SuperAdmin and CLIENT_ADMIN can delete users within their organization
- */
-export async function deleteUser(
-  req: ExtendedRequest<any> & { params: { userId: string } },
-): Promise<any> {
-  try {
-    const currentUser = getCurrentUser(req);
-    const { userId } = req.params;
-
-    if (!userId) {
-      throw createValidationError('User ID is required', [
-        { field: 'userId', message: 'User ID parameter is required' },
-      ]);
-    }
-
-    const targetUserId = parseInt(userId);
-    if (isNaN(targetUserId)) {
-      throw createValidationError('Invalid user ID format', [
-        { field: 'userId', message: 'User ID must be a valid number' },
-      ]);
-    }
-
-    // Get target user first
-    const targetUser = await userRepository.findUserById(targetUserId);
-    if (!targetUser) {
-      throw createAuthorizationError('User not found');
-    }
-
-    // Create authorization request for deleting specific user
-    const oAuthReq: AuthRequest = createAuthRequest(
-      currentUser,
-      targetUserId,
-      targetUser.clientId,
-      null,
-      null,
-      RequestUserAction.userDelete, // Specific permission for deletion
-    );
-
-    const hasPermission = performAuthorization(oAuthReq);
-
-    if (!hasPermission) {
-      logger.error(
-        `User ${currentUser.userId} denied deletion access to user ${targetUserId} - Insufficient permissions`,
-      );
-      throw createAuthorizationError(
-        'Access denied - Insufficient permissions to delete this user',
-      );
-    }
-
-    // Additional business rules for deletion
-    const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
-
-    // Prevent SUPER_ADMIN deletion
-    const targetUserRoles = targetUser.userRoles.map((ur: any) => ur.role.name);
-    if (targetUserRoles.includes(CoreRole.SUPER_ADMIN)) {
-      throw createAuthorizationError('SUPER_ADMIN users cannot be deleted');
-    }
-
-    // CLIENT_ADMIN can only delete users in their own client (except other CLIENT_ADMINs)
-    if (
-      currentUserRole === CoreRole.CLIENT_ADMIN &&
-      targetUserRoles.includes(CoreRole.CLIENT_ADMIN)
-    ) {
-      throw createAuthorizationError('CLIENT_ADMIN cannot delete other CLIENT_ADMIN users');
-    }
-
-    // Perform soft delete
-    await userRepository.softDeleteUser(targetUserId, currentUser.loginName);
-
-    return {
-      success: true,
-      data: {
-        deletedUserId: targetUserId,
-        deletedAt: new Date().toISOString(),
-        deletedBy: currentUser.loginName,
-      },
-      message: 'User deleted successfully',
-      timestamp: new Date().toISOString(),
-    };
-  } catch (error: any) {
-    logger.error('Error in deleteUser service:', error);
-    throw error;
-  }
-}
-
-/**
- * Update user status with STRICT multi-tenant validation and authorization
- * HIPAA/PHI Protection: Only authorized roles can change user status within their organization
+ * Update user status (activate/deactivate)
+ *
+ * Changes user status with proper authorization and audit logging.
+ * Enforces business rules and client isolation policies.
+ *
+ * @param req - Extended request with userId parameter, status data, and auth context
+ * @returns Promise<any> - Status update confirmation with audit details
  */
 export async function updateUserStatus(
   req: ExtendedRequest<any> & { params: { userId: string } },
@@ -528,8 +489,13 @@ export async function updateUserStatus(
 }
 
 /**
- * Update user password with STRICT multi-tenant validation and password policies
- * HIPAA/PHI Protection: Only authorized users can change passwords within their organization
+ * Update user password
+ *
+ * Updates user password with security validations and audit logging.
+ * Enforces password policies, client isolation, and self-update verification.
+ *
+ * @param req - Extended request with userId parameter, password data, and auth context
+ * @returns Promise<any> - Password update confirmation with security audit
  */
 export async function updateUserPassword(
   req: ExtendedRequest<any> & { params: { userId: string } },
@@ -632,13 +598,110 @@ export async function updateUserPassword(
   }
 }
 
+/**
+ * Delete user by ID (Admin operation)
+ *
+ * Permanently removes user account with strict authorization.
+ * Includes comprehensive audit logging and business rule validation.
+ *
+ * @param req - Extended request with userId parameter and auth context
+ * @returns Promise<any> - Deletion confirmation with audit details
+ */
+export async function deleteUser(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+): Promise<any> {
+  try {
+    const currentUser = getCurrentUser(req);
+    const { userId } = req.params;
+
+    if (!userId) {
+      throw createValidationError('User ID is required', [
+        { field: 'userId', message: 'User ID parameter is required' },
+      ]);
+    }
+
+    const targetUserId = parseInt(userId);
+    if (isNaN(targetUserId)) {
+      throw createValidationError('Invalid user ID format', [
+        { field: 'userId', message: 'User ID must be a valid number' },
+      ]);
+    }
+
+    // Get target user first
+    const targetUser = await userRepository.findUserById(targetUserId);
+    if (!targetUser) {
+      throw createAuthorizationError('User not found');
+    }
+
+    // Create authorization request for deleting specific user
+    const oAuthReq: AuthRequest = createAuthRequest(
+      currentUser,
+      targetUserId,
+      targetUser.clientId,
+      null,
+      null,
+      RequestUserAction.userDelete, // Specific permission for deletion
+    );
+
+    const hasPermission = performAuthorization(oAuthReq);
+
+    if (!hasPermission) {
+      logger.error(
+        `User ${currentUser.userId} denied deletion access to user ${targetUserId} - Insufficient permissions`,
+      );
+      throw createAuthorizationError(
+        'Access denied - Insufficient permissions to delete this user',
+      );
+    }
+
+    // Additional business rules for deletion
+    const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
+
+    // Prevent SUPER_ADMIN deletion
+    const targetUserRoles = targetUser.userRoles.map((ur: any) => ur.role.name);
+    if (targetUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+      throw createAuthorizationError('SUPER_ADMIN users cannot be deleted');
+    }
+
+    // CLIENT_ADMIN can only delete users in their own client (except other CLIENT_ADMINs)
+    if (
+      currentUserRole === CoreRole.CLIENT_ADMIN &&
+      targetUserRoles.includes(CoreRole.CLIENT_ADMIN)
+    ) {
+      throw createAuthorizationError('CLIENT_ADMIN cannot delete other CLIENT_ADMIN users');
+    }
+
+    // Perform soft delete
+    await userRepository.softDeleteUser(targetUserId, currentUser.loginName);
+
+    return {
+      success: true,
+      data: {
+        deletedUserId: targetUserId,
+        deletedAt: new Date().toISOString(),
+        deletedBy: currentUser.loginName,
+      },
+      message: 'User deleted successfully',
+      timestamp: new Date().toISOString(),
+    };
+  } catch (error: any) {
+    logger.error('Error in deleteUser service:', error);
+    throw error;
+  }
+}
+
 // ===================================================================
-// 📱 MAIN PUBLIC FUNCTIONS - MOBILE APP USER PROFILE
+// 👤 CURRENT USER PROFILE OPERATIONS
 // ===================================================================
 
 /**
- * Get user profile for mobile app
- * Returns comprehensive profile information including extraInfo
+ * Get current user's profile
+ *
+ * Retrieves authenticated user's complete profile information.
+ * Includes personal details, medical info, and mobile app specific data.
+ *
+ * @param userId - The authenticated user's ID
+ * @returns Promise<any> - Comprehensive user profile with extraInfo
  */
 export async function getUserProfile(userId: number) {
   try {
@@ -679,8 +742,14 @@ export async function getUserProfile(userId: number) {
 }
 
 /**
- * Update user profile for mobile app
- * Handles profile data updates with extraInfo merging
+ * Update current user's profile
+ *
+ * Allows authenticated users to update their own profile information.
+ * Validates data, merges extraInfo, and maintains audit trail.
+ *
+ * @param userId - The authenticated user's ID
+ * @param profileData - Profile update data with optional fields
+ * @returns Promise<any> - Updated user profile information
  */
 export async function updateUserProfile(userId: number, profileData: any) {
   try {
@@ -734,8 +803,14 @@ export async function updateUserProfile(userId: number, profileData: any) {
 }
 
 /**
- * Update personal information for mobile app
- * Focuses on personal and medical information updates
+ * Update current user's personal information
+ *
+ * Updates specific personal information fields for the authenticated user.
+ * Focuses on personal and medical information with HIPAA compliance.
+ *
+ * @param userId - The authenticated user's ID
+ * @param personalInfo - Personal information update data
+ * @returns Promise<any> - Updated user profile with personal information
  */
 export async function updatePersonalInfo(userId: number, personalInfo: any) {
   try {
@@ -783,80 +858,14 @@ export async function updatePersonalInfo(userId: number, personalInfo: any) {
 }
 
 /**
- * Complete user onboarding for mobile app
- * Marks onboarding as complete and processes final setup
- */
-export async function completeOnboarding(userId: number, onboardingData: any) {
-  try {
-    // Update user profile with onboarding data
-    await updateUserProfile(userId, onboardingData);
-
-    // Get current user
-    const currentUser = await userRepository.findUserById(userId);
-    if (!currentUser) {
-      throw new Error('User not found');
-    }
-
-    // Mark onboarding as completed
-    const currentExtraInfo = currentUser.extraInfo || {};
-    const newExtraInfo = {
-      ...currentExtraInfo,
-      onboardingCompleted: true,
-      onboardingCompletedAt: new Date().toISOString(),
-    };
-
-    await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
-
-    return {
-      success: true,
-      message: 'Onboarding completed successfully',
-      profile: await getUserProfile(userId),
-    };
-  } catch (error) {
-    logger.error('Complete onboarding error:', error);
-    throw new Error('Failed to complete onboarding');
-  }
-}
-
-/**
- * Get onboarding status for mobile app
- * Returns progress tracking and completion status
- */
-export async function getOnboardingStatus(userId: number) {
-  try {
-    const profile = await getUserProfile(userId);
-
-    const completedSteps = {
-      basicInfo: !!(profile.firstName && profile.lastName && profile.email),
-      personalInfo: !!(profile.dob && profile.gender),
-      contactInfo: !!profile.phoneNumber,
-      preferences: !!profile.preferences,
-      profilePicture: !!profile.profilePicture,
-    };
-
-    const totalSteps = Object.keys(completedSteps).length;
-    const completedCount = Object.values(completedSteps).filter(Boolean).length;
-    const progressPercentage = Math.round((completedCount / totalSteps) * 100);
-
-    return {
-      isCompleted: profile.onboardingCompleted || false,
-      steps: completedSteps,
-      progress: {
-        completed: completedCount,
-        total: totalSteps,
-        percentage: progressPercentage,
-      },
-      nextStep: getNextOnboardingStep(completedSteps),
-    };
-  } catch (error) {
-    logger.error('Get onboarding status error:', error);
-    throw new Error('Failed to retrieve onboarding status');
-  }
-}
-
-/**
- * Upload profile picture for mobile app
- * Handles secure file upload and storage
+ * Upload current user's profile picture
+ *
+ * Handles secure file upload for user profile pictures.
+ * Validates file types, generates secure URLs, and updates extraInfo.
+ *
+ * @param userId - The authenticated user's ID
+ * @param file - Uploaded file object with metadata
+ * @returns Promise<any> - Upload confirmation with profile picture URL
  */
 export async function uploadProfilePicture(userId: number, file: UploadedFile) {
   try {
@@ -899,11 +908,106 @@ export async function uploadProfilePicture(userId: number, file: UploadedFile) {
 }
 
 // ===================================================================
-// 👩‍⚕️ MAIN PUBLIC FUNCTIONS - DOCTOR SELECTION & MANAGEMENT
+// 🎯 ONBOARDING OPERATIONS
 // ===================================================================
 
 /**
- * Get available doctors with optional filtering for a specific client
+ * Complete current user's onboarding
+ *
+ * Marks onboarding as complete and processes final setup steps.
+ * Validates all required information and updates completion timestamp.
+ *
+ * @param userId - The authenticated user's ID
+ * @param onboardingData - Final onboarding completion data
+ * @returns Promise<any> - Completion confirmation with updated profile
+ */
+export async function completeOnboarding(userId: number, onboardingData: any) {
+  try {
+    // Update user profile with onboarding data
+    await updateUserProfile(userId, onboardingData);
+
+    // Get current user
+    const currentUser = await userRepository.findUserById(userId);
+    if (!currentUser) {
+      throw new Error('User not found');
+    }
+
+    // Mark onboarding as completed
+    const currentExtraInfo = currentUser.extraInfo || {};
+    const newExtraInfo = {
+      ...currentExtraInfo,
+      onboardingCompleted: true,
+      onboardingCompletedAt: new Date().toISOString(),
+    };
+
+    await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
+
+    return {
+      success: true,
+      message: 'Onboarding completed successfully',
+      profile: await getUserProfile(userId),
+    };
+  } catch (error) {
+    logger.error('Complete onboarding error:', error);
+    throw new Error('Failed to complete onboarding');
+  }
+}
+
+/**
+ * Get current user's onboarding status
+ *
+ * Retrieves the onboarding progress and completion status.
+ * Calculates completion percentage and determines next required steps.
+ *
+ * @param userId - The authenticated user's ID
+ * @returns Promise<any> - Onboarding status with progress tracking
+ */
+export async function getOnboardingStatus(userId: number) {
+  try {
+    const profile = await getUserProfile(userId);
+
+    const completedSteps = {
+      basicInfo: !!(profile.firstName && profile.lastName && profile.email),
+      personalInfo: !!(profile.dob && profile.gender),
+      contactInfo: !!profile.phoneNumber,
+      preferences: !!profile.preferences,
+      profilePicture: !!profile.profilePicture,
+    };
+
+    const totalSteps = Object.keys(completedSteps).length;
+    const completedCount = Object.values(completedSteps).filter(Boolean).length;
+    const progressPercentage = Math.round((completedCount / totalSteps) * 100);
+
+    return {
+      isCompleted: profile.onboardingCompleted || false,
+      steps: completedSteps,
+      progress: {
+        completed: completedCount,
+        total: totalSteps,
+        percentage: progressPercentage,
+      },
+      nextStep: getNextOnboardingStep(completedSteps),
+    };
+  } catch (error) {
+    logger.error('Get onboarding status error:', error);
+    throw new Error('Failed to retrieve onboarding status');
+  }
+}
+
+// ===================================================================
+// 👨‍⚕️ HEALTHCARE PROVIDER OPERATIONS
+// ===================================================================
+
+/**
+ * Get available doctors for selection
+ *
+ * Retrieves list of available healthcare providers within client scope.
+ * Supports filtering by specialization and location with client isolation.
+ *
+ * @param clientId - Client ID for filtering doctors
+ * @param specialization - Optional specialization filter
+ * @param location - Optional location filter
+ * @returns Promise<DoctorsListResponse> - Filtered list of available doctors
  */
 export async function getDoctors(
   clientId: number,
@@ -1019,7 +1123,15 @@ export async function getDoctors(
 }
 
 /**
- * Select a doctor for a user with client validation
+ * Select a doctor for care
+ *
+ * Associates a patient with a selected healthcare provider.
+ * Validates provider availability, client relationships, and scheduling.
+ *
+ * @param userId - The patient's user ID
+ * @param clientId - Client ID for validation
+ * @param doctorSelection - Doctor selection request with appointment preferences
+ * @returns Promise<DoctorSelectionResponse> - Selection confirmation with next steps
  */
 export async function selectDoctor(
   userId: string,
@@ -1091,6 +1203,12 @@ export async function selectDoctor(
 
 /**
  * Validate registration request body using Zod schema
+ *
+ * Validates all registration fields including roles, client ID, and user type.
+ * Ensures data integrity and security compliance before processing.
+ *
+ * @param body - Raw request body from registration endpoint
+ * @returns RegisterUserRequest - Validated and typed registration data
  */
 function validateRegisterRequestBody(body: any): RegisterUserRequest {
   const validationResult = registerUserSchema.safeParse(body);
@@ -1107,7 +1225,13 @@ function validateRegisterRequestBody(body: any): RegisterUserRequest {
 }
 
 /**
- * Validate query parameters using Zod - replaces manual validation
+ * Validate query parameters using Zod schema
+ *
+ * Validates and transforms query parameters for user listing operations.
+ * Ensures proper type conversion and security compliance.
+ *
+ * @param query - Raw query parameters from request
+ * @returns GetUsersQueryRequest - Validated and typed query parameters
  */
 function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
   try {
@@ -1134,7 +1258,13 @@ function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
 }
 
 /**
- * Validate update request body using Zod schema - similar to registerUser pattern
+ * Validate update request body using Zod schema
+ *
+ * Validates user update requests with support for partial updates.
+ * Handles extraInfo validation separately for complex JSON fields.
+ *
+ * @param body - Raw request body from update endpoint
+ * @returns any - Validated update data with extraInfo handling
  */
 function validateUpdateRequestBody(body: UserUpdateInput): any {
   try {
@@ -1188,6 +1318,13 @@ function validateUpdateRequestBody(body: UserUpdateInput): any {
 
 /**
  * Validate all business rules for registration
+ *
+ * Validates email domains, client status, user types, and business rules.
+ * Ensures compliance with organizational policies and data integrity.
+ *
+ * @param requestData - Validated registration request data
+ * @param currentUser - Current authenticated user context
+ * @returns Promise<void> - Throws error if validation fails
  */
 async function validateRegistrationRules(
   requestData: RegisterUserRequest,
@@ -1225,6 +1362,12 @@ async function validateRegistrationRules(
 
 /**
  * Validate user uniqueness across the system
+ *
+ * Checks for existing users with same login name or email address.
+ * Prevents duplicate account creation and maintains data integrity.
+ *
+ * @param requestData - Validated registration request data
+ * @returns Promise<void> - Throws error if user already exists
  */
 async function validateUserUniqueness(requestData: RegisterUserRequest): Promise<void> {
   // Check if login name already exists
@@ -1248,7 +1391,13 @@ async function validateUserUniqueness(requestData: RegisterUserRequest): Promise
 
 /**
  * Perform user registration - main orchestration function
- * Handles the complete registration workflow with database transaction
+ *
+ * Handles the complete registration workflow with database transaction.
+ * Orchestrates validation, password generation, role assignment, and notifications.
+ *
+ * @param requestData - Validated registration request data
+ * @param currentUser - Current authenticated user performing registration
+ * @returns Promise<RegisterUserResponse> - Complete registration result
  */
 async function performUserRegistration(
   requestData: RegisterUserRequest,
@@ -1338,7 +1487,15 @@ async function performUserRegistration(
 }
 
 /**
- * Perform user update with business logic - similar to performUserRegistration pattern
+ * Perform user update with business logic
+ *
+ * Handles user update operations with extraInfo merging and validation.
+ * Maintains audit trail and ensures data consistency across updates.
+ *
+ * @param targetUserId - ID of user being updated
+ * @param validatedData - Validated update data
+ * @param currentUser - Current authenticated user performing update
+ * @returns Promise<{data: any; message: string}> - Update result with audit info
  */
 async function performUserUpdate(
   targetUserId: number,
@@ -1429,6 +1586,14 @@ async function performUserUpdate(
 
 /**
  * Get users list with role-based filtering and client isolation
+ *
+ * Implements complex role-based access control for user listing.
+ * Enforces client isolation and applies appropriate filters based on user permissions.
+ *
+ * @param queryParams - Validated query parameters for filtering
+ * @param currentUserRoles - Current user's roles for permission checking
+ * @param currentUserClientId - Current user's client ID for isolation
+ * @returns Promise<GetUsersResponse> - Filtered and paginated user list
  */
 async function getUsersList(
   queryParams: GetUsersQueryRequest,
@@ -1575,7 +1740,13 @@ async function getUsersList(
 // ===================================================================
 
 /**
- * Hash password using bcrypt with strong salt rounds for healthcare data
+ * Hash password using bcrypt with strong salt rounds
+ *
+ * Creates secure password hashes using industry-standard bcrypt algorithm.
+ * Uses high salt rounds appropriate for healthcare data security requirements.
+ *
+ * @param password - Plain text password to hash
+ * @returns Promise<string> - Securely hashed password
  */
 async function hashPassword(password: string): Promise<string> {
   const saltRounds = 12; // Strong salt rounds for healthcare data
@@ -1583,7 +1754,12 @@ async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Generate secure temporary password with mixed character types
+ * Generate secure temporary password
+ *
+ * Creates cryptographically secure temporary passwords with mixed character types.
+ * Ensures compliance with password complexity requirements.
+ *
+ * @returns string - Secure temporary password with mixed character types
  */
 function generateTemporaryPassword(): string {
   const uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -1614,6 +1790,13 @@ function generateTemporaryPassword(): string {
 
 /**
  * Get current user primary role from hierarchy
+ *
+ * Determines the highest priority role when a user has multiple roles assigned.
+ * Implements role hierarchy system for consistent authorization decisions across the application.
+ *
+ * @param roles - Array of role names assigned to the user
+ * @returns string - The highest priority role name from the predefined hierarchy
+ * @throws createAuthError - When user has no roles or no valid roles assigned
  */
 function getCurrentUserPrimaryRole(roles: string[]): string {
   if (roles.length === 0) {
@@ -1643,6 +1826,12 @@ function getCurrentUserPrimaryRole(roles: string[]): string {
 
 /**
  * Helper function to determine next onboarding step
+ *
+ * Analyzes completed onboarding steps to determine the next required action.
+ * Implements sequential onboarding flow for mobile app user experience.
+ *
+ * @param completedSteps - Object containing boolean flags for each onboarding step
+ * @returns string | null - Next required step name or null if all steps completed
  */
 function getNextOnboardingStep(completedSteps: any): string | null {
   if (!completedSteps.basicInfo) return 'basicInfo';
@@ -1659,6 +1848,13 @@ function getNextOnboardingStep(completedSteps: any): string | null {
 
 /**
  * Get role IDs from role names with validation
+ *
+ * Converts role names to corresponding database IDs with comprehensive validation.
+ * Ensures all requested roles exist in the system before proceeding with operations.
+ *
+ * @param roleNames - Array of CoreRole enum values to convert to IDs
+ * @returns Promise<number[]> - Array of role IDs corresponding to the input role names
+ * @throws Error - When one or more role names are invalid or not found in database
  */
 async function getRoleIdsFromNames(roleNames: CoreRole[]): Promise<number[]> {
   const roles = await userRepository.findRolesByNames(roleNames);
@@ -1678,6 +1874,14 @@ async function getRoleIdsFromNames(roleNames: CoreRole[]): Promise<number[]> {
 
 /**
  * Send welcome email to new user with proper logging
+ *
+ * Sends welcome email notification to newly registered users with account details.
+ * Includes temporary password if generated and maintains audit trail through logging.
+ *
+ * @param email - Recipient email address for welcome notification
+ * @param user - Created user object with profile and client information
+ * @param temporaryPassword - Optional temporary password to include in email
+ * @returns Promise<void> - Does not throw on email failure to avoid registration rollback
  */
 async function sendWelcomeEmail(
   email: string,
