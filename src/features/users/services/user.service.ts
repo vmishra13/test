@@ -705,11 +705,19 @@ export async function deleteUser(
  */
 export async function getUserProfile(userId: number) {
   try {
+    logger.debug('Getting user profile', { userId });
+
     const user = await userRepository.findUserById(userId);
 
     if (!user) {
+      logger.warn('User not found during profile retrieval', { userId });
       throw new Error('User not found');
     }
+
+    logger.info('User profile retrieved successfully', {
+      userId,
+      hasExtraInfo: Boolean(user.extraInfo),
+    });
 
     return {
       id: user.id,
@@ -753,9 +761,16 @@ export async function getUserProfile(userId: number) {
  */
 export async function updateUserProfile(userId: number, profileData: any) {
   try {
+    logger.info('Updating user profile', {
+      userId,
+      fieldsToUpdate: Object.keys(profileData),
+      hasExtraInfo: Boolean(profileData.extraInfo),
+    });
+
     // Get current user
     const currentUser = await userRepository.findUserById(userId);
     if (!currentUser) {
+      logger.warn('User not found during profile update', { userId });
       throw new Error('User not found');
     }
 
@@ -793,9 +808,13 @@ export async function updateUserProfile(userId: number, profileData: any) {
     // Update user with properly formatted UserUpdateInput
     await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
 
+    logger.info('User profile updated successfully', { userId });
     return await getUserProfile(userId);
   } catch (error) {
-    logger.error('Update user profile error:', error);
+    logger.error('Update user profile error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+    });
     throw new Error(
       `Failed to update user profile: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
@@ -814,9 +833,15 @@ export async function updateUserProfile(userId: number, profileData: any) {
  */
 export async function updatePersonalInfo(userId: number, personalInfo: any) {
   try {
+    logger.info('Updating personal info', {
+      userId,
+      fieldsToUpdate: Object.keys(personalInfo),
+    });
+
     // Get current user
     const currentUser = await userRepository.findUserById(userId);
     if (!currentUser) {
+      logger.warn('User not found during personal info update', { userId });
       throw new Error('User not found');
     }
 
@@ -850,9 +875,13 @@ export async function updatePersonalInfo(userId: number, personalInfo: any) {
     // Update user with properly formatted UserUpdateInput
     await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
 
+    logger.info('Personal info updated successfully', { userId });
     return await getUserProfile(userId);
   } catch (error) {
-    logger.error('Update personal info error:', error);
+    logger.error('Update personal info error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+    });
     throw new Error('Failed to update personal information');
   }
 }
@@ -869,9 +898,17 @@ export async function updatePersonalInfo(userId: number, personalInfo: any) {
  */
 export async function uploadProfilePicture(userId: number, file: UploadedFile) {
   try {
+    logger.info('Uploading profile picture', {
+      userId,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    });
+
     // Get current user
     const currentUser = await userRepository.findUserById(userId);
     if (!currentUser) {
+      logger.warn('User not found during profile picture upload', { userId });
       throw new Error('User not found');
     }
 
@@ -896,13 +933,22 @@ export async function uploadProfilePicture(userId: number, file: UploadedFile) {
 
     await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
 
+    logger.info('Profile picture uploaded successfully', {
+      userId,
+      profilePictureUrl,
+    });
+
     return {
       success: true,
       profilePicture: profilePictureUrl,
       message: 'Profile picture uploaded successfully',
     };
   } catch (error) {
-    logger.error('Upload profile picture error:', error);
+    logger.error('Upload profile picture error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+      fileName: file?.name,
+    });
     throw new Error('Failed to upload profile picture');
   }
 }
@@ -923,12 +969,18 @@ export async function uploadProfilePicture(userId: number, file: UploadedFile) {
  */
 export async function completeOnboarding(userId: number, onboardingData: any) {
   try {
+    logger.info('Completing onboarding for user', {
+      userId,
+      dataFields: Object.keys(onboardingData),
+    });
+
     // Update user profile with onboarding data
     await updateUserProfile(userId, onboardingData);
 
     // Get current user
     const currentUser = await userRepository.findUserById(userId);
     if (!currentUser) {
+      logger.warn('User not found during onboarding completion', { userId });
       throw new Error('User not found');
     }
 
@@ -942,13 +994,18 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
 
     await userRepository.updateUserExtraInfo(userId, newExtraInfo, 'mobile-app');
 
+    logger.info('Onboarding completed successfully', { userId });
+
     return {
       success: true,
       message: 'Onboarding completed successfully',
       profile: await getUserProfile(userId),
     };
   } catch (error) {
-    logger.error('Complete onboarding error:', error);
+    logger.error('Complete onboarding error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+    });
     throw new Error('Failed to complete onboarding');
   }
 }
@@ -964,6 +1021,8 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
  */
 export async function getOnboardingStatus(userId: number) {
   try {
+    logger.debug('Getting onboarding status for user', { userId });
+
     const profile = await getUserProfile(userId);
 
     const completedSteps = {
@@ -978,6 +1037,14 @@ export async function getOnboardingStatus(userId: number) {
     const completedCount = Object.values(completedSteps).filter(Boolean).length;
     const progressPercentage = Math.round((completedCount / totalSteps) * 100);
 
+    logger.info('Onboarding status calculated', {
+      userId,
+      completedCount,
+      totalSteps,
+      progressPercentage,
+      isCompleted: profile.onboardingCompleted || false,
+    });
+
     return {
       isCompleted: profile.onboardingCompleted || false,
       steps: completedSteps,
@@ -989,7 +1056,10 @@ export async function getOnboardingStatus(userId: number) {
       nextStep: getNextOnboardingStep(completedSteps),
     };
   } catch (error) {
-    logger.error('Get onboarding status error:', error);
+    logger.error('Get onboarding status error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId,
+    });
     throw new Error('Failed to retrieve onboarding status');
   }
 }
@@ -1015,7 +1085,8 @@ export async function getDoctors(
   location?: string,
 ): Promise<DoctorsListResponse> {
   try {
-    console.log('Getting doctors for client:', clientId, 'with filters:', {
+    logger.info('Getting doctors for client:', {
+      clientId,
       specialization,
       location,
     });
@@ -1117,7 +1188,7 @@ export async function getDoctors(
       },
     };
   } catch (error) {
-    console.error('Error fetching doctors:', error);
+    logger.error('Error fetching doctors:', error);
     throw new Error('Failed to fetch doctors');
   }
 }
@@ -1139,14 +1210,12 @@ export async function selectDoctor(
   doctorSelection: DoctorSelectionRequest,
 ): Promise<DoctorSelectionResponse> {
   try {
-    console.log(
-      'Selecting doctor for user:',
+    logger.info('Selecting doctor for user:', {
       userId,
-      'client:',
       clientId,
-      'doctor:',
-      doctorSelection,
-    );
+      doctorId: doctorSelection.doctorId,
+      hasPreferredAppointmentTime: Boolean(doctorSelection.preferredAppointmentTime),
+    });
 
     // TODO: Implement actual database operations with client validation
     // - Verify doctor belongs to the same client
@@ -1192,7 +1261,7 @@ export async function selectDoctor(
       },
     };
   } catch (error) {
-    console.error('Error selecting doctor:', error);
+    logger.error('Error selecting doctor:', error);
     throw error;
   }
 }
@@ -1211,8 +1280,19 @@ export async function selectDoctor(
  * @returns RegisterUserRequest - Validated and typed registration data
  */
 function validateRegisterRequestBody(body: any): RegisterUserRequest {
+  logger.debug('Validating registration request body', {
+    hasLoginName: Boolean(body.loginName),
+    hasEmail: Boolean(body.email),
+    hasClientId: Boolean(body.clientId),
+    hasUserTypeId: Boolean(body.userTypeId),
+    rolesCount: Array.isArray(body.roles) ? body.roles.length : 0,
+  });
+
   const validationResult = registerUserSchema.safeParse(body);
   if (!validationResult.success) {
+    logger.warn('Registration request validation failed', {
+      errors: validationResult.error.errors,
+    });
     throw createValidationError(
       'Validation failed',
       validationResult.error.errors.map(err => ({
@@ -1221,6 +1301,8 @@ function validateRegisterRequestBody(body: any): RegisterUserRequest {
       })),
     );
   }
+
+  logger.debug('Registration request validation completed successfully');
   return validationResult.data;
 }
 
@@ -1234,12 +1316,25 @@ function validateRegisterRequestBody(body: any): RegisterUserRequest {
  * @returns GetUsersQueryRequest - Validated and typed query parameters
  */
 function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
+  logger.debug('Validating query parameters', {
+    page: query.page,
+    limit: query.limit,
+    search: query.search,
+    status: query.status,
+    role: query.role,
+    clientId: query.clientId,
+  });
+
   try {
     // Use Zod schema for validation
     const validatedQuery = getUsersQuerySchema.parse(query);
+    logger.debug('Query parameters validation completed successfully');
     return validatedQuery;
   } catch (error: any) {
     if (error.errors) {
+      logger.warn('Query parameters validation failed', {
+        errors: error.errors,
+      });
       // Zod validation errors
       throw createValidationError(
         'Invalid query parameters',
@@ -1250,6 +1345,9 @@ function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
       );
     }
 
+    logger.warn('Query parameters validation failed with non-Zod error', {
+      error: error.message,
+    });
     // Other validation errors
     throw createValidationError('Query validation failed', [
       { field: 'query', message: error.message },
@@ -1267,6 +1365,11 @@ function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
  * @returns any - Validated update data with extraInfo handling
  */
 function validateUpdateRequestBody(body: UserUpdateInput): any {
+  logger.debug('Validating update request body', {
+    fieldsPresent: Object.keys(body),
+    hasExtraInfo: Boolean(body.extraInfo),
+  });
+
   try {
     // Import the UserUpdateInputSchema for validation
     const { extraInfo, ...otherFields } = body;
@@ -1278,6 +1381,9 @@ function validateUpdateRequestBody(body: UserUpdateInput): any {
     }).safeParse(otherFields);
 
     if (!mainFieldsValidation.success) {
+      logger.warn('Update request main fields validation failed', {
+        errors: mainFieldsValidation.error.errors,
+      });
       throw createValidationError(
         'Validation failed',
         mainFieldsValidation.error.errors.map((err: any) => ({
@@ -1290,9 +1396,13 @@ function validateUpdateRequestBody(body: UserUpdateInput): any {
     // Validate extraInfo separately if provided
     let validatedExtraInfo: UserExtraInfo;
     if (extraInfo !== undefined) {
+      logger.debug('Validating extraInfo field');
       const validation = validateUserExtraInfo(extraInfo);
 
       if (!validation.success) {
+        logger.warn('Update request extraInfo validation failed', {
+          errors: validation.errors,
+        });
         throw createValidationError(
           'Invalid extraInfo format',
           validation.errors.map((error: string) => ({ field: 'extraInfo', message: error })),
@@ -1302,6 +1412,7 @@ function validateUpdateRequestBody(body: UserUpdateInput): any {
       validatedExtraInfo = validation.data;
     }
 
+    logger.debug('Update request validation completed successfully');
     return {
       ...mainFieldsValidation.data,
       ...(extraInfo !== undefined && { extraInfo: validatedExtraInfo }),
@@ -1310,6 +1421,9 @@ function validateUpdateRequestBody(body: UserUpdateInput): any {
     if (error.name === 'ValidationError') {
       throw error; // Re-throw our validation errors
     }
+    logger.error('Update request validation failed with unexpected error', {
+      error: error.message,
+    });
     throw createValidationError('Update validation failed', [
       { field: 'body', message: error.message },
     ]);
@@ -1330,11 +1444,24 @@ async function validateRegistrationRules(
   requestData: RegisterUserRequest,
   currentUser: AuthenticatedUser,
 ): Promise<void> {
+  logger.debug('Validating registration rules', {
+    loginName: requestData.loginName,
+    clientId: requestData.clientId,
+    userTypeId: requestData.userTypeId,
+    hasEmail: Boolean(requestData.email),
+    sendWelcomeEmail: requestData.sendWelcomeEmail,
+    currentUser: currentUser.loginName,
+  });
+
   // 1. Validate email domain if email is provided
   if (requestData.email) {
     const emailDomainResult = validateEmailDomain(requestData.email);
 
     if (!emailDomainResult.isValid) {
+      logger.warn('Email domain validation failed', {
+        email: requestData.email,
+        error: emailDomainResult.error,
+      });
       throw new Error(emailDomainResult.error);
     }
   }
@@ -1342,22 +1469,40 @@ async function validateRegistrationRules(
   // 2. Validate client exists and is active
   const client = await userRepository.findClientById(requestData.clientId);
   if (!client) {
+    logger.warn('Client validation failed - client not found', {
+      clientId: requestData.clientId,
+    });
     throw new Error('Invalid client ID');
   }
   if (client.status !== 1) {
+    logger.warn('Client validation failed - client inactive', {
+      clientId: requestData.clientId,
+      clientStatus: client.status,
+    });
     throw new Error('Cannot create users for inactive client');
   }
 
   // 3. Validate user type exists
   const userType = await userRepository.findUserTypeById(requestData.userTypeId);
   if (!userType) {
+    logger.warn('User type validation failed', {
+      userTypeId: requestData.userTypeId,
+    });
     throw new Error('Invalid user type ID');
   }
 
   // 4. Validate business rule: Email required for welcome email
   if (requestData.sendWelcomeEmail && !requestData.email) {
+    logger.warn('Welcome email requested but no email provided', {
+      loginName: requestData.loginName,
+    });
     throw new Error('Email is required when sendWelcomeEmail is enabled');
   }
+
+  logger.debug('Registration rules validation completed successfully', {
+    loginName: requestData.loginName,
+    clientId: requestData.clientId,
+  });
 }
 
 /**
@@ -1370,9 +1515,17 @@ async function validateRegistrationRules(
  * @returns Promise<void> - Throws error if user already exists
  */
 async function validateUserUniqueness(requestData: RegisterUserRequest): Promise<void> {
+  logger.debug('Validating user uniqueness', {
+    loginName: requestData.loginName,
+    hasEmail: Boolean(requestData.email),
+  });
+
   // Check if login name already exists
   const existingUser = await userRepository.findUserByLoginName(requestData.loginName);
   if (existingUser) {
+    logger.warn('User uniqueness validation failed - login name exists', {
+      loginName: requestData.loginName,
+    });
     throw new Error('User with this login name already exists');
   }
 
@@ -1380,9 +1533,16 @@ async function validateUserUniqueness(requestData: RegisterUserRequest): Promise
   if (requestData.email) {
     const existingEmailUser = await userRepository.findUserByEmail(requestData.email);
     if (existingEmailUser) {
+      logger.warn('User uniqueness validation failed - email exists', {
+        email: requestData.email,
+      });
       throw new Error('User with this email already exists');
     }
   }
+
+  logger.debug('User uniqueness validation completed successfully', {
+    loginName: requestData.loginName,
+  });
 }
 
 // ===================================================================
@@ -1403,6 +1563,14 @@ async function performUserRegistration(
   requestData: RegisterUserRequest,
   currentUser: AuthenticatedUser,
 ): Promise<RegisterUserResponse> {
+  logger.info('Starting user registration', {
+    loginName: requestData.loginName,
+    clientId: requestData.clientId,
+    userTypeId: requestData.userTypeId,
+    rolesCount: requestData.roles.length,
+    createdBy: currentUser.loginName,
+  });
+
   try {
     // 1. Validate business rules
     await validateRegistrationRules(requestData, currentUser);
@@ -1420,6 +1588,12 @@ async function performUserRegistration(
 
     // 5. Get role IDs from role names
     const roleIds = await getRoleIdsFromNames(requestData.roles);
+
+    logger.debug('Creating user with roles', {
+      loginName: requestData.loginName,
+      roleIds,
+      hasTemporaryPassword: Boolean(requestData.temporaryPassword),
+    });
 
     // 6. Create user in database transaction
     const result = await userRepository.createUserWithRoles({
@@ -1447,6 +1621,13 @@ async function performUserRegistration(
     if (requestData.sendWelcomeEmail && requestData.email) {
       await sendWelcomeEmail(requestData.email, result.user, passwordToUse);
     }
+
+    logger.info('User registration completed successfully', {
+      userId: result.user.id,
+      loginName: result.user.loginName,
+      clientId: result.user.clientId,
+      emailSent: Boolean(requestData.sendWelcomeEmail && requestData.email),
+    });
 
     // 8. Return response
     return {
@@ -1482,6 +1663,12 @@ async function performUserRegistration(
       timestamp: new Date().toISOString(),
     };
   } catch (error: any) {
+    logger.error('User registration failed', {
+      error: error.message,
+      loginName: requestData.loginName,
+      clientId: requestData.clientId,
+      createdBy: currentUser.loginName,
+    });
     throw new Error(`Registration failed: ${error.message}`);
   }
 }
@@ -1502,10 +1689,21 @@ async function performUserUpdate(
   validatedData: any,
   currentUser: AuthenticatedUser,
 ): Promise<{ data: any; message: string }> {
+  logger.info('Starting user update', {
+    targetUserId,
+    updatedBy: currentUser.loginName,
+    hasExtraInfo: Boolean(validatedData.extraInfo),
+    fieldsToUpdate: Object.keys(validatedData),
+  });
+
   try {
     // 1. Get existing user for extraInfo merging
     const existingUser = await userRepository.findUserById(targetUserId);
     if (!existingUser) {
+      logger.warn('User not found during update operation', {
+        targetUserId,
+        updatedBy: currentUser.loginName,
+      });
       throw new Error('User not found during update operation');
     }
 
@@ -1539,6 +1737,12 @@ async function performUserUpdate(
     }
 
     // 4. Perform database update
+    logger.debug('Performing database update', {
+      targetUserId,
+      updateFields: Object.keys(updateData),
+      hasExtraInfo: Boolean(updateData.extraInfo),
+    });
+
     const updatedUser = await prismaPostgres.user.update({
       where: { id: targetUserId },
       data: updateData,
@@ -1551,6 +1755,12 @@ async function performUserUpdate(
           },
         },
       },
+    });
+
+    logger.info('User updated successfully', {
+      targetUserId,
+      updatedBy: currentUser.loginName,
+      updatedAt: updatedUser.modDate,
     });
 
     // 5. Format response
@@ -1580,6 +1790,11 @@ async function performUserUpdate(
       message: 'User updated successfully',
     };
   } catch (error: any) {
+    logger.error('Failed to update user', {
+      error: error.message,
+      targetUserId,
+      updatedBy: currentUser.loginName,
+    });
     throw new Error(`Failed to update user: ${error.message}`);
   }
 }
@@ -1600,11 +1815,20 @@ async function getUsersList(
   currentUserRoles: CoreRole[],
   currentUserClientId: number,
 ): Promise<GetUsersResponse> {
+  logger.debug('Getting users list', {
+    queryParams,
+    currentUserRoles,
+    currentUserClientId,
+  });
+
   // Validate clientId if provided
   let requestedClientId: number | undefined;
   if (queryParams.clientId) {
     requestedClientId = queryParams.clientId;
     if (isNaN(requestedClientId) || requestedClientId <= 0) {
+      logger.warn('Invalid client ID format provided', {
+        clientId: queryParams.clientId,
+      });
       throw createValidationError('Invalid client ID format', [
         { field: 'clientId', message: 'Client ID must be a positive integer' },
       ]);
@@ -1612,6 +1836,10 @@ async function getUsersList(
   }
 
   const currentUserRole = getCurrentUserPrimaryRole(currentUserRoles);
+  logger.debug('Determined primary user role', {
+    currentUserRole,
+    allRoles: currentUserRoles,
+  });
 
   const statusFilter = queryParams.status?.toString();
   const roleFilter = queryParams.role;
@@ -1625,6 +1853,7 @@ async function getUsersList(
 
   switch (currentUserRole) {
     case CoreRole.SUPER_ADMIN:
+      logger.debug('Applying SUPER_ADMIN permissions - can view all users');
       // Rule 1: SUPER_ADMIN can view all users irrespective of client
       if (requestedClientId) {
         filters.clientId = requestedClientId;
@@ -1639,8 +1868,13 @@ async function getUsersList(
       break;
 
     case CoreRole.CLIENT_ADMIN:
+      logger.debug('Applying CLIENT_ADMIN permissions - restricted to own client');
       // Rule 2: CLIENT_ADMIN can only view users in their own client
       if (requestedClientId && requestedClientId !== currentUserClientId) {
+        logger.warn('CLIENT_ADMIN attempted cross-client access', {
+          currentUserClientId,
+          requestedClientId,
+        });
         throw createAuthorizationError(
           'CLIENT_ADMIN can only view users in their own organization',
         );
@@ -1663,8 +1897,13 @@ async function getUsersList(
 
     case CoreRole.CLINICAL_STAFF:
     case CoreRole.OFFICE_STAFF:
+      logger.debug(`Applying ${currentUserRole} permissions - patients only in own client`);
       // Rule 3: CLINICAL_STAFF/OFFICE_STAFF can only view patients in their own client
       if (requestedClientId && requestedClientId !== currentUserClientId) {
+        logger.warn(`${currentUserRole} attempted cross-client access`, {
+          currentUserClientId,
+          requestedClientId,
+        });
         throw createAuthorizationError(
           `${currentUserRole} can only view patients in their own organization`,
         );
@@ -1683,16 +1922,31 @@ async function getUsersList(
       break;
 
     case CoreRole.PATIENT:
+      logger.warn('PATIENT role attempted to access user lists');
       // PATIENT role cannot view user lists
       throw createAuthorizationError('PATIENT role is not authorized to view user lists');
 
     default:
+      logger.error('Invalid user role detected', {
+        currentUserRole,
+        currentUserRoles,
+      });
       throw createAuthorizationError('Invalid or unsupported user role');
   }
+
+  logger.debug('Final filters applied for users list', { filters });
 
   try {
     // Get users from repository
     const result = await userRepository.getUsersWithFilters(filters);
+
+    logger.info('Users list retrieved successfully', {
+      totalUsers: result.users.length,
+      totalRecords: result.pagination.total,
+      page: filters.page,
+      limit: filters.limit,
+      currentUserRole,
+    });
 
     return {
       success: true,
@@ -1731,6 +1985,11 @@ async function getUsersList(
       timestamp: new Date().toISOString(),
     };
   } catch (error: any) {
+    logger.error('Failed to retrieve users list', {
+      error: error.message,
+      filters,
+      currentUserRole,
+    });
     throw new Error(`Failed to retrieve users: ${error.message}`);
   }
 }
@@ -1857,15 +2116,31 @@ function getNextOnboardingStep(completedSteps: any): string | null {
  * @throws Error - When one or more role names are invalid or not found in database
  */
 async function getRoleIdsFromNames(roleNames: CoreRole[]): Promise<number[]> {
+  logger.debug('Getting role IDs from role names', {
+    roleNames,
+    roleCount: roleNames.length,
+  });
+
   const roles = await userRepository.findRolesByNames(roleNames);
 
   if (roles.length !== roleNames.length) {
     const foundRoleNames = roles.map(role => role.name);
     const missingRoles = roleNames.filter(name => !foundRoleNames.includes(name));
+    logger.error('Invalid roles detected during role ID lookup', {
+      requestedRoles: roleNames,
+      foundRoles: foundRoleNames,
+      missingRoles,
+    });
     throw new Error(`Invalid roles: ${missingRoles.join(', ')}`);
   }
 
-  return roles.map(role => role.id);
+  const roleIds = roles.map(role => role.id);
+  logger.debug('Role IDs retrieved successfully', {
+    roleNames,
+    roleIds,
+  });
+
+  return roleIds;
 }
 
 // ===================================================================
