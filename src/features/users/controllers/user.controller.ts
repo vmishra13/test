@@ -6,7 +6,7 @@
  * - HIPAA/PHI compliance
  * - Role-based access control
  * - Consistent error handling patterns
- * 
+ *
  * FUNCTION ORDER:
  * 1. 🛠️  Utility Functions
  * 2. 🔐 Authentication & Registration
@@ -26,28 +26,46 @@ import logger from '@config/logger';
 import type { ExtendedRequest, UserQuery } from '../types/extended-request';
 import type { RegisterUserRequest, MobileRegistrationRequest } from '../dto/registration.dto';
 import type { DoctorSelectionRequest } from '../dto/doctor.dto';
+import {
+  deleteUser,
+  getUserById,
+  getUserProfile,
+  getUsers,
+  registerUser,
+  registerMobileUser,
+  updateUser,
+  updateUserPassword,
+  updateUserProfile,
+  updateUserStatus,
+  updatePersonalInfo,
+  uploadProfilePicture,
+  getOnboardingStatus,
+  completeOnboarding,
+  getDoctors,
+  selectDoctor,
+} from '../services/user.service';
 
 // Service imports
-import {
-  getUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
-  updateUserStatus,
-  updateUserPassword,
-  getUserProfile,
-  updateUserProfile,
-  updatePersonalInfo as updatePersonalInfoService,
-  completeOnboarding as completeOnboardingService,
-  getOnboardingStatus as getOnboardingStatusService,
-  uploadProfilePicture as uploadProfilePictureService,
-} from '../services/user.service';
-import { registerUser } from '../services/registration.service';
-import { registerUser as registerMobileUserService } from '../services/user-registration.service';
-import {
-  getDoctors as getDoctorsService,
-  selectDoctor as selectDoctorService,
-} from '../services/doctor-selection.service';
+// import {
+//   getUsers,
+//   getUserById,
+//   updateUser,
+//   deleteUser,
+//   updateUserStatus,
+//   updateUserPassword,
+//   getUserProfile,
+//   updateUserProfile,
+//   updatePersonalInfo as updatePersonalInfoService,
+//   completeOnboarding as completeOnboardingService,
+//   getOnboardingStatus as getOnboardingStatusService,
+//   uploadProfilePicture as uploadProfilePictureService,
+// } from '../services/user.service';
+// import { registerUser } from '../services/registration.service';
+// import { registerUser as registerMobileUserService } from '../services/user-registration.service';
+// import {
+//   getDoctors as getDoctorsService,
+//   selectDoctor as selectDoctorService,
+// } from '../services/doctor-selection.service';
 
 // ===================================================================
 // 🛠️ UTILITY FUNCTIONS
@@ -55,14 +73,14 @@ import {
 
 /**
  * Standardized error handling across all controller methods
- * 
+ *
  * Handles different error types with consistent response format:
  * - AuthenticationError: 401 Unauthorized
  * - AuthorizationError: 403 Forbidden
  * - ValidationError: 400 Bad Request
  * - NotFoundError: 404 Not Found
  * - Generic errors: 500 Internal Server Error
- * 
+ *
  * @param res - Express response object
  * @param error - The error object to handle
  * @param defaultMessage - Default message for generic errors
@@ -124,10 +142,10 @@ function handleError(res: Response, error: any, defaultMessage: string): void {
 
 /**
  * Register a new user (Admin/Web Registration)
- * 
+ *
  * Creates a new user account with role-based authorization.
  * Supports multi-role assignments based on user permissions.
- * 
+ *
  * @route POST /api/v1/users/register
  * @access Private (requires authentication)
  * @param req - Extended request with RegisterUserRequest body
@@ -163,10 +181,10 @@ export async function registerUserController(
 
 /**
  * Register a new user via mobile app
- * 
+ *
  * Handles mobile app user registration with simplified flow.
  * Validates client ID and creates user with default settings.
- * 
+ *
  * @route POST /api/v1/users/register/mobile
  * @access Public
  * @param req - Extended request with MobileRegistrationRequest body
@@ -186,7 +204,7 @@ export async function registerMobileUserController(
       return;
     }
 
-    const result = await registerMobileUserService(registrationData);
+    const result = await registerMobileUser(registrationData);
     res
       .status(StatusCodes.CREATED)
       .json(ApiResponse.success(result, 'User registered successfully'));
@@ -201,10 +219,10 @@ export async function registerMobileUserController(
 
 /**
  * Get all users with filtering and pagination
- * 
+ *
  * Retrieves users based on role permissions and client isolation.
  * Supports filtering by status, role, and client.
- * 
+ *
  * @route GET /api/v1/users
  * @access Private (requires authentication)
  * @param req - Extended request with UserQuery parameters
@@ -224,10 +242,10 @@ export async function getUsersController(
 
 /**
  * Get specific user by ID
- * 
+ *
  * Retrieves detailed user information with role-based access control.
  * Enforces client isolation and permission checks.
- * 
+ *
  * @route GET /api/v1/users/:userId
  * @access Private (requires authentication)
  * @param req - Extended request with userId parameter
@@ -247,10 +265,10 @@ export async function getUserByIdController(
 
 /**
  * Update specific user by ID (Admin operation)
- * 
+ *
  * Updates user information with proper authorization checks.
  * Supports partial updates and maintains audit trail.
- * 
+ *
  * @route PUT /api/v1/users/:userId
  * @access Private (requires admin permissions)
  * @param req - Extended request with userId parameter and update data
@@ -270,10 +288,10 @@ export async function updateUserController(
 
 /**
  * Update user status (activate/deactivate)
- * 
+ *
  * Changes user status with proper authorization and audit logging.
  * Prevents self-deactivation and validates business rules.
- * 
+ *
  * @route PATCH /api/v1/users/:userId/status
  * @access Private (requires admin permissions)
  * @param req - Extended request with userId parameter and status data
@@ -295,10 +313,10 @@ export async function updateUserStatusController(
 
 /**
  * Update user password
- * 
+ *
  * Updates user password with security validations and audit logging.
  * Enforces password policies and client isolation.
- * 
+ *
  * @route PUT /api/v1/users/:userId/password
  * @access Private (requires admin permissions)
  * @param req - Extended request with userId parameter and password data
@@ -335,10 +353,10 @@ export async function updateUserPasswordController(
 
 /**
  * Delete user by ID (Admin operation)
- * 
+ *
  * Permanently removes user account with strict authorization.
  * Includes comprehensive audit logging and validation checks.
- * 
+ *
  * @route DELETE /api/v1/users/:userId
  * @access Private (requires admin permissions)
  * @param req - Extended request with userId parameter
@@ -378,10 +396,10 @@ export async function deleteUserController(
 
 /**
  * Get current user's profile
- * 
+ *
  * Retrieves authenticated user's complete profile information.
  * Includes personal details, preferences, and client information.
- * 
+ *
  * @route GET /api/v1/users/profile
  * @access Private (requires authentication)
  * @param req - Express request object
@@ -409,10 +427,10 @@ export async function getCurrentUserProfileController(req: Request, res: Respons
 
 /**
  * Update current user's profile
- * 
+ *
  * Allows authenticated users to update their own profile information.
  * Validates data and maintains audit trail of changes.
- * 
+ *
  * @route PUT /api/v1/users/profile
  * @access Private (requires authentication)
  * @param req - Express request object with profile data
@@ -451,10 +469,10 @@ export async function updateCurrentUserProfileController(
 
 /**
  * Update current user's personal information
- * 
+ *
  * Updates specific personal information fields for the authenticated user.
  * Includes validation and HIPAA-compliant data handling.
- * 
+ *
  * @route PUT /api/v1/users/profile/personal-info
  * @access Private (requires authentication)
  * @param req - Express request object with personal info data
@@ -478,7 +496,7 @@ export async function updatePersonalInfoController(req: Request, res: Response):
     }
 
     const personalInfo = req.body;
-    const updatedInfo = await updatePersonalInfoService(userId, personalInfo);
+    const updatedInfo = await updatePersonalInfo(userId, personalInfo);
 
     res
       .status(StatusCodes.OK)
@@ -490,10 +508,10 @@ export async function updatePersonalInfoController(req: Request, res: Response):
 
 /**
  * Upload current user's profile picture
- * 
+ *
  * Handles secure file upload for user profile pictures.
  * Validates file types, sizes, and stores securely.
- * 
+ *
  * @route POST /api/v1/users/profile/upload-picture
  * @access Private (requires authentication)
  * @param req - Express request object with file upload
@@ -531,7 +549,7 @@ export async function uploadProfilePictureController(req: Request, res: Response
     }
 
     const imageFile = req.files.profilePicture as UploadedFile;
-    const result = await uploadProfilePictureService(userId, imageFile);
+    const result = await uploadProfilePicture(userId, imageFile);
 
     res
       .status(StatusCodes.OK)
@@ -547,10 +565,10 @@ export async function uploadProfilePictureController(req: Request, res: Response
 
 /**
  * Get current user's onboarding status
- * 
+ *
  * Retrieves the onboarding progress and completion status.
  * Used to determine required onboarding steps.
- * 
+ *
  * @route GET /api/v1/users/profile/onboarding-status
  * @access Private (requires authentication)
  * @param req - Express request object
@@ -573,7 +591,7 @@ export async function getOnboardingStatusController(req: Request, res: Response)
       return;
     }
 
-    const status = await getOnboardingStatusService(userId);
+    const status = await getOnboardingStatus(userId);
 
     res
       .status(StatusCodes.OK)
@@ -585,10 +603,10 @@ export async function getOnboardingStatusController(req: Request, res: Response)
 
 /**
  * Complete current user's onboarding
- * 
+ *
  * Marks onboarding as complete and processes final setup steps.
  * Validates all required information is provided.
- * 
+ *
  * @route POST /api/v1/users/profile/complete-onboarding
  * @access Private (requires authentication)
  * @param req - Express request object with onboarding data
@@ -612,7 +630,7 @@ export async function completeOnboardingController(req: Request, res: Response):
     }
 
     const onboardingData = req.body;
-    const result = await completeOnboardingService(userId, onboardingData);
+    const result = await completeOnboarding(userId, onboardingData);
 
     res
       .status(StatusCodes.OK)
@@ -628,10 +646,10 @@ export async function completeOnboardingController(req: Request, res: Response):
 
 /**
  * Get available doctors for selection
- * 
+ *
  * Retrieves list of available healthcare providers within client scope.
  * Supports filtering by specialization and location.
- * 
+ *
  * @route GET /api/v1/users/doctors
  * @access Private (requires authentication)
  * @param req - Extended request with optional query parameters
@@ -651,7 +669,7 @@ export async function getDoctorsController(req: ExtendedRequest, res: Response):
       typeof req.query.specialization === 'string' ? req.query.specialization : undefined;
     const location = typeof req.query.location === 'string' ? req.query.location : undefined;
 
-    const result = await getDoctorsService(clientId, specialization, location);
+    const result = await getDoctors(clientId, specialization, location);
     res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Doctors retrieved successfully'));
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve doctors');
@@ -660,10 +678,10 @@ export async function getDoctorsController(req: ExtendedRequest, res: Response):
 
 /**
  * Select a doctor for care
- * 
+ *
  * Associates a patient with a selected healthcare provider.
  * Validates provider availability and client relationships.
- * 
+ *
  * @route POST /api/v1/users/select-doctor
  * @access Private (requires authentication)
  * @param req - Extended request with DoctorSelectionRequest body
@@ -685,7 +703,7 @@ export async function selectDoctorController(
     }
 
     const selectionData: DoctorSelectionRequest = req.body;
-    const result = await selectDoctorService(userId.toString(), clientId, selectionData);
+    const result = await selectDoctor(userId.toString(), clientId, selectionData);
 
     res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Doctor selected successfully'));
   } catch (error: any) {
@@ -699,10 +717,10 @@ export async function selectDoctorController(
 
 /**
  * Link user to a client (Admin operation)
- * 
+ *
  * Associates a user with a specific client organization.
  * Requires super admin permissions and validates relationships.
- * 
+ *
  * @route POST /api/v1/users/:userId/link-client
  * @access Private (requires super admin permissions)
  * @param req - Extended request with userId parameter and clientId body
