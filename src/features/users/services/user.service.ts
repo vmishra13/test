@@ -29,7 +29,12 @@ import type {
   CreateUserResult,
   MobileRegistrationRequest,
   MobileRegistrationResponse,
-} from '../dto/registration.dto';
+  GetUsersResponse,
+  Doctor,
+  DoctorSelectionRequest,
+  DoctorSelectionResponse,
+  DoctorsListResponse,
+} from '../dto/user.dto';
 import type { AuthenticatedUser } from '@features/auth/dto/auth.dto';
 import { validateEmailDomain, registerUserSchema } from '../validators/registration.validators';
 import * as userRepository from '../repositories/user.repository';
@@ -46,7 +51,6 @@ import {
 } from '@shared/errors/application-error';
 import { createAuthRequest, getCurrentUser, performAuthorization } from '@features/auth';
 import logger from '@config/logger';
-import type { GetUsersResponse } from '../dto/user.dto';
 import {
   getUsersQuerySchema,
   mergeJsonFields,
@@ -58,12 +62,6 @@ import {
 } from '../validators/user.validators';
 import prismaPostgres from '@db/postgres/client';
 import type { UploadedFile } from 'express-fileupload';
-import type {
-  Doctor,
-  DoctorSelectionRequest,
-  DoctorSelectionResponse,
-  DoctorsListResponse,
-} from '../dto/doctor.dto';
 
 // ===================================================================
 // 🔐 AUTHENTICATION & REGISTRATION
@@ -1653,7 +1651,7 @@ async function performUserRegistration(
             name: result.user.userType.name,
             description: result.user.userType.description,
           },
-          roles: result.roles.map(role => role.name),
+          roles: result.roles.map((role: { name: string }) => role.name),
         },
         ...(requestData.temporaryPassword && {
           temporaryPassword: passwordToUse,

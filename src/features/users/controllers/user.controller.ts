@@ -24,8 +24,11 @@ import { ApiResponse } from '@shared/utils/api-response';
 import { getCurrentUserId } from '@features/auth/middlewares';
 import logger from '@config/logger';
 import type { ExtendedRequest, UserQuery } from '../types/extended-request';
-import type { RegisterUserRequest, MobileRegistrationRequest } from '../dto/registration.dto';
-import type { DoctorSelectionRequest } from '../dto/doctor.dto';
+import type {
+  RegisterUserRequest,
+  MobileRegistrationRequest,
+  DoctorSelectionRequest,
+} from '../dto/user.dto';
 import {
   deleteUserService,
   getUserByIdService,
