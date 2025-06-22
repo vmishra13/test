@@ -6,6 +6,13 @@
  * - HIPAA/PHI compliance
  * - Role-based access control
  * - Consistent error handling patterns
+ *
+ * Consolidated from 5 separate controllers:
+ * - user.controller.ts (admin operations)
+ * - profile.controller.ts (current user profile)
+ * - registration.controller.ts (user registration)
+ * - doctor-selection.controller.ts (healthcare provider selection)
+ * - mobile-registration.controller.ts (mobile app registration)
  */
 
 import { Request, Response } from 'express';
@@ -52,43 +59,76 @@ function handleError(res: Response, error: any, defaultMessage: string): void {
 
   // Handle custom authentication errors
   if (error.name === 'AuthenticationError') {
-    res
-      .status(StatusCodes.UNAUTHORIZED)
-      .json(ApiResponse.error('Authentication required', 'AUTHENTICATION_ERROR', error.message));
+    res.status(StatusCodes.UNAUTHORIZED).json({
+      success: false,
+      error: 'Authentication required',
+      details: error.message,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Handle custom authorization errors
   if (error.name === 'AuthorizationError') {
-    res
-      .status(StatusCodes.FORBIDDEN)
-      .json(ApiResponse.error('Authorization failed', 'AUTHORIZATION_ERROR', error.message));
+    res.status(StatusCodes.FORBIDDEN).json({
+      success: false,
+      error: 'Authorization failed',
+      details: error.message,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Handle custom validation errors
   if (error.name === 'ValidationError') {
-    res
-      .status(StatusCodes.BAD_REQUEST)
-      .json(ApiResponse.error('Validation failed', 'VALIDATION_ERROR', error.details));
+    res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
+      error: 'Validation failed',
+      details: error.details,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Handle custom not found errors
   if (error.name === 'NotFoundError') {
-    res
-      .status(StatusCodes.NOT_FOUND)
-      .json(ApiResponse.error('Resource not found', 'NOT_FOUND_ERROR', error.message));
+    res.status(StatusCodes.NOT_FOUND).json({
+      success: false,
+      error: 'Resource not found',
+      details: error.message,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Use specific status code if provided
   const statusCode = error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
 
-  res
-    .status(statusCode)
-    .json(ApiResponse.error(defaultMessage, 'INTERNAL_ERROR', error.message || 'Unknown error'));
+  res.status(statusCode).json({
+    success: false,
+    error: defaultMessage,
+    details: error.message || 'Unknown error',
+    timestamp: new Date().toISOString(),
+  });
 }
+
+/**
+ * UNIFIED USER CONTROLLER - FUNCTION-BASED IMPLEMENTATION
+ *
+ * Converted from class-based to function-based implementation.
+ * Consolidates all user-related operations while maintaining:
+ * - Strict multi-tenant security isolation
+ * - HIPAA/PHI compliance
+ * - Role-based access control
+ * - Consistent error handling patterns
+ *
+ * Consolidated from 5 separate controllers:
+ * - user.controller.ts (admin operations)
+ * - profile.controller.ts (current user profile)
+ * - registration.controller.ts (user registration)
+ * - doctor-selection.controller.ts (healthcare provider selection)
+ * - mobile-registration.controller.ts (mobile app registration)
+ */
 
 // ===================================================================
 // 🔐 AUTHENTICATION & REGISTRATION
@@ -104,9 +144,7 @@ export async function registerUserController(
 ): Promise<void> {
   try {
     const result = await registerUser(req);
-    res
-      .status(StatusCodes.CREATED)
-      .json(ApiResponse.success(result, 'User registered successfully'));
+    res.status(StatusCodes.CREATED).json(result);
   } catch (error: any) {
     handleError(res, error, 'Registration failed');
   }
@@ -153,7 +191,7 @@ export async function getUsersController(
 ): Promise<void> {
   try {
     const result = await getUsers(req as any);
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Users retrieved successfully'));
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve users');
   }
@@ -169,7 +207,7 @@ export async function getUserByIdController(
 ): Promise<void> {
   try {
     const result = await getUserById(req as any);
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User retrieved successfully'));
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve user');
   }
@@ -185,7 +223,7 @@ export async function updateUserController(
 ): Promise<void> {
   try {
     const result = await updateUser(req as any);
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User updated successfully'));
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to update user');
   }
@@ -201,7 +239,7 @@ export async function deleteUserController(
 ): Promise<void> {
   try {
     const result = await deleteUser(req as any);
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User deleted successfully'));
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to delete user');
   }
@@ -217,9 +255,7 @@ export async function updateUserStatusController(
 ): Promise<void> {
   try {
     const result = await updateUserStatus(req as any);
-    res
-      .status(StatusCodes.OK)
-      .json(ApiResponse.success(result, 'User status updated successfully'));
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to update user status');
   }
@@ -235,9 +271,7 @@ export async function updateUserPasswordController(
 ): Promise<void> {
   try {
     const result = await updateUserPassword(req as any);
-    res
-      .status(StatusCodes.OK)
-      .json(ApiResponse.success(result, 'User password updated successfully'));
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to update user password');
   }
@@ -275,10 +309,7 @@ export async function getCurrentUserProfileController(req: Request, res: Respons
  * Update current user's profile
  * PUT /api/v1/users/profile
  */
-export async function updateCurrentUserProfileController(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function updateCurrentUserProfileController(req: Request, res: Response): Promise<void> {
   try {
     const userId = getCurrentUserId(req);
 
@@ -516,10 +547,7 @@ export async function selectDoctorController(
  * Link user to a client (Admin operation)
  * POST /api/v1/users/:userId/link-client
  */
-export async function linkUserToClientController(
-  req: ExtendedRequest<any>,
-  res: Response,
-): Promise<void> {
+export async function linkUserToClientController(req: ExtendedRequest<any>, res: Response): Promise<void> {
   try {
     const { userId } = req.params;
     const { clientId } = req.body;
