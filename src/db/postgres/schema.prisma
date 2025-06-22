@@ -10,30 +10,26 @@ datasource postgresDb {
 
 /// Client model with relationships
 model client {
-  id                        Int                         @id @default(autoincrement())
-  name                      String                      @postgresDb.VarChar(100)
-  description               String?
-  timeZone                  String                      @postgresDb.VarChar(100)
-  status                    Int?                        @default(-1)
-  logo                      String?                     @postgresDb.VarChar(2000)
-  favIcon                   String?                     @postgresDb.VarChar(2000)
-  language                  String?                     @postgresDb.VarChar(50)
-  website                   String?                     @postgresDb.VarChar(2000)
-  extraInfo                 Json?                       @postgresDb.Json
-  crUser                    String                      @postgresDb.VarChar(50)
-  crDate                    DateTime                    @default(now()) @postgresDb.Timestamp(6)
-  modUser                   String                      @postgresDb.VarChar(50)
-  modDate                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
-  locations                 client_location[]
-  contacts                  contact[]
-  medication_master         medication_master[]
-  patient_form              patient_form[]
-  patient_plan              patient_plan[]
-  patient_plan_schedule     patient_plan_schedule[]
-  patient_plan_schedule_log patient_plan_schedule_log[]
-  plan                      plan[]
-  users                     user[]
-  userRoles                 user_role[]
+  id                Int                 @id @default(autoincrement())
+  name              String              @postgresDb.VarChar(100)
+  description       String?
+  timeZone          String              @postgresDb.VarChar(100)
+  status            Int?                @default(-1)
+  logo              String?             @postgresDb.VarChar(2000)
+  favIcon           String?             @postgresDb.VarChar(2000)
+  language          String?             @postgresDb.VarChar(50)
+  website           String?             @postgresDb.VarChar(2000)
+  extraInfo         Json?               @postgresDb.Json
+  crUser            String              @postgresDb.VarChar(50)
+  crDate            DateTime            @default(now()) @postgresDb.Timestamp(6)
+  modUser           String              @postgresDb.VarChar(50)
+  modDate           DateTime?           @default(now()) @postgresDb.Timestamp(6)
+  locations         client_location[]
+  contacts          contact[]
+  form_master       form_master[]
+  medication_master medication_master[]
+  users             user[]
+  userRoles         user_role[]
 }
 
 /// Client location model with relationships
@@ -250,7 +246,7 @@ model patient_plan_schedule {
   scheduleDate              DateTime                    @postgresDb.Timestamp(6)
   frequencyUnit             frequency_unit_type?
   frequencyValue            Int?
-  scheduleUnit              String?                     @postgresDb.VarChar
+  scheduleUnit              String?                     @postgresDb.VarChar(50)
   scheduleUnitValue         Decimal?                    @postgresDb.Decimal(10, 2)
   measurementUnit           measurement_unit_type?
   validFrom                 DateTime?                   @postgresDb.Date
@@ -307,9 +303,9 @@ model plan {
 
 model form_master {
   id          Int       @id @default(autoincrement())
+  clientid    Int?      @default(1)
   name        String    @postgresDb.VarChar(255)
   description String?
-  clientid    Int?      @default(1)
   cruser      String    @postgresDb.VarChar(50)
   crdate      DateTime? @default(now()) @postgresDb.Timestamp(6)
   moduser     String    @postgresDb.VarChar(50)
