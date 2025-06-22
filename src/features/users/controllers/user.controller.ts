@@ -27,22 +27,22 @@ import type { ExtendedRequest, UserQuery } from '../types/extended-request';
 import type { RegisterUserRequest, MobileRegistrationRequest } from '../dto/registration.dto';
 import type { DoctorSelectionRequest } from '../dto/doctor.dto';
 import {
-  deleteUser,
-  getUserById,
-  getUserProfile,
-  getUsers,
-  registerUser,
-  registerMobileUser,
-  updateUser,
-  updateUserPassword,
-  updateUserProfile,
-  updateUserStatus,
-  updatePersonalInfo,
-  uploadProfilePicture,
-  getOnboardingStatus,
-  completeOnboarding,
-  getDoctors,
-  selectDoctor,
+  deleteUserService,
+  getUserByIdService,
+  getUserProfileService,
+  getUsersService,
+  registerUserService,
+  registerMobileUserService,
+  updateUserService,
+  updateUserPasswordService,
+  updateUserProfileService,
+  updateUserStatusService,
+  updatePersonalInfoService,
+  uploadProfilePictureService,
+  getOnboardingStatusService,
+  completeOnboardingService,
+  getDoctorsService,
+  selectDoctorService,
 } from '../services/user.service';
 
 // Service imports
@@ -162,7 +162,7 @@ export async function registerUserController(
       timestamp: new Date().toISOString(),
     });
 
-    const result = await registerUser(req);
+    const result = await registerUserService(req);
 
     logger.info('User registration successful', {
       userId: result.data?.user?.id,
@@ -204,7 +204,7 @@ export async function registerMobileUserController(
       return;
     }
 
-    const result = await registerMobileUser(registrationData);
+    const result = await registerMobileUserService(registrationData);
     res
       .status(StatusCodes.CREATED)
       .json(ApiResponse.success(result, 'User registered successfully'));
@@ -233,7 +233,7 @@ export async function getUsersController(
   res: Response,
 ): Promise<void> {
   try {
-    const result = await getUsers(req as any);
+    const result = await getUsersService(req as any);
     res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Users retrieved successfully'));
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve users');
@@ -256,7 +256,7 @@ export async function getUserByIdController(
   res: Response,
 ): Promise<void> {
   try {
-    const result = await getUserById(req as any);
+    const result = await getUserByIdService(req as any);
     res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User retrieved successfully'));
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve user');
@@ -279,7 +279,7 @@ export async function updateUserController(
   res: Response,
 ): Promise<void> {
   try {
-    const result = await updateUser(req as any);
+    const result = await updateUserService(req as any);
     res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User updated successfully'));
   } catch (error: any) {
     handleError(res, error, 'Failed to update user');
@@ -302,7 +302,7 @@ export async function updateUserStatusController(
   res: Response,
 ): Promise<void> {
   try {
-    const result = await updateUserStatus(req as any);
+    const result = await updateUserStatusService(req as any);
     res
       .status(StatusCodes.OK)
       .json(ApiResponse.success(result, 'User status updated successfully'));
@@ -335,7 +335,7 @@ export async function updateUserPasswordController(
       timestamp: new Date().toISOString(),
     });
 
-    const result = await updateUserPassword(req as any);
+    const result = await updateUserPasswordService(req as any);
 
     logger.info('Password update successful', {
       targetUserId: userId,
@@ -375,7 +375,7 @@ export async function deleteUserController(
       timestamp: new Date().toISOString(),
     });
 
-    const result = await deleteUser(req as any);
+    const result = await deleteUserService(req as any);
 
     logger.warn('User deletion successful', {
       targetUserId: userId,
@@ -416,7 +416,7 @@ export async function getCurrentUserProfileController(req: Request, res: Respons
       return;
     }
 
-    const profile = await getUserProfile(userId);
+    const profile = await getUserProfileService(userId);
     res
       .status(StatusCodes.OK)
       .json(ApiResponse.success(profile, 'User profile retrieved successfully'));
@@ -457,7 +457,7 @@ export async function updateCurrentUserProfileController(
     }
 
     const profileData = req.body;
-    const updatedProfile = await updateUserProfile(userId, profileData);
+    const updatedProfile = await updateUserProfileService(userId, profileData);
 
     res
       .status(StatusCodes.OK)
@@ -496,7 +496,7 @@ export async function updatePersonalInfoController(req: Request, res: Response):
     }
 
     const personalInfo = req.body;
-    const updatedInfo = await updatePersonalInfo(userId, personalInfo);
+    const updatedInfo = await updatePersonalInfoService(userId, personalInfo);
 
     res
       .status(StatusCodes.OK)
@@ -549,7 +549,7 @@ export async function uploadProfilePictureController(req: Request, res: Response
     }
 
     const imageFile = req.files.profilePicture as UploadedFile;
-    const result = await uploadProfilePicture(userId, imageFile);
+    const result = await uploadProfilePictureService(userId, imageFile);
 
     res
       .status(StatusCodes.OK)
@@ -591,7 +591,7 @@ export async function getOnboardingStatusController(req: Request, res: Response)
       return;
     }
 
-    const status = await getOnboardingStatus(userId);
+    const status = await getOnboardingStatusService(userId);
 
     res
       .status(StatusCodes.OK)
@@ -630,7 +630,7 @@ export async function completeOnboardingController(req: Request, res: Response):
     }
 
     const onboardingData = req.body;
-    const result = await completeOnboarding(userId, onboardingData);
+    const result = await completeOnboardingService(userId, onboardingData);
 
     res
       .status(StatusCodes.OK)
@@ -669,7 +669,7 @@ export async function getDoctorsController(req: ExtendedRequest, res: Response):
       typeof req.query.specialization === 'string' ? req.query.specialization : undefined;
     const location = typeof req.query.location === 'string' ? req.query.location : undefined;
 
-    const result = await getDoctors(clientId, specialization, location);
+    const result = await getDoctorsService(clientId, specialization, location);
     res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Doctors retrieved successfully'));
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve doctors');
@@ -703,7 +703,7 @@ export async function selectDoctorController(
     }
 
     const selectionData: DoctorSelectionRequest = req.body;
-    const result = await selectDoctor(userId.toString(), clientId, selectionData);
+    const result = await selectDoctorService(userId.toString(), clientId, selectionData);
 
     res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Doctor selected successfully'));
   } catch (error: any) {

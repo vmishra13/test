@@ -78,7 +78,7 @@ import type {
  * @param req - Extended request with RegisterUserRequest body and auth context
  * @returns Promise<RegisterUserResponse> - Registration result with user details
  */
-export async function registerUser(
+export async function registerUserService(
   req: ExtendedRequest<any, RegisterUserRequest>,
 ): Promise<RegisterUserResponse> {
   // 1. Check authentication
@@ -125,7 +125,7 @@ export async function registerUser(
  * @param data - Mobile registration request data
  * @returns Promise<MobileRegistrationResponse> - Registration result with tokens
  */
-export async function registerMobileUser(
+export async function registerMobileUserService(
   data: MobileRegistrationRequest,
 ): Promise<MobileRegistrationResponse> {
   try {
@@ -189,7 +189,7 @@ export async function registerMobileUser(
  * @param req - Extended request with UserQuery parameters and auth context
  * @returns Promise<GetUsersResponse> - Paginated list of users with metadata
  */
-export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {
+export async function getUsersService(req: ExtendedRequest<UserQuery>): Promise<GetUsersResponse> {
   try {
     const currentUser = getCurrentUser(req);
 
@@ -238,7 +238,7 @@ export async function getUsers(req: ExtendedRequest<UserQuery>): Promise<GetUser
  * @param req - Extended request with userId parameter and auth context
  * @returns Promise<any> - Detailed user information with relationships
  */
-export async function getUserById(
+export async function getUserByIdService(
   req: ExtendedRequest<any> & { params: { userId: string } },
 ): Promise<any> {
   try {
@@ -328,7 +328,7 @@ export async function getUserById(
  * @param req - Extended request with userId parameter, update data, and auth context
  * @returns Promise<{data: any; message: string}> - Updated user information
  */
-export async function updateUser(
+export async function updateUserService(
   req: ExtendedRequest<any> & { params: { userId: string } },
 ): Promise<{ data: any; message: string }> {
   try {
@@ -406,7 +406,7 @@ export async function updateUser(
  * @param req - Extended request with userId parameter, status data, and auth context
  * @returns Promise<any> - Status update confirmation with audit details
  */
-export async function updateUserStatus(
+export async function updateUserStatusService(
   req: ExtendedRequest<any> & { params: { userId: string } },
 ): Promise<any> {
   try {
@@ -497,7 +497,7 @@ export async function updateUserStatus(
  * @param req - Extended request with userId parameter, password data, and auth context
  * @returns Promise<any> - Password update confirmation with security audit
  */
-export async function updateUserPassword(
+export async function updateUserPasswordService(
   req: ExtendedRequest<any> & { params: { userId: string } },
 ): Promise<any> {
   try {
@@ -607,7 +607,7 @@ export async function updateUserPassword(
  * @param req - Extended request with userId parameter and auth context
  * @returns Promise<any> - Deletion confirmation with audit details
  */
-export async function deleteUser(
+export async function deleteUserService(
   req: ExtendedRequest<any> & { params: { userId: string } },
 ): Promise<any> {
   try {
@@ -703,7 +703,7 @@ export async function deleteUser(
  * @param userId - The authenticated user's ID
  * @returns Promise<any> - Comprehensive user profile with extraInfo
  */
-export async function getUserProfile(userId: number) {
+export async function getUserProfileService(userId: number) {
   try {
     logger.debug('Getting user profile', { userId });
 
@@ -759,7 +759,7 @@ export async function getUserProfile(userId: number) {
  * @param profileData - Profile update data with optional fields
  * @returns Promise<any> - Updated user profile information
  */
-export async function updateUserProfile(userId: number, profileData: any) {
+export async function updateUserProfileService(userId: number, profileData: any) {
   try {
     logger.info('Updating user profile', {
       userId,
@@ -809,7 +809,7 @@ export async function updateUserProfile(userId: number, profileData: any) {
     await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
 
     logger.info('User profile updated successfully', { userId });
-    return await getUserProfile(userId);
+    return await getUserProfileService(userId);
   } catch (error) {
     logger.error('Update user profile error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -831,7 +831,7 @@ export async function updateUserProfile(userId: number, profileData: any) {
  * @param personalInfo - Personal information update data
  * @returns Promise<any> - Updated user profile with personal information
  */
-export async function updatePersonalInfo(userId: number, personalInfo: any) {
+export async function updatePersonalInfoService(userId: number, personalInfo: any) {
   try {
     logger.info('Updating personal info', {
       userId,
@@ -876,7 +876,7 @@ export async function updatePersonalInfo(userId: number, personalInfo: any) {
     await userRepository.updateUserProfile(userId, userUpdateInput, 'mobile-app');
 
     logger.info('Personal info updated successfully', { userId });
-    return await getUserProfile(userId);
+    return await getUserProfileService(userId);
   } catch (error) {
     logger.error('Update personal info error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -896,7 +896,7 @@ export async function updatePersonalInfo(userId: number, personalInfo: any) {
  * @param file - Uploaded file object with metadata
  * @returns Promise<any> - Upload confirmation with profile picture URL
  */
-export async function uploadProfilePicture(userId: number, file: UploadedFile) {
+export async function uploadProfilePictureService(userId: number, file: UploadedFile) {
   try {
     logger.info('Uploading profile picture', {
       userId,
@@ -967,7 +967,7 @@ export async function uploadProfilePicture(userId: number, file: UploadedFile) {
  * @param onboardingData - Final onboarding completion data
  * @returns Promise<any> - Completion confirmation with updated profile
  */
-export async function completeOnboarding(userId: number, onboardingData: any) {
+export async function completeOnboardingService(userId: number, onboardingData: any) {
   try {
     logger.info('Completing onboarding for user', {
       userId,
@@ -975,7 +975,7 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
     });
 
     // Update user profile with onboarding data
-    await updateUserProfile(userId, onboardingData);
+    await updateUserProfileService(userId, onboardingData);
 
     // Get current user
     const currentUser = await userRepository.findUserById(userId);
@@ -999,7 +999,7 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
     return {
       success: true,
       message: 'Onboarding completed successfully',
-      profile: await getUserProfile(userId),
+      profile: await getUserProfileService(userId),
     };
   } catch (error) {
     logger.error('Complete onboarding error:', {
@@ -1019,11 +1019,11 @@ export async function completeOnboarding(userId: number, onboardingData: any) {
  * @param userId - The authenticated user's ID
  * @returns Promise<any> - Onboarding status with progress tracking
  */
-export async function getOnboardingStatus(userId: number) {
+export async function getOnboardingStatusService(userId: number) {
   try {
     logger.debug('Getting onboarding status for user', { userId });
 
-    const profile = await getUserProfile(userId);
+    const profile = await getUserProfileService(userId);
 
     const completedSteps = {
       basicInfo: !!(profile.firstName && profile.lastName && profile.email),
@@ -1079,7 +1079,7 @@ export async function getOnboardingStatus(userId: number) {
  * @param location - Optional location filter
  * @returns Promise<DoctorsListResponse> - Filtered list of available doctors
  */
-export async function getDoctors(
+export async function getDoctorsService(
   clientId: number,
   specialization?: string,
   location?: string,
@@ -1204,7 +1204,7 @@ export async function getDoctors(
  * @param doctorSelection - Doctor selection request with appointment preferences
  * @returns Promise<DoctorSelectionResponse> - Selection confirmation with next steps
  */
-export async function selectDoctor(
+export async function selectDoctorService(
   userId: string,
   clientId: number,
   doctorSelection: DoctorSelectionRequest,
