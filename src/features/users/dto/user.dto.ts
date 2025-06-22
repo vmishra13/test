@@ -859,3 +859,43 @@ export const createUserSchema = z.object({
  */
 export type UpdateUserRequestSchema = z.infer<typeof updateUserSchema>;
 export type CreateUserRequestSchema = z.infer<typeof createUserSchema>;
+
+// User Registration DTOs
+export interface UserRegistrationRequest {
+  // Required fields
+  clientId: number;
+  userTypeId: number;
+  loginName: string;
+  password: string;
+  confirmPassword: string;
+
+  // Optional user details
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  email?: string;
+  dob?: string; // ISO date string
+  mrn?: string;
+  gender?: 'Male' | 'Female' | 'Other' | 'Prefer not to say';
+  timeZone?: string;
+
+  // Terms and role assignments
+  acceptTerms: boolean;
+  roleIds?: number[];
+}
+
+export interface UserRegistrationResponse {
+  success: boolean;
+  data: {
+    userId: number;
+    user: CreatedUserSummary;
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresIn: number;
+      tokenType: 'Bearer';
+    };
+  };
+  message: string;
+  timestamp: string;
+}

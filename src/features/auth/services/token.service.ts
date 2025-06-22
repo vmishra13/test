@@ -6,8 +6,6 @@ import { ENV } from '../../../config/env';
 import { StringValue } from '../../../shared/types';
 import {
   TokenPair,
-  AccessTokenClaims,
-  RefreshTokenClaims,
   AuthenticatedUser,
   SecurityEvent,
   PasswordVerificationResult,
