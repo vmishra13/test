@@ -2043,6 +2043,204 @@
 			]
 		},
 		{
+			"name": "📋 Forms",
+			"item": [
+				{
+					"name": "1. Get All Forms",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms?page=1&limit=20",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "2. Get Form by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "3. Create Form",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Patient Intake Form\",\n    \"description\": \"Comprehensive patient intake form for new patients\",\n    \"formType\": \"INTAKE\",\n    \"category\": \"PATIENT_REGISTRATION\",\n    \"isActive\": true,\n    \"formStructure\": {\n        \"version\": \"1.0\",\n        \"sections\": [\n            {\n                \"id\": \"personal_info\",\n                \"title\": \"Personal Information\",\n                \"fields\": [\n                    {\n                        \"id\": \"first_name\",\n                        \"type\": \"text\",\n                        \"label\": \"First Name\",\n                        \"required\": true\n                    }\n                ]\n            }\n        ]\n    },\n    \"complianceSettings\": {\n        \"hipaaCompliant\": true,\n        \"auditTrail\": true,\n        \"dataRetentionDays\": 2555,\n        \"encryptionRequired\": true\n    },\n    \"accessLevel\": \"STANDARD\",\n    \"tags\": [\"intake\", \"patient\"]\n}"
+						},
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms"
+							]
+						}
+					}
+				},
+				{
+					"name": "4. Update Form",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Patient Intake Form\",\n    \"description\": \"Updated comprehensive patient intake form\",\n    \"isActive\": true\n}"
+						},
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "5. Delete Form",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/1",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"1"
+							]
+						}
+					}
+				},
+				{
+					"name": "6. Search Forms",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{RELIACARE_X_AUTH_TOKEN}}"
+							}
+						],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/search?q=intake",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "intake"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "7. Forms Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{PROTOCOL}}://{{BASE_URL}}:{{PORT}}/api/v1/forms/health",
+							"host": [
+								"{{BASE_URL}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"forms",
+								"health"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
 			"name": "\ud83e\ude7a Diagnosis",
 			"item": [
 				{

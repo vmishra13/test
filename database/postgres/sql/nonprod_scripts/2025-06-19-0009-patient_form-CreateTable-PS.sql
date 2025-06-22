@@ -14,8 +14,9 @@ BEGIN
 
         CREATE TABLE "patient_form" (
             id SERIAL PRIMARY KEY,
-            "patientId" integer,
-            "clientId" integer,
+            "patientId" integer NOT NULL,
+            "clientId" integer NOT NULL,
+            "formId" integer NOT NULL,
             "processed" boolean DEFAULT false,
             "crUser" varchar(50) NOT NULL,
             "crDate" timestamp DEFAULT CURRENT_TIMESTAMP,
@@ -26,6 +27,9 @@ BEGIN
                 ON DELETE RESTRICT ON UPDATE CASCADE,
             CONSTRAINT fk_patientform_client 
                 FOREIGN KEY ("clientId") REFERENCES client(id) 
+                ON DELETE RESTRICT ON UPDATE CASCADE,
+            CONSTRAINT fk_patientform_form_master
+                FOREIGN KEY ("formId") REFERENCES form_master(id) 
                 ON DELETE RESTRICT ON UPDATE CASCADE
         );
 

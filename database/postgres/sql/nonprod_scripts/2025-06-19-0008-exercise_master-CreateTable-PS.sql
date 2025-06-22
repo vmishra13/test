@@ -24,11 +24,9 @@ BEGIN
         WHERE table_schema = 'reliacare'
         AND table_name = 'exercise_master'
     )
-    THEN
-
-        CREATE TABLE "exercise_master" (
+    THEN        CREATE TABLE "exercise_master" (
             id SERIAL PRIMARY KEY,
-            "title" varchar(100) NOT NULL,
+            "title" varchar(100) NOT NULL UNIQUE,
             "description" text,
             "purpose" varchar(255),
             "media_type" media_type_enum DEFAULT NULL,

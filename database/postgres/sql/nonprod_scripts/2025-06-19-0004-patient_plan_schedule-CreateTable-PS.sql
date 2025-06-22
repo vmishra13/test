@@ -23,9 +23,9 @@ BEGIN     -- Create ENUM types if they don't exist
         id SERIAL PRIMARY KEY,
         "patientId" integer NOT NULL,
         "clientId" integer DEFAULT 1,
-        "planID" integer NOT NULL,
+        "planId" integer NOT NULL,
         "type" schedule_type DEFAULT 'None',
-        "typeID" integer NOT NULL,        
+        "typeId" integer NOT NULL,        
         "scheduleDate" timestamp NOT NULL,
         "frequencyUnit" frequency_unit_type DEFAULT NULL,
         "frequencyValue" integer,        
@@ -46,7 +46,7 @@ BEGIN     -- Create ENUM types if they don't exist
             FOREIGN KEY ("clientId") REFERENCES client(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE,
         CONSTRAINT fk_patient_plan_schedule_user_plan 
-            FOREIGN KEY ("planID") REFERENCES "patient_plan"(id) 
+            FOREIGN KEY ("planId") REFERENCES "patient_plan"(id) 
             ON DELETE RESTRICT ON UPDATE CASCADE
     );
 
