@@ -57,19 +57,21 @@ const prismaPostgres = new PrismaClient({
 
 // Log PrismaClient events
 prismaPostgres.$on('query', e => {
-  // Add formatted SQL logging with parameters
+  // Format query with parameters for logging
   const formattedQuery = formatSql(e.query, e.params);
-
+  const timestamp = new Date().toISOString();
+  
+  // Structured logging for all environments
   console.debug('Postgres query', {
-    query: e.query,
+    query: formattedQuery,
     params: e.params,
     duration: `${e.duration}ms`,
-    formattedSql: formattedQuery,
+    timestamp,
   });
-  
-  // In development, also log to console for easier debugging
+
+  // Enhanced development logging (console-friendly format)
   if (process.env.NODE_ENV === 'development') {
-    console.log('\n🔍 PostgreSQL Query:');
+    console.log(`\n🔍 PostgreSQL Query [${timestamp}]`);
     console.log(`⏱️  Duration: ${e.duration}ms`);
     console.log(`📝 ${formattedQuery}\n`);
   }
@@ -125,12 +127,9 @@ export type {
   // Commented out tables that don't exist in schema:
   // refresh_token,
   // msg_group,
-  // msg_group_user, 
+  // msg_group_user,
   // message,
   // user_msg_box,
 } from './generated/postgres-client';
 // Export useful Prisma types
-export type {
-  Prisma,
-} from './generated/postgres-client';
-
+export type { Prisma } from './generated/postgres-client';
