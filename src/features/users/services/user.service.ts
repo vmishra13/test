@@ -607,11 +607,13 @@ export async function updateUserPasswordService(
  */
 export async function deleteUserService(
   req: ExtendedRequest<any> & { params: { userId: string } },
-): Promise<any> {
+): Promise<{ data: any; message: string }> {
   try {
+    // 1. Check authentication
     const currentUser = getCurrentUser(req);
-    const { userId } = req.params;
 
+    // 2. Validate userId parameter
+    const { userId } = req.params;
     if (!userId) {
       throw createValidationError('User ID is required', [
         { field: 'userId', message: 'User ID parameter is required' },
@@ -625,43 +627,76 @@ export async function deleteUserService(
       ]);
     }
 
-    // Get target user first
+    // 3. Get target user to build authorization context
     const targetUser = await userRepository.findUserById(targetUserId);
     if (!targetUser) {
       throw createAuthorizationError('User not found');
     }
 
-    // Create authorization request for deleting specific user
+    // Extract target user's roles for authorization
+    const targetUserRoles =
+      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+
+    // 4. Build authorization request
+    const actionUserId = targetUserId;
+    const actionClientId = targetUser.clientId; // Target user's client
+    const actionUserTypeId = targetUser.userTypeId; // Target user's type
+    const actionUserRoles = targetUserRoles; // Target user's roles
+    const actionPermission = RequestUserAction.userDelete; // Specific permission for user deletion
+
     const oAuthReq: AuthRequest = createAuthRequest(
       currentUser,
-      targetUserId,
-      targetUser.clientId,
-      null,
-      null,
-      RequestUserAction.userDelete, // Specific permission for deletion
+      actionUserId,
+      actionClientId,
+      actionUserTypeId,
+      actionUserRoles,
+      actionPermission,
     );
 
+    // 5. Check authorization for the specific action
     const hasPermission = performAuthorization(oAuthReq);
 
     if (!hasPermission) {
       logger.error(
-        `User ${currentUser.userId} denied deletion access to user ${targetUserId} - Insufficient permissions`,
+        `User ${currentUser.userId} does not have permission to delete user ${targetUserId}`,
       );
-      throw createAuthorizationError(
-        'Access denied - Insufficient permissions to delete this user',
-      );
+      throw createAuthorizationError('You do not have permission to perform this action');
     }
 
+    // 6. Apply business rules for deletion
+    return await performUserDeletion(targetUserId, targetUserRoles, currentUser);
+  } catch (error: any) {
+    logger.error('Error in deleteUser service:', error);
+    throw error;
+  }
+}
+
+/**
+ * Perform user deletion with business rules validation
+ *
+ * Applies deletion business rules and performs the actual deletion operation.
+ * Includes comprehensive audit logging and validation.
+ *
+ * @param targetUserId - ID of user to delete
+ * @param targetUserRoles - Roles of the target user
+ * @param currentUser - User performing the deletion
+ * @returns Promise<any> - Deletion confirmation with audit details
+ */
+async function performUserDeletion(
+  targetUserId: number,
+  targetUserRoles: CoreRole[],
+  currentUser: any,
+): Promise<{ data: any; message: string }> {
+  try {
     // Additional business rules for deletion
     const currentUserRole = getCurrentUserPrimaryRole(currentUser.roles);
 
-    // Prevent SUPER_ADMIN deletion
-    const targetUserRoles = targetUser.userRoles.map((ur: any) => ur.role.name);
+    // 1. Prevent SUPER_ADMIN deletion
     if (targetUserRoles.includes(CoreRole.SUPER_ADMIN)) {
       throw createAuthorizationError('SUPER_ADMIN users cannot be deleted');
     }
 
-    // CLIENT_ADMIN can only delete users in their own client (except other CLIENT_ADMINs)
+    // 2. CLIENT_ADMIN cannot delete other CLIENT_ADMINs
     if (
       currentUserRole === CoreRole.CLIENT_ADMIN &&
       targetUserRoles.includes(CoreRole.CLIENT_ADMIN)
@@ -669,21 +704,36 @@ export async function deleteUserService(
       throw createAuthorizationError('CLIENT_ADMIN cannot delete other CLIENT_ADMIN users');
     }
 
-    // Perform soft delete
+    // 3. Prevent self-deletion
+    if (targetUserId === currentUser.userId) {
+      throw createAuthorizationError('Users cannot delete themselves');
+    }
+
+    // 4. Check for active dependencies (optional - implement based on business needs)
+    // TODO: Check for active appointments, ongoing treatments, etc.
+
+    // 5. Perform soft delete
     await userRepository.softDeleteUser(targetUserId, currentUser.loginName);
 
+    // 6. Log successful deletion
+    logger.warn('User deletion completed', {
+      deletedUserId: targetUserId,
+      deletedUserRoles: targetUserRoles,
+      deletedBy: currentUser.loginName,
+      timestamp: new Date().toISOString(),
+    });
+
     return {
-      success: true,
       data: {
         deletedUserId: targetUserId,
         deletedAt: new Date().toISOString(),
         deletedBy: currentUser.loginName,
+        status: 'soft_deleted',
       },
       message: 'User deleted successfully',
-      timestamp: new Date().toISOString(),
     };
   } catch (error: any) {
-    logger.error('Error in deleteUser service:', error);
+    logger.error('Error performing user deletion:', error);
     throw error;
   }
 }

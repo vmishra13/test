@@ -42,22 +42,8 @@ export function performAuthorization(oAuthReq: AuthRequest): boolean {
     case RequestUserAction.userEdit:
       return validateUserEditAccess(oAuthReq, currentUserRoles);
 
-    // case RequestUserAction.userDelete:
-    //   // SUPER_ADMIN can edit/delete any user
-    //   if (currentUserRole === CoreRole.SUPER_ADMIN) {
-    //     return true;
-    //   }
-
-    //   // CLIENT_ADMIN can edit/delete users in their client (except SUPER_ADMIN users)
-    //   if (currentUserRole === CoreRole.CLIENT_ADMIN) {
-    //     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-    //       return false;
-    //     }
-    //     return true;
-    //   }
-
-    //   // Other roles cannot edit/delete users
-    //   return false;
+    case RequestUserAction.userDelete:
+      return validateUserDeleteAccess(oAuthReq, currentUserRoles);
 
     default:
       logger.error(`❌ Unknown action permission: ${oAuthReq.actionPermission}`);
@@ -549,6 +535,92 @@ function validateUserEditAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
   // Default: deny access for unknown roles
   logger.error(
     `❌ Unknown or invalid role combination for edit access: ${currentUserRoles.join(', ')}`,
+  );
+  return false;
+}
+
+/**
+ * Validate if the current user can delete the specified user based on their roles
+ * @param oAuthReq The OAuth request containing action and client information
+ * @param currentUserRoles The roles of the current user
+ * @returns true if the user can delete the specified user, false otherwise
+ */
+function validateUserDeleteAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRole[]): boolean {
+  const targetUserRoles = Array.isArray(oAuthReq.actionUserRoles)
+    ? (oAuthReq.actionUserRoles as CoreRole[])
+    : oAuthReq.actionUserRoles
+      ? [oAuthReq.actionUserRoles as CoreRole]
+      : [];
+
+  // SUPER_ADMIN can delete any user (except other SUPER_ADMINs - handled in service layer)
+  if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    return true;
+  }
+
+  // CLIENT_ADMIN can delete users in their client, but NOT SUPER_ADMIN users
+  if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
+    // Check client boundary
+    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      logger.error(
+        `❌ CLIENT_ADMIN cannot delete users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
+      );
+      return false;
+    }
+
+    // Cannot delete SUPER_ADMIN users
+    if (targetUserRoles.includes(CoreRole.SUPER_ADMIN) || oAuthReq.actionUserTypeId === 1) {
+      logger.error(`❌ CLIENT_ADMIN cannot delete SUPER_ADMIN users`);
+      return false;
+    }
+
+    // Cannot delete other CLIENT_ADMIN users (handled in service layer as well, but double-check here)
+    if (targetUserRoles.includes(CoreRole.CLIENT_ADMIN) || oAuthReq.actionUserTypeId === 2) {
+      logger.error(`❌ CLIENT_ADMIN cannot delete other CLIENT_ADMIN users`);
+      return false;
+    }
+
+    return true;
+  }
+
+  // CLINICAL_STAFF and OFFICE_STAFF can only delete PATIENT users in their client
+  if (
+    currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
+    currentUserRoles.includes(CoreRole.OFFICE_STAFF)
+  ) {
+    // Check client boundary
+    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+      logger.error(
+        `❌ CLINICAL_STAFF/OFFICE_STAFF cannot delete users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
+      );
+      return false;
+    }
+
+    // Can only delete PATIENT accounts (userTypeId = 5)
+    if (oAuthReq.actionUserTypeId && oAuthReq.actionUserTypeId !== 5) {
+      logger.error(
+        `❌ CLINICAL_STAFF/OFFICE_STAFF can only delete PATIENT accounts, attempted to delete userTypeId: ${oAuthReq.actionUserTypeId}`,
+      );
+      return false;
+    }
+
+    // Also check roles - must have PATIENT role
+    if (targetUserRoles.length > 0 && !targetUserRoles.includes(CoreRole.PATIENT)) {
+      logger.error(`❌ CLINICAL_STAFF/OFFICE_STAFF can only delete users with PATIENT role`);
+      return false;
+    }
+
+    return true;
+  }
+
+  // PATIENT users cannot delete any users (including themselves for security)
+  if (currentUserRoles.includes(CoreRole.PATIENT)) {
+    logger.error(`❌ PATIENT users cannot delete any users`);
+    return false;
+  }
+
+  // Default: deny access for unknown roles
+  logger.error(
+    `❌ Unknown or invalid role combination for delete access: ${currentUserRoles.join(', ')}`,
   );
   return false;
 }
