@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod';
+import { CompletePlanModelSchema } from '../../../shared/types/plan-model.types';
 
 // ===================================================================
 // 🎯 ENUMS AND SHARED SCHEMAS
@@ -34,7 +35,7 @@ export const PlanSchema = z.object({
   diagnosisId: z.number().int().positive(),
   diagnosisName: z.string().max(100),
   version: z.number().int().optional(),
-  model: z.any().optional(), // JSON field
+  model: CompletePlanModelSchema.optional(), // Validated JSON field for plan structure
   crUser: z.string().max(50),
   crDate: z.date().optional(),
   modUser: z.string().max(50),
@@ -65,7 +66,7 @@ export const CreatePlanSchema = z.object({
     .optional()
     .default(1),
   
-  model: z.any().optional(), // JSON field for plan structure
+  model: CompletePlanModelSchema.optional(), // Validated JSON field for plan structure
 });
 
 /**
@@ -94,7 +95,7 @@ export const UpdatePlanSchema = z.object({
     .min(1, 'Version must be at least 1')
     .optional(),
   
-  model: z.any().optional(),
+  model: CompletePlanModelSchema.optional(),
 });
 
 // ===================================================================
@@ -117,7 +118,7 @@ export const PatientPlanSchema = z.object({
   surgeryDate: z.string().datetime(),
   surgeryTime: z.string().datetime(),
   literality: LiteralityEnum.optional(),
-  model: z.any().optional(),
+  model: CompletePlanModelSchema.optional(),
   crUser: z.string().max(50).optional(),
   crDate: z.date().optional(),
   modUser: z.string().max(50),
@@ -165,7 +166,7 @@ export const CreatePatientPlanSchema = z.object({
   
   literality: LiteralityEnum.optional(),
   
-  model: z.any().optional(),
+  model: CompletePlanModelSchema.optional(),
 });
 
 /**
@@ -208,7 +209,7 @@ export const UpdatePatientPlanSchema = z.object({
   
   literality: LiteralityEnum.optional(),
   
-  model: z.any().optional(),
+  model: CompletePlanModelSchema.optional(),
 });
 
 // ===================================================================

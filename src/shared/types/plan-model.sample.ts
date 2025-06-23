@@ -1,0 +1,673 @@
+/**
+ * Sample Plan Model Data
+ * 
+ * This file contains sample data that demonstrates the plan-model.types.ts structure
+ * based on the approved JSON format - matches the exact structure provided
+ */
+
+import { 
+  CompletePlanModel, 
+  validatePlanModel, 
+  safeParsePlanModel 
+} from './plan-model.types';
+
+// ===================================================================
+// 🎯 SAMPLE PLAN MODEL DATA (MATCHES APPROVED JSON EXACTLY)
+// ===================================================================
+
+/**
+ * Complete sample plan model matching the approved JSON structure exactly
+ */
+export const samplePlanModel: CompletePlanModel = {
+  plan: {
+    planID: 9,
+    primaryDiagnosis: {
+      id: 172,
+      title: "Acute ACL Sprain",
+      body_area: "Knee",
+      group_type: "ACL",
+      left_ICD10: "NA",
+      right_IDC10: "NA",
+      bilateral_IDC10: "NA",
+      na_IDC10: "NA"
+    },
+    relatedDiagnosis: [
+      {
+        id: 96,
+        title: "Medial ACL Sprin",
+        body_area: "Knee",
+        group_type: "ACL",
+        left_ICD10: "NA",
+        right_IDC10: "NA",
+        bilateral_IDC10: "NA",
+        na_IDC10: "NA"
+      },
+      {
+        id: 97,
+        title: "General ACL Sprin",
+        body_area: "Knee",
+        group_type: "ACL",
+        left_ICD10: "NA",
+        right_IDC10: "NA",
+        bilateral_IDC10: "NA",
+        na_IDC10: "NA"
+      }
+    ],
+    note: "Please do not eat after midnight the night before surgery Continue clear liquid after midnight until 4 hrs before surgery. If your surgery is the 1st morning case, please do not eat or drink after midnight the night before surgeryPlease see additional Fasting (NPO) Gudlines",
+    journey: {
+      type: "Surgical", // Non-Surgical
+      recoveryTime: "12-24",
+      recoveryTimeUnit: "Week" // Months
+    },
+    preOpLearning: {
+      id: 1,
+      node_type: "RootNode",
+      title: "General Preoperative Instructions",
+      text: "NULL",
+      media: {
+        name: "NA",
+        type: "NA",
+        url: "NULL"
+      },
+      items: [
+        {
+          id: 1,
+          node_type: "ChildNode",
+          title: "1. General Pre-Op Information",
+          text: "NULL",
+          media: {
+            name: "NA",
+            type: "NA",
+            url: "NULL"
+          },
+          items: [
+            {
+              id: 1,
+              node_type: "ChildNode",
+              title: "What to bring on the day of surgery",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one • Identification card, driving licence and hospital co-paymment, if informed • Postoperative brace, if requried• Compfortable loose fitting clothing• Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            },
+            {
+              id: 2,
+              node_type: "ChildNode",
+              title: "What to prepare for surgery ",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n • Identification card, driving licence and hospital co-paymment, if informed \n• Postoperative brace, if requried \n• Compfortable loose fitting clothing \n• Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            },
+            {
+              id: 3,
+              node_type: "ChildNode",
+              title: "How to reschedule surgery ",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n • Identification card, driving licence and hospital co-paymment, if informed \n• Postoperative brace, if requried \n• Compfortable loose fitting clothing \n• Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 2,
+          node_type: "ChildNode",
+          title: "2. Pre-Op Antiseptive Process",
+          text: "NULL",
+          media: {
+            name: "NA",
+            type: "NA",
+            url: "NULL"
+          },
+          items: [
+            {
+              id: 1,
+              node_type: "ChildNode",
+              title: "What to bring on the day of surgery",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n • Identification card, driving licence and hospital co-paymment, if informed \n• Postoperative brace, if requried \n• Compfortable loose fitting clothing \n• Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            },
+            {
+              id: 2,
+              node_type: "ChildNode",
+              title: "What to prepare for surgery ",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n• Identification card, driving licence and hospital co-paymment, if informed \n• Postoperative brace, if requried \n• Compfortable loose fitting clothing \n• Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            },
+            {
+              id: 3,
+              node_type: "ChildNode",
+              title: "What to reschedule surgery ",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n • Identification card, driving licence and hospital co-paymment, if informed \n • Postoperative brace, if requried \n• Compfortable loose fitting clothing \n• Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          id: 3,
+          node_type: "ChildNode",
+          title: "3. Fasting (NPO) Guidlines",
+          text: "NULL",
+          media: {
+            name: "NA",
+            type: "NA",
+            url: "NULL"
+          },
+          items: [
+            {
+              id: 1,
+              node_type: "ChildNode",
+              title: "What to bring on the day of surgery",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n • Identification card, driving licence and hospital co-paymment, if informed \n • Postoperative brace, if requried \n • Compfortable loose fitting clothing \n • Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            },
+            {
+              id: 3,
+              node_type: "ChildNode",
+              title: "What to prepare for surgery ",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n • Identification card, driving licence and hospital co-paymment, if informed \n • Postoperative brace, if requried \n • Compfortable loose fitting clothing \n • Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            },
+            {
+              id: 3,
+              node_type: "ChildNode",
+              title: "What to reschedule surgery ",
+              text: "NULL",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: [
+                {
+                  id: 1,
+                  node_type: "LeafdNode",
+                  title: "Do bring the following:",
+                  text: "• Advance directive, if you have one \n • Identification card, driving licence and hospital co-paymment, if informed \n• Postoperative brace, if requried \n • Compfortable loose fitting clothing \n • Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                },
+                {
+                  id: 2,
+                  node_type: "LeafdNode",
+                  title: "Do NOT bring the following:",
+                  text: "• Jewelry, phones, laptops or valuables that can lost",
+                  media: {
+                    name: "NA",
+                    type: "NA",
+                    url: "NULL"
+                  },
+                  items: []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    postOpLearning: {
+      id: 1,
+      node_type: "RootNode",
+      title: "General Postoperative Instructions",
+      text: "NULL",
+      media: {
+        name: "NA",
+        type: "NA",
+        url: "NULL"
+      },
+      items: [
+        {
+          id: 1,
+          node_type: "ChildNode",
+          title: "Diet",
+          text: "NULL",
+          media: {
+            name: "NA",
+            type: "Image",
+            url: "S3://dietImage.jpeg"
+          },
+          items: [
+            {
+              id: 1,
+              node_type: "LeafNode",
+              title: "What should I eat after surgery",
+              text: "• Begin with clear liquids and light foods (jello, soup etc.) \n • Avoid greasy or spicy for first 24 hours  \n • Increase fluid intake to help  prevent constipation",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: []
+            }
+          ]
+        },
+        {
+          id: 2,
+          node_type: "ChildNode",
+          title: "Anesthesia",
+          text: "NULL",
+          media: {
+            name: "NA",
+            type: "Image",
+            url: "S3://anesthesiaImage.jpeg"
+          },
+          items: [
+            {
+              id: 1,
+              node_type: "LeafdNode",
+              title: "What should I expect to feel from the nerve block?",
+              text: "• If the anestesia team places a nerve block,  you may have numbness or inabality to move limb. Do not be alarmed as this may last 8-36 hours. \n • If you experienced numbness after 36 hours, contact your healthcare provider \n • When nerve blocks being to wear off, you will feel a tingling sensation, like pins and needles. It is important that you start taking the pain medication at the time to ensure you stay ahead of pain.",
+              media: {
+                name: "NA",
+                type: "NA",
+                url: "NULL"
+              },
+              items: []
+            }
+          ]
+        }
+      ]
+    },
+    milestones: [
+      {
+        id: 1,
+        durationUnit: "Week",
+        fromDuration: -4,
+        toDuration: 0
+      },
+      {
+        id: 2,
+        durationUnit: "Week",
+        fromDuration: 0,
+        toDuration: 4,
+        goals: [
+          {
+            id: 1,
+            title: "Exercise goals ",
+            text: "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence"
+          }
+        ],
+        precaution: {
+          id: 1,
+          title: "Precautions",
+          text: "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait"
+        },
+        media: {
+          name: "NA",
+          type: "NA",
+          url: "NULL"
+        }
+      }
+    ],
+    careJourney: [
+      {
+        title: "Standard",
+        description: "Standard ACL Protocol",
+        selected: true,
+        media: {
+          name: "NA",
+          type: "NA",
+          url: "NULL"
+        },
+        weeklyUnit: "4",
+        dailyUnit: "3",
+        selectedDays: [1, 3, 5, 7],
+        timeLines: [
+          {
+            durationUnit: "Week",
+            fromDuration: -2,
+            toDuration: 0,
+            exercises: [
+              {
+                id: 1,
+                title: "HEP Protocol:",
+                text: "Stool Rotations",
+                set: 1,
+                repetition: 10,
+                showCheckbox: true,
+                media: {
+                  name: "Stool Rotation",
+                  type: "Video",
+                  url: "S3://stoolRotation.mp4"
+                },
+                purpose: "Purpose", // addition
+                procedure: {
+                  title: "Procedure:",
+                  text: "1. Place the involved knee on stool. \n 2. Then, rotate your leg outwords and hold for 10 seconds. \n 3. Then, rotate your leg inword and hold for 10 seconds. \n Note: Keep your hips facing down so the rotation comes from the surgical hip. \n Note: Progress range without any pain and minimal discomfort."
+                }
+              },
+              {
+                id: 2,
+                title: "HEP Protocol:",
+                text: "Prone Hip Rotations",
+                set: 1,
+                repetition: 5,
+                showCheckbox: true,
+                media: {
+                  name: "Stool Rotation",
+                  type: "Video",
+                  url: "S3://stoolRotation.mp4"
+                },
+                purpose: "Purpose of excerise",
+                procedure: {
+                  title: "Procedure:",
+                  text: "1. Rotate your leg outwrod and hold for 10 seconds. \n 2. Then, rotate your leg inword and hold for 10 seconds. \n Note: Keep your hips facing down so the rotation comes from the surgical hip. \n Note: Progress range without any pain and minimal discomfort. "
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    medication: [
+      {
+        id: 2,
+        name: "SAMSCA",
+        identifier: "NDC",
+        code: "59148-020",
+        dosageForm: "TABLET",
+        strength: "15 mg/1",
+        timeUnit: "Day",
+        timeUnitValue: 1,
+        timePeriod: 10
+      },
+      {
+        id: 4,
+        name: "Celebrex",
+        identifier: "NDC",
+        code: "00006-0820",
+        dosageForm: "CAPSULE",
+        strength: "200 mg/1",
+        timeUnit: "Day",
+        timeUnitValue: 1,
+        timePeriod: 10
+      },
+      {
+        id: 6,
+        name: "Zanaflex",
+        identifier: "NDC",
+        code: "70515-604",
+        dosageFrom: "CAPSULE", // Note: keeping the typo as it exists in approved structure
+        strength: "4 mg/1",
+        timeUnit: "Day",
+        timeUnitValue: 1,
+        timePeriod: 10
+      }
+    ]
+  }
+};
+
+// ===================================================================
+// 🎯 VALIDATION EXAMPLE
+// ===================================================================
+
+/**
+ * Example of validating the sample plan model
+ */
+export function validateSamplePlan(): boolean {
+  try {
+    const validated = validatePlanModel(samplePlanModel);
+    console.log('✅ Sample plan model is valid');
+    console.log('Plan ID:', validated.plan.planID);
+    console.log('Primary Diagnosis:', validated.plan.primaryDiagnosis.title);
+    console.log('Journey Type:', validated.plan.journey.type);
+    console.log('Recovery Time:', validated.plan.journey.recoveryTime, validated.plan.journey.recoveryTimeUnit);
+    return true;
+  } catch (error) {
+    console.error('❌ Sample plan model validation failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Example of safe parsing
+ */
+export function safeParseSamplePlan(): CompletePlanModel | null {
+  const result = safeParsePlanModel(samplePlanModel);
+  if (result) {
+    console.log('✅ Sample plan model parsed successfully');
+    return result;
+  } else {
+    console.log('❌ Sample plan model parsing failed');
+    return null;
+  }
+}

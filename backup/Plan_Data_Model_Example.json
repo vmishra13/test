@@ -36,8 +36,12 @@
                 
             }
         ],   
-        "literality": "Left",
         "note": "Please do not eat after midnight the night before surgery Continue clear liquid after midnight until 4 hrs before surgery. If your surgery is the 1st morning case, please do not eat or drink after midnight the night before surgeryPlease see additional Fasting (NPO) Gudlines",
+        "journey": {
+            "type":"Surgical", //Non-Surgical
+            "recoveryTime": "12-24",
+            "recoveryTimeUnit": "Week" //Months
+        },
         "preOpLearning": {
             "id": 1,
             "node_type": "RootNode",
