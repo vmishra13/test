@@ -338,9 +338,13 @@ export class PlansRepository {
    * Create a new patient plan schedule
    */
   async createSchedule(data: CreateScheduleData & { clientId: number; crUser: string; modUser: string }) {
+    // Transform planID -> planId and typeID -> typeId for Prisma compatibility
+    const { planID, typeID, ...rest } = data;
     return await this.db.patient_plan_schedule.create({
       data: {
-        ...data,
+        ...rest,
+        planId: planID,
+        typeId: typeID,
         crDate: new Date(),
         modDate: new Date(),
       }
@@ -368,7 +372,7 @@ export class PlansRepository {
     const where: Prisma.patient_plan_scheduleWhereInput = {
       clientId,
       ...(patientId && { patientId }),
-      ...(planId && { planID: planId }),
+      ...(planId && { planId: planId }),
       ...(type && { type: type as any }),
       ...(scheduleDate && { 
         scheduleDate: {
@@ -490,9 +494,12 @@ export class PlansRepository {
    * Create a new schedule log entry
    */
   async createScheduleLog(data: CreateScheduleLogData & { clientId: number; crUser: string; modUser: string }) {
+    // Transform planID -> planId for Prisma compatibility  
+    const { planID, ...rest } = data;
     return await this.db.patient_plan_schedule_log.create({
       data: {
-        ...data,
+        ...rest,
+        planId: planID,
         crDate: new Date(),
         modDate: new Date(),
       }

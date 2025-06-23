@@ -1,9 +1,10 @@
 // Test script to verify imports work
-import { UserRegistrationService, DoctorSelectionService } from './features/users/services/user.service';
+import { registerUserService, getUsersService } from './features/users/services/user.service';
 
 console.log('All imports successful!');
 
-const userService = new UserRegistrationService();
-const doctorService = new DoctorSelectionService();
+// Test that functions are available
+console.log('registerUserService:', typeof registerUserService);
+console.log('getUsersService:', typeof getUsersService);
 
-console.log('All services instantiated successfully!');
+console.log('All services imported successfully!');

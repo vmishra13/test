@@ -10,27 +10,33 @@ datasource postgresDb {
 
 /// Client model with relationships
 model client {
-  id           Int               @id @default(autoincrement())
-  name         String            @postgresDb.VarChar(100)
-  description  String?
-  timeZone     String            @postgresDb.VarChar(100)
-  status       Int?              @default(-1)
-  logo         String?           @postgresDb.VarChar(2000)
-  favIcon      String?           @postgresDb.VarChar(2000)
-  language     String?           @postgresDb.VarChar(50)
-  website      String?           @postgresDb.VarChar(2000)
-  extraInfo    Json?             @postgresDb.Json
-  crUser       String            @postgresDb.VarChar(50)
-  crDate       DateTime          @default(now()) @postgresDb.Timestamp(6)
-  modUser      String            @postgresDb.VarChar(50)
-  modDate      DateTime?         @default(now()) @postgresDb.Timestamp(6)
-  locations    client_location[]
-  contacts     contact[]
-  form_master  form_master[]
-  patient_form patient_form[]
-  plan         plan[]
-  users        user[]
-  userRoles    user_role[]
+  id                        Int                         @id @default(autoincrement())
+  name                      String                      @postgresDb.VarChar(100)
+  description               String?
+  timeZone                  String                      @postgresDb.VarChar(100)
+  status                    Int?                        @default(-1)
+  logo                      String?                     @postgresDb.VarChar(2000)
+  favIcon                   String?                     @postgresDb.VarChar(2000)
+  language                  String?                     @postgresDb.VarChar(50)
+  website                   String?                     @postgresDb.VarChar(2000)
+  extraInfo                 Json?                       @postgresDb.Json
+  crUser                    String                      @postgresDb.VarChar(50)
+  crDate                    DateTime                    @default(now()) @postgresDb.Timestamp(6)
+  modUser                   String                      @postgresDb.VarChar(50)
+  modDate                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
+  locations                 client_location[]
+  contacts                  contact[]
+  form_master               form_master[]
+  medication_master         medication_master[]
+  msg_group                 msg_group[]
+  patient_form              patient_form[]
+  patient_plan              patient_plan[]
+  patient_plan_schedule     patient_plan_schedule[]
+  patient_plan_schedule_log patient_plan_schedule_log[]
+  plan                      plan[]
+  plan_user                 plan_user[]
+  users                     user[]
+  userRoles                 user_role[]
 }
 
 /// Client location model with relationships
@@ -96,32 +102,40 @@ model role {
 
 /// User model with relationships
 model user {
-  id               Int            @id @default(autoincrement())
-  clientId         Int
-  userTypeId       Int
-  loginName        String         @unique(map: "uk_user_login_name") @postgresDb.VarChar(50)
-  firstName        String?        @postgresDb.VarChar(50)
-  middleName       String?        @postgresDb.VarChar(50)
-  lastName         String?        @postgresDb.VarChar(50)
-  email            String?        @unique(map: "uk_user_email") @postgresDb.VarChar(100)
-  dob              DateTime?      @postgresDb.Date
-  mrn              String?        @postgresDb.VarChar(50)
-  gender           String?        @postgresDb.VarChar(50)
-  timeZone         String?        @postgresDb.VarChar(100)
-  profilePicture   String?        @postgresDb.VarChar(2000)
-  passExpireInDays Int?
-  extraInfo        Json?          @postgresDb.Json
-  status           Int?
-  crUser           String         @postgresDb.VarChar(50)
-  crDate           DateTime       @default(now()) @postgresDb.Timestamp(6)
-  modUser          String         @postgresDb.VarChar(50)
-  modDate          DateTime?      @default(now()) @postgresDb.Timestamp(6)
-  contacts         contact[]
-  passwords        password[]
-  patient_form     patient_form[]
-  client           client         @relation(fields: [clientId], references: [id], map: "fk_user_client")
-  userType         user_type      @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
-  userRoles        user_role[]
+  id                                        Int                         @id @default(autoincrement())
+  clientId                                  Int
+  userTypeId                                Int
+  loginName                                 String                      @unique(map: "uk_user_login_name") @postgresDb.VarChar(50)
+  firstName                                 String?                     @postgresDb.VarChar(50)
+  middleName                                String?                     @postgresDb.VarChar(50)
+  lastName                                  String?                     @postgresDb.VarChar(50)
+  email                                     String?                     @unique(map: "uk_user_email") @postgresDb.VarChar(100)
+  dob                                       DateTime?                   @postgresDb.Date
+  mrn                                       String?                     @postgresDb.VarChar(50)
+  gender                                    String?                     @postgresDb.VarChar(50)
+  timeZone                                  String?                     @postgresDb.VarChar(100)
+  profilePicture                            String?                     @postgresDb.VarChar(2000)
+  passExpireInDays                          Int?
+  extraInfo                                 Json?                       @postgresDb.Json
+  status                                    Int?
+  crUser                                    String                      @postgresDb.VarChar(50)
+  crDate                                    DateTime                    @default(now()) @postgresDb.Timestamp(6)
+  modUser                                   String                      @postgresDb.VarChar(50)
+  modDate                                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
+  contacts                                  contact[]
+  msg_group                                 msg_group[]
+  msg_group_participant                     msg_group_participant[]
+  msg_group_relation                        msg_group_relation[]
+  passwords                                 password[]
+  patient_form                              patient_form[]
+  patient_plan_patient_plan_surgeonIdTouser patient_plan[]              @relation("patient_plan_surgeonIdTouser")
+  patient_plan_patient_plan_patientIdTouser patient_plan[]              @relation("patient_plan_patientIdTouser")
+  patient_plan_schedule                     patient_plan_schedule[]
+  patient_plan_schedule_log                 patient_plan_schedule_log[]
+  plan_user                                 plan_user[]
+  client                                    client                      @relation(fields: [clientId], references: [id], map: "fk_user_client")
+  userType                                  user_type                   @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
+  userRoles                                 user_role[]
 }
 
 /// User role model with relationships
@@ -152,20 +166,22 @@ model user_type {
 }
 
 model diagnosis_master {
-  id                                        Int       @id @default(autoincrement())
-  name                                      String?   @unique @postgresDb.VarChar(100)
-  bodyArea                                  String    @postgresDb.VarChar(100)
-  groupType                                 String    @postgresDb.VarChar(100)
-  leftICDCode                               String?   @postgresDb.VarChar(50)
-  rightICDCode                              String?   @postgresDb.VarChar(50)
-  bilateralICDCode                          String?   @postgresDb.VarChar(50)
-  noneICDCode                               String?   @postgresDb.VarChar(50)
-  crUser                                    String    @postgresDb.VarChar(50)
-  crDate                                    DateTime? @default(now()) @postgresDb.Timestamp(6)
-  modUser                                   String    @postgresDb.VarChar(50)
-  modDate                                   DateTime? @default(now()) @postgresDb.Timestamp(6)
-  plan_plan_diagnosisIdTodiagnosis_master   plan[]    @relation("plan_diagnosisIdTodiagnosis_master")
-  plan_plan_diagnosisNameTodiagnosis_master plan[]    @relation("plan_diagnosisNameTodiagnosis_master")
+  id                                                        Int            @id @default(autoincrement())
+  name                                                      String?        @unique @postgresDb.VarChar(100)
+  bodyArea                                                  String         @postgresDb.VarChar(100)
+  groupType                                                 String         @postgresDb.VarChar(100)
+  leftICDCode                                               String?        @postgresDb.VarChar(50)
+  rightICDCode                                              String?        @postgresDb.VarChar(50)
+  bilateralICDCode                                          String?        @postgresDb.VarChar(50)
+  noneICDCode                                               String?        @postgresDb.VarChar(50)
+  crUser                                                    String         @postgresDb.VarChar(50)
+  crDate                                                    DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  modUser                                                   String         @postgresDb.VarChar(50)
+  modDate                                                   DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  patient_plan_patient_plan_diagnosisIdTodiagnosis_master   patient_plan[] @relation("patient_plan_diagnosisIdTodiagnosis_master")
+  patient_plan_patient_plan_diagnosisNameTodiagnosis_master patient_plan[] @relation("patient_plan_diagnosisNameTodiagnosis_master")
+  plan_plan_diagnosisIdTodiagnosis_master                   plan[]         @relation("plan_diagnosisIdTodiagnosis_master")
+  plan_plan_diagnosisNameTodiagnosis_master                 plan[]         @relation("plan_diagnosisNameTodiagnosis_master")
 }
 
 model patient_form {
@@ -196,6 +212,7 @@ model plan {
   crDate                                                DateTime?        @default(now()) @postgresDb.Timestamp(6)
   modUser                                               String           @postgresDb.VarChar(50)
   modDate                                               DateTime?        @default(now()) @postgresDb.Timestamp(6)
+  patient_plan                                          patient_plan[]
   client                                                client           @relation(fields: [clientId], references: [id], map: "fk_plan_client")
   diagnosis_master_plan_diagnosisIdTodiagnosis_master   diagnosis_master @relation("plan_diagnosisIdTodiagnosis_master", fields: [diagnosisId], references: [id], map: "fk_plan_diagnosis_master")
   diagnosis_master_plan_diagnosisNameTodiagnosis_master diagnosis_master @relation("plan_diagnosisNameTodiagnosis_master", fields: [diagnosisName], references: [name], map: "fk_plan_diagnosis_name")
@@ -212,4 +229,305 @@ model form_master {
   moddate      DateTime?      @default(now()) @postgresDb.Timestamp(6)
   client       client?        @relation(fields: [clientid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_form_master_client")
   patient_form patient_form[]
+}
+
+model exercise_master {
+  id              Int                  @id @default(autoincrement())
+  title           String               @postgresDb.VarChar(100)
+  description     String?
+  purpose         String?              @postgresDb.VarChar(255)
+  media_type      media_type_enum?
+  media_url       String?              @postgresDb.VarChar(2048)
+  frequencyPeriod frequency_unit_type? @default(Day)
+  unit            unit_type?           @default(Set)
+  value           Int?                 @default(1)
+  setUnit         Int?                 @default(1)
+  repetition      Int?                 @default(0)
+  procedure       String?              @postgresDb.VarChar(1024)
+  note            String?
+  show_checkbox   Boolean?
+  crUser          String               @postgresDb.VarChar(50)
+  crDate          DateTime?            @default(now()) @postgresDb.Timestamp(6)
+  modUser         String               @postgresDb.VarChar(50)
+  modDate         DateTime?            @default(now()) @postgresDb.Timestamp(6)
+}
+
+model medication_master {
+  id           Int               @id @default(autoincrement())
+  name         String            @postgresDb.VarChar(255)
+  clientId     Int?              @default(1)
+  identifier   String?           @postgresDb.VarChar(50)
+  code         String?           @postgresDb.VarChar(50)
+  dosageForm   dosage_form_type?
+  strength     String?           @postgresDb.VarChar(50)
+  manufacturer String?           @postgresDb.VarChar(255)
+  description  String?
+  crUser       String            @postgresDb.VarChar(50)
+  crDate       DateTime?         @default(now()) @postgresDb.Timestamp(6)
+  modUser      String            @postgresDb.VarChar(50)
+  modDate      DateTime?         @default(now()) @postgresDb.Timestamp(6)
+  client       client?           @relation(fields: [clientId], references: [id], onDelete: Restrict, map: "fk_medication_master_client")
+}
+
+model message {
+  id                    Int                     @id @default(autoincrement())
+  type                  message_type_enum
+  body                  String?
+  attachments           Json?                   @postgresDb.Json
+  crUser                String                  @postgresDb.VarChar(50)
+  crDate                DateTime?               @default(now()) @postgresDb.Timestamp(6)
+  modUser               String                  @postgresDb.VarChar(50)
+  modDate               DateTime?               @default(now()) @postgresDb.Timestamp(6)
+  msg_group             msg_group[]
+  msg_group_participant msg_group_participant[]
+  msg_group_relation    msg_group_relation[]
+}
+
+model msg_group {
+  id                    Int                     @id @default(autoincrement())
+  type                  msg_group_type_enum
+  patientPlanId         Int
+  patientId             Int
+  clientId              Int
+  name                  String                  @postgresDb.VarChar(100)
+  description           String?
+  active                Boolean?                @default(true)
+  lastMsgId             Int?
+  lastMsgDate           DateTime?               @postgresDb.Timestamp(6)
+  crUser                String                  @postgresDb.VarChar(50)
+  crDate                DateTime?               @default(now()) @postgresDb.Timestamp(6)
+  modUser               String                  @postgresDb.VarChar(50)
+  modDate               DateTime?               @default(now()) @postgresDb.Timestamp(6)
+  client                client                  @relation(fields: [clientId], references: [id], map: "fk_msggroup_client")
+  message               message?                @relation(fields: [lastMsgId], references: [id], map: "fk_msggroup_message")
+  user                  user                    @relation(fields: [patientId], references: [id], map: "fk_msggroup_patient")
+  patient_plan          patient_plan            @relation(fields: [patientPlanId], references: [id], map: "fk_msggroup_patient_plan")
+  msg_group_participant msg_group_participant[]
+  msg_group_relation    msg_group_relation[]
+}
+
+model msg_group_participant {
+  id                 Int            @id @default(autoincrement())
+  msgGroupId         Int
+  userId             Int
+  userType           user_type_enum
+  boxtype            box_type_enum
+  unReadCount        Int?           @default(0)
+  firstUnreadMsgId   Int?
+  firstUnreadMsgDate DateTime?      @postgresDb.Timestamp(6)
+  validFrom          DateTime?      @postgresDb.Date
+  validTo            DateTime?      @postgresDb.Date
+  crUser             String         @postgresDb.VarChar(50)
+  crDate             DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  modUser            String         @postgresDb.VarChar(50)
+  modDate            DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  message            message?       @relation(fields: [firstUnreadMsgId], references: [id], map: "fk_msgparticipant_message")
+  msg_group          msg_group      @relation(fields: [msgGroupId], references: [id], map: "fk_msgparticipant_msg_group")
+  user               user           @relation(fields: [userId], references: [id], map: "fk_msgparticipant_user")
+}
+
+model msg_group_relation {
+  id         Int       @id @default(autoincrement())
+  msgGroupId Int
+  msgId      Int
+  senderId   Int
+  extraInfo  Json?     @postgresDb.Json
+  crUser     String    @postgresDb.VarChar(50)
+  crDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
+  modUser    String    @postgresDb.VarChar(50)
+  modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
+  message    message   @relation(fields: [msgId], references: [id], map: "fk_msgrelation_message")
+  msg_group  msg_group @relation(fields: [msgGroupId], references: [id], map: "fk_msgrelation_msg_group")
+  user       user      @relation(fields: [senderId], references: [id], map: "fk_msgrelation_sender")
+}
+
+model patient_plan {
+  id                                                            Int                         @id @default(autoincrement())
+  patientId                                                     Int
+  clientId                                                      Int?                        @default(1)
+  locationId                                                    Int?
+  planId                                                        Int?
+  surgeonId                                                     Int
+  diagnosisId                                                   Int?
+  diagnosisName                                                 String?                     @postgresDb.VarChar(100)
+  description                                                   String?
+  surgeryDate                                                   DateTime                    @postgresDb.Date
+  surgeryTime                                                   DateTime                    @postgresDb.Time(6)
+  literality                                                    literality_enum?            @default(None)
+  model                                                         Json?                       @postgresDb.Json
+  crUser                                                        String?                     @postgresDb.VarChar(50)
+  crDate                                                        DateTime?                   @default(now()) @postgresDb.Timestamp(6)
+  modUser                                                       String                      @postgresDb.VarChar(50)
+  modDate                                                       DateTime?                   @default(now()) @postgresDb.Timestamp(6)
+  msg_group                                                     msg_group[]
+  client                                                        client?                     @relation(fields: [clientId], references: [id], onDelete: Restrict, map: "fk_patientplan_client")
+  diagnosis_master_patient_plan_diagnosisIdTodiagnosis_master   diagnosis_master?           @relation("patient_plan_diagnosisIdTodiagnosis_master", fields: [diagnosisId], references: [id], onDelete: Restrict, map: "fk_patientplan_diagnosis_master")
+  diagnosis_master_patient_plan_diagnosisNameTodiagnosis_master diagnosis_master?           @relation("patient_plan_diagnosisNameTodiagnosis_master", fields: [diagnosisName], references: [name], onDelete: Restrict, map: "fk_patientplan_diagnosis_name")
+  plan                                                          plan?                       @relation(fields: [planId], references: [id], onDelete: Restrict, map: "fk_patientplan_plan")
+  user_patient_plan_surgeonIdTouser                             user                        @relation("patient_plan_surgeonIdTouser", fields: [surgeonId], references: [id], map: "fk_patientplan_surgeon")
+  user_patient_plan_patientIdTouser                             user                        @relation("patient_plan_patientIdTouser", fields: [patientId], references: [id], map: "fk_patientplan_user")
+  patient_plan_schedule                                         patient_plan_schedule[]
+  patient_plan_schedule_log                                     patient_plan_schedule_log[]
+  plan_user                                                     plan_user[]
+}
+
+model patient_plan_schedule {
+  id                        Int                         @id @default(autoincrement())
+  patientId                 Int
+  clientId                  Int?                        @default(1)
+  planId                    Int
+  type                      schedule_type?              @default(None)
+  typeId                    Int
+  scheduleDate              DateTime                    @postgresDb.Timestamp(6)
+  frequencyUnit             frequency_unit_type?
+  frequencyValue            Int?
+  scheduleUnit              String?                     @postgresDb.VarChar(50)
+  scheduleUnitValue         Decimal?                    @postgresDb.Decimal(10, 2)
+  measurementUnit           measurement_unit_type?
+  validFrom                 DateTime?                   @postgresDb.Date
+  validTo                   DateTime?                   @postgresDb.Date
+  status                    Boolean?                    @default(true)
+  crUser                    String                      @postgresDb.VarChar(50)
+  crDate                    DateTime?                   @default(now()) @postgresDb.Timestamp(6)
+  modUser                   String                      @postgresDb.VarChar(50)
+  modDate                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
+  client                    client?                     @relation(fields: [clientId], references: [id], onDelete: Restrict, map: "fk_patient_plan_schedule_client")
+  user                      user                        @relation(fields: [patientId], references: [id], map: "fk_patient_plan_schedule_user")
+  patient_plan              patient_plan                @relation(fields: [planId], references: [id], map: "fk_patient_plan_schedule_user_plan")
+  patient_plan_schedule_log patient_plan_schedule_log[]
+}
+
+model patient_plan_schedule_log {
+  id                    Int                    @id @default(autoincrement())
+  patientPlanScheduleId Int
+  patientId             Int
+  clientId              Int?                   @default(1)
+  planId                Int
+  type                  schedule_type?         @default(None)
+  typeId                Int
+  scheduleDate          DateTime?              @postgresDb.Timestamp(6)
+  frequencyUnit         frequency_unit_type?
+  frequencyValue        Int?
+  scheduleUnit          String?                @postgresDb.VarChar(50)
+  scheduleUnitValue     Decimal?               @postgresDb.Decimal(10, 2)
+  measurementUnit       measurement_unit_type?
+  validFrom             DateTime?              @postgresDb.Date
+  validTo               DateTime?              @postgresDb.Date
+  status                Boolean?               @default(true)
+  crUser                String                 @postgresDb.VarChar(50)
+  crDate                DateTime?              @default(now()) @postgresDb.Timestamp(6)
+  modUser               String                 @postgresDb.VarChar(50)
+  modDate               DateTime?              @default(now()) @postgresDb.Timestamp(6)
+  client                client?                @relation(fields: [clientId], references: [id], onDelete: Restrict, map: "fk_patient_plan_schedule_log_client")
+  user                  user                   @relation(fields: [patientId], references: [id], map: "fk_patient_plan_schedule_log_user")
+  patient_plan          patient_plan           @relation(fields: [planId], references: [id], map: "fk_patient_plan_schedule_log_user_plan")
+  patient_plan_schedule patient_plan_schedule  @relation(fields: [patientPlanScheduleId], references: [id], map: "fk_patient_plan_schedule_log_user_plan_schedule")
+}
+
+model plan_user {
+  id            Int            @id @default(autoincrement())
+  clientId      Int
+  patientPlanId Int
+  userId        Int
+  userType      user_type_enum
+  crUser        String         @postgresDb.VarChar(50)
+  crDate        DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  modUser       String         @postgresDb.VarChar(50)
+  modDate       DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  client        client         @relation(fields: [clientId], references: [id], map: "fk_planuser_client")
+  patient_plan  patient_plan   @relation(fields: [patientPlanId], references: [id], map: "fk_planuser_patient_plan")
+  user          user           @relation(fields: [userId], references: [id], map: "fk_planuser_user")
+}
+
+model ssi_data {
+  id                Int       @id @default(autoincrement())
+  ssiImageUrl       String?   @postgresDb.VarChar(500)
+  ssiClassification String?   @postgresDb.VarChar(100)
+  ssiComment        String?
+  gender            String?   @postgresDb.VarChar(50)
+  age               Int?
+  bmi               Float?
+  dateOfSurgery     DateTime? @postgresDb.Date
+  imgTakenDate      DateTime? @postgresDb.Timestamp(6)
+  typeOfSurgery     String?   @postgresDb.VarChar(100)
+  woundLoction      String?   @postgresDb.VarChar(100)
+  diabetesFlag      Boolean?
+  smokingFlag       Boolean?
+  imgCaptueDevice   String?   @postgresDb.VarChar(255)
+}
+
+enum box_type_enum {
+  Inbox
+  Archive
+  Deleted
+}
+
+enum dosage_form_type {
+  Tablet
+  Capsule
+  Liquid
+  Injection
+  Cream
+  Ointment
+  Patch
+  Spray
+  Drop
+  Inhaler
+  Other
+}
+
+enum frequency_unit_type {
+  Day
+  Week
+}
+
+enum literality_enum {
+  Left
+  Right
+  Bilateral
+  None
+}
+
+enum measurement_unit_type {
+  Count
+  Steps
+}
+
+enum media_type_enum {
+  Image
+  Video
+  Audio
+  Document
+  Link
+}
+
+enum message_type_enum {
+  text
+  html
+  submit_img
+  review_img
+}
+
+enum msg_group_type_enum {
+  Group
+}
+
+enum schedule_type {
+  Exercise
+  Goal
+  Medication
+  None
+}
+
+enum unit_type {
+  Set
+  Steps
+  Duration
+}
+
+enum user_type_enum {
+  Surgen
+  Clinical_Staff
+  Office_Staff
+  Patient
 }
