@@ -61,6 +61,7 @@
     "axios": "^1.10.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
+    "deep-diff": "^1.0.2",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-fileupload": "^1.5.1",
@@ -77,6 +78,7 @@
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.18",
+    "@types/deep-diff": "^1.0.5",
     "@types/express": "^5.0.1",
     "@types/express-fileupload": "^1.5.1",
     "@types/jest": "^29.5.14",
