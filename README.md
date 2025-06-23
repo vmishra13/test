@@ -2,7 +2,7 @@
 
 > A comprehensive, HIPAA-compliant healthcare backend platform built with **Express.js**, **TypeScript**, and **Prisma ORM**.
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue?style=flat-square&logo=typescript) ![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat-square&logo=node.js) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue?style=flat-square&logo=postgresql) ![Express](https://img.shields.io/badge/Express.js-4.18+-lightgrey?style=flat-square&logo=express) ![Prisma](https://img.shields.io/badge/Prisma-5.0+-darkgreen?style=flat-square&logo=prisma)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-blue?style=flat-square&logo=typescript) ![Node.js](https://img.shields.io/badge/Node.js-22.16.0-green?style=flat-square&logo=node.js) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue?style=flat-square&logo=postgresql) ![Express](https://img.shields.io/badge/Express.js-5.0-lightgrey?style=flat-square&logo=express) ![Prisma](https://img.shields.io/badge/Prisma-6.10.0-darkgreen?style=flat-square&logo=prisma) ![pnpm](https://img.shields.io/badge/pnpm-10.0-orange?style=flat-square&logo=pnpm)
 
 ---
 
@@ -29,6 +29,7 @@
 ## � **Key Features**
 
 ### **🏥 Healthcare Management**
+
 - 🩺 **Diagnosis Master** - ICD-10 compliant diagnosis codes and descriptions
 - 💊 **Medications Master** - Comprehensive pharmaceutical database management
 - 🏃‍♂️ **Exercises Master** - Therapeutic exercise library with detailed instructions
@@ -37,6 +38,7 @@
 - 📝 **Activity Logs** - Detailed audit trail for all patient interactions
 
 ### **🔐 Security & Architecture**
+
 - 🛡️ **Multi-tenant Architecture** - Complete client isolation and data segregation
 - 🔑 **OAuth 2.0 Authentication** - Secure token-based authentication system
 - 👥 **Role-based Access Control** - Granular permission management (Admin, Doctor, Patient)
@@ -44,6 +46,7 @@
 - 🔒 **Data Encryption** - At-rest and in-transit data protection
 
 ### **⚡ Developer Experience**
+
 - 📊 **RESTful API Design** - Consistent, well-documented endpoints
 - 🧪 **Comprehensive Testing** - Unit and integration test coverage
 - 📈 **Production Ready** - Logging, monitoring, and error handling
@@ -68,30 +71,30 @@ ReliaCare follows a **feature-based vertical slice architecture** designed for h
 
 Our system manages comprehensive healthcare data through these core entities:
 
-| **Domain** | **Models** | **Purpose** |
-|------------|------------|-------------|
-| **🔐 Authentication** | `users`, `roles`, `sessions` | Multi-tenant user management and authentication |
-| **🏢 Organization** | `clients`, `client_settings` | Healthcare organization management |
-| **🩺 Clinical Data** | `diagnosis_master` | ICD-10 compliant diagnosis codes and descriptions |
-| **💊 Pharmaceuticals** | `medication_master` | Comprehensive medication database with dosing |
-| **🏃‍♂️ Therapy** | `exercise_master` | Therapeutic exercise library with instructions |
-| **📋 Care Planning** | `plan`, `patient_plan` | Treatment plan creation and assignment |
-| **📅 Scheduling** | `patient_plan_schedule` | Session scheduling and time management |
-| **📝 Activity Tracking** | `patient_plan_schedule_log` | Detailed audit trail and progress tracking |
+| **Domain**               | **Models**                   | **Purpose**                                       |
+| ------------------------ | ---------------------------- | ------------------------------------------------- |
+| **🔐 Authentication**    | `users`, `roles`, `sessions` | Multi-tenant user management and authentication   |
+| **🏢 Organization**      | `clients`, `client_settings` | Healthcare organization management                |
+| **🩺 Clinical Data**     | `diagnosis_master`           | ICD-10 compliant diagnosis codes and descriptions |
+| **💊 Pharmaceuticals**   | `medication_master`          | Comprehensive medication database with dosing     |
+| **🏃‍♂️ Therapy**           | `exercise_master`            | Therapeutic exercise library with instructions    |
+| **📋 Care Planning**     | `plan`, `patient_plan`       | Treatment plan creation and assignment            |
+| **📅 Scheduling**        | `patient_plan_schedule`      | Session scheduling and time management            |
+| **📝 Activity Tracking** | `patient_plan_schedule_log`  | Detailed audit trail and progress tracking        |
 
 ### **🔗 Technical Stack**
 
-| **Layer** | **Technology** | **Purpose** |
-|-----------|----------------|-------------|
-| **Runtime** | Node.js 22.16 | JavaScript runtime environment |
-| **Framework** | Express.js 4.18+ | Web application framework |
-| **Language** | TypeScript 5.0+ | Type-safe JavaScript development |
-| **Database** | PostgreSQL 15+ | Primary relational database |
-| **ORM** | Prisma 5.0+ | Type-safe database client |
-| **Authentication** | OAuth 2.0 + JWT | Secure token-based authentication |
-| **Testing** | Jest | Unit and integration testing |
-| **API Docs** | Postman Collections | Comprehensive API documentation |
-| **Package Manager** | pnpm | Fast, disk space efficient package manager |
+| **Layer**           | **Technology**      | **Purpose**                                |
+| ------------------- | ------------------- | ------------------------------------------ |
+| **Runtime**         | Node.js 22.16       | JavaScript runtime environment             |
+| **Framework**       | Express.js 4.18+    | Web application framework                  |
+| **Language**        | TypeScript 5.0+     | Type-safe JavaScript development           |
+| **Database**        | PostgreSQL 15+      | Primary relational database                |
+| **ORM**             | Prisma 5.0+         | Type-safe database client                  |
+| **Authentication**  | OAuth 2.0 + JWT     | Secure token-based authentication          |
+| **Testing**         | Jest                | Unit and integration testing               |
+| **API Docs**        | Postman Collections | Comprehensive API documentation            |
+| **Package Manager** | pnpm                | Fast, disk space efficient package manager |
 
 ### **🌐 Multi-Tenant Architecture**
 
@@ -104,6 +107,7 @@ const userPlans = await planRepository.findByClientAndUser(clientId, userId);
 ```
 
 **Data Isolation Strategy:**
+
 - **Database Level**: All tables include `clientId` for tenant separation
 - **Application Level**: Middleware enforces tenant context in all operations
 - **API Level**: Routes validate tenant access permissions
@@ -271,6 +275,7 @@ feature-name/
 ```
 
 This structure ensures:
+
 - **� Easy Navigation**: Find all related code in one place
 - **🧪 Testability**: Each layer can be tested independently
 - **🔄 Maintainability**: Changes are isolated to specific features
@@ -293,8 +298,8 @@ pnpm install
 # 3. Setup environment variables
 cp .env.example .env  # Configure your database URLs and secrets
 
-# 4. Generate Prisma clients
-pnpm generate
+# 4. Setup database and generate clients (one command!)
+pnpm db:setup
 
 # 5. Start development server
 pnpm dev
@@ -311,6 +316,7 @@ curl http://localhost:3000/api/v1/health
 ```
 
 Expected response:
+
 ```json
 {
   "status": "OK",
@@ -326,12 +332,12 @@ Expected response:
 
 ### **System Requirements**
 
-| **Component** | **Version** | **Purpose** |
-|---------------|-------------|-------------|
-| **Node.js** | v22.16 | JavaScript runtime |
-| **pnpm** | v8.0+ | Package manager |
-| **PostgreSQL** | v15.0+ | Primary database |
-| **Git** | v2.0+ | Version control |
+| **Component**  | **Version** | **Purpose**        |
+| -------------- | ----------- | ------------------ |
+| **Node.js**    | v22.16.0+   | JavaScript runtime |
+| **pnpm**       | v10.0+      | Package manager    |
+| **PostgreSQL** | v17.0+      | Primary database   |
+| **Git**        | v2.0+       | Version control    |
 
 ### **1. Install Node.js**
 
@@ -367,7 +373,7 @@ pnpm is faster and more disk-efficient than npm:
 npm install -g pnpm
 
 # Verify installation
-pnpm --version  # Should output v8.0.0 or higher
+pnpm --version  # Should output v10.0.0 or higher
 ```
 
 **Alternative installation methods:**
@@ -421,6 +427,7 @@ docker exec -it reliacare-postgres psql -U root -d reliacare
 **Option C: Cloud Database**
 
 Consider using managed PostgreSQL services:
+
 - **AWS RDS** (recommended for production)
 - **Google Cloud SQL**
 - **Azure Database for PostgreSQL**
@@ -586,14 +593,14 @@ ReliaCare provides a comprehensive set of scripts for development, testing, and 
 
 ### **🔥 Development Scripts**
 
-| **Script** | **Command** | **Description** |
-|------------|-------------|-----------------|
-| **Development** | `pnpm dev` | Start development server with hot reload and TypeScript compilation |
-| **Build** | `pnpm build` | Compile TypeScript to JavaScript for production |
-| **Production** | `pnpm start` | Start production server (requires build) |
-| **Type Check** | `pnpm type-check` | Run TypeScript compiler without emitting files |
-| **Lint** | `pnpm lint` | Run ESLint for code quality checks |
-| **Format** | `pnpm format` | Format code using Prettier |
+| **Script**      | **Command**       | **Description**                                                     |
+| --------------- | ----------------- | ------------------------------------------------------------------- |
+| **Development** | `pnpm dev`        | Start development server with hot reload and TypeScript compilation |
+| **Build**       | `pnpm build`      | Compile TypeScript to JavaScript for production                     |
+| **Production**  | `pnpm start`      | Start production server (requires build)                            |
+| **Type Check**  | `pnpm type-check` | Run TypeScript compiler without emitting files                      |
+| **Lint**        | `pnpm lint`       | Run ESLint for code quality checks                                  |
+| **Format**      | `pnpm format`     | Format code using Prettier                                          |
 
 ```bash
 # Example development workflow
@@ -606,19 +613,21 @@ pnpm start        # Run production build
 
 ### **🗄️ Database Scripts**
 
-| **Script** | **Command** | **Description** |
-|------------|-------------|-----------------|
-| **Generate All** | `pnpm generate` | Generate Prisma clients for all databases |
-| **PostgreSQL** | `pnpm generate:postgres` | Generate PostgreSQL Prisma client only |
-| **MongoDB** | `pnpm generate:mongodb` | Generate MongoDB Prisma client only |
-| **Pull Schema** | `pnpm pull` | Pull latest schema from all databases |
-| **PostgreSQL Pull** | `pnpm pull:postgres` | Pull PostgreSQL schema only |
-| **MongoDB Pull** | `pnpm pull:mongodb` | Pull MongoDB schema only |
-| **Clean** | `pnpm db:clean` | Remove generated Prisma clients |
-| **Full Sync** | `pnpm db:sync` | Pull latest schema + regenerate clients |
+| **Script**            | **Command**              | **Description**                                                    |
+| --------------------- | ------------------------ | ------------------------------------------------------------------ |
+| **🚀 Complete Setup** | `pnpm db:setup`          | **One-command database setup** (runs SQL script + pull + generate) |
+| **Generate All**      | `pnpm generate`          | Generate Prisma clients for all databases                          |
+| **PostgreSQL**        | `pnpm generate:postgres` | Generate PostgreSQL Prisma client only                             |
+| **MongoDB**           | `pnpm generate:mongodb`  | Generate MongoDB Prisma client only                                |
+| **Pull Schema**       | `pnpm pull`              | Pull latest schema from all databases                              |
+| **PostgreSQL Pull**   | `pnpm pull:postgres`     | Pull PostgreSQL schema only                                        |
+| **MongoDB Pull**      | `pnpm pull:mongodb`      | Pull MongoDB schema only                                           |
+| **Clean**             | `pnpm db:clean`          | Remove generated Prisma clients                                    |
+| **Full Sync**         | `pnpm db:sync`           | Pull latest schema + regenerate clients                            |
 
 ```bash
 # Example database workflow
+pnpm db:setup               # 🚀 Complete database setup (recommended)
 pnpm pull:postgres          # Pull latest PostgreSQL schema
 pnpm generate:postgres      # Generate TypeScript client
 pnpm db:sync               # Full sync (pull + generate)
@@ -626,13 +635,13 @@ pnpm db:sync               # Full sync (pull + generate)
 
 ### **🧪 Testing Scripts**
 
-| **Script** | **Command** | **Description** |
-|------------|-------------|-----------------|
-| **All Tests** | `pnpm test` | Run all test suites |
-| **Unit Tests** | `pnpm test:unit` | Run unit tests only |
-| **Integration Tests** | `pnpm test:integration` | Run integration tests only |
-| **Test Coverage** | `pnpm test:coverage` | Generate test coverage report |
-| **Test Watch** | `pnpm test:watch` | Run tests in watch mode |
+| **Script**            | **Command**             | **Description**               |
+| --------------------- | ----------------------- | ----------------------------- |
+| **All Tests**         | `pnpm test`             | Run all test suites           |
+| **Unit Tests**        | `pnpm test:unit`        | Run unit tests only           |
+| **Integration Tests** | `pnpm test:integration` | Run integration tests only    |
+| **Test Coverage**     | `pnpm test:coverage`    | Generate test coverage report |
+| **Test Watch**        | `pnpm test:watch`       | Run tests in watch mode       |
 
 ```bash
 # Example testing workflow
@@ -644,12 +653,12 @@ pnpm test:watch        # Watch mode for TDD
 
 ### **🔍 Database Management Tools**
 
-| **Tool** | **Command** | **Description** |
-|----------|-------------|-----------------|
-| **PostgreSQL Studio** | `pnpm studio:postgres` | Open Prisma Studio for PostgreSQL |
-| **MongoDB Studio** | `pnpm studio:mongodb` | Open Prisma Studio for MongoDB |
-| **Database Reset** | `pnpm db:reset` | Reset database and apply migrations |
-| **Seed Data** | `pnpm db:seed` | Populate database with initial data |
+| **Tool**              | **Command**            | **Description**                     |
+| --------------------- | ---------------------- | ----------------------------------- |
+| **PostgreSQL Studio** | `pnpm studio:postgres` | Open Prisma Studio for PostgreSQL   |
+| **MongoDB Studio**    | `pnpm studio:mongodb`  | Open Prisma Studio for MongoDB      |
+| **Database Reset**    | `pnpm db:reset`        | Reset database and apply migrations |
+| **Seed Data**         | `pnpm db:seed`         | Populate database with initial data |
 
 ```bash
 # Open database management interface
@@ -659,12 +668,12 @@ pnpm db:seed          # Add sample data
 
 ### **� Utility Scripts**
 
-| **Script** | **Command** | **Description** |
-|------------|-------------|-----------------|
-| **Dependencies** | `pnpm deps:check` | Check for outdated dependencies |
-| **Security Audit** | `pnpm audit` | Run security vulnerability scan |
-| **Clean Install** | `pnpm clean-install` | Remove node_modules and reinstall |
-| **Bundle Analysis** | `pnpm analyze` | Analyze bundle size and dependencies |
+| **Script**          | **Command**          | **Description**                      |
+| ------------------- | -------------------- | ------------------------------------ |
+| **Dependencies**    | `pnpm deps:check`    | Check for outdated dependencies      |
+| **Security Audit**  | `pnpm audit`         | Run security vulnerability scan      |
+| **Clean Install**   | `pnpm clean-install` | Remove node_modules and reinstall    |
+| **Bundle Analysis** | `pnpm analyze`       | Analyze bundle size and dependencies |
 
 ```bash
 # Maintenance and optimization
@@ -792,13 +801,13 @@ pnpm start
 
 **Common Issues and Solutions:**
 
-| **Issue** | **Symptom** | **Solution** |
-|-----------|-------------|--------------|
-| **Schema Drift** | "Schema drift detected" error | `pnpm pull:postgres && pnpm generate:postgres` |
-| **Missing Client** | "Cannot find module '@prisma/client'" | `pnpm generate:postgres` |
-| **Type Errors** | TypeScript errors with Prisma types | `pnpm generate:postgres` |
-| **Connection Error** | "Can't reach database server" | Check DATABASE_URL in .env |
-| **Permission Error** | "Permission denied" on database | Verify database user permissions |
+| **Issue**            | **Symptom**                           | **Solution**                                   |
+| -------------------- | ------------------------------------- | ---------------------------------------------- |
+| **Schema Drift**     | "Schema drift detected" error         | `pnpm pull:postgres && pnpm generate:postgres` |
+| **Missing Client**   | "Cannot find module '@prisma/client'" | `pnpm generate:postgres`                       |
+| **Type Errors**      | TypeScript errors with Prisma types   | `pnpm generate:postgres`                       |
+| **Connection Error** | "Can't reach database server"         | Check DATABASE_URL in .env                     |
+| **Permission Error** | "Permission denied" on database       | Verify database user permissions               |
 
 ```bash
 # Diagnostic commands
@@ -850,7 +859,7 @@ API_PREFIX="/api"
 # =============================================================================
 # CORS CONFIGURATION
 # =============================================================================
-CORS_ORIGIN="http://localhost:3000,http://localhost:5173,http://localhost:4200"
+CORS_ORIGIN="http://localhost:3000,http://localhost:5173"
 CORS_CREDENTIALS="true"
 
 # =============================================================================
@@ -950,11 +959,7 @@ ReliaCare automatically validates environment variables at startup:
 
 ```typescript
 // Example validation in src/config/env.ts
-const requiredEnvVars = [
-  'DATABASE_URL',
-  'JWT_SECRET',
-  'NODE_ENV'
-];
+const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'NODE_ENV'];
 
 requiredEnvVars.forEach(envVar => {
   if (!process.env[envVar]) {
@@ -976,6 +981,7 @@ ReliaCare provides comprehensive API documentation through multiple channels:
 The complete API collection is available in `/postman/ReliaCare APIs.postman_collection.json`:
 
 **Features:**
+
 - **🔐 Authentication flows** with example tokens
 - **📋 Complete CRUD operations** for all healthcare entities
 - **🧪 Pre-configured test cases** and assertions
@@ -983,6 +989,7 @@ The complete API collection is available in `/postman/ReliaCare APIs.postman_col
 - **📝 Detailed request/response examples**
 
 **Import into Postman:**
+
 1. Open Postman
 2. Click "Import" → "Upload Files"
 3. Select `/postman/ReliaCare APIs.postman_collection.json`
@@ -1001,102 +1008,102 @@ pnpm dev
 
 #### **🔐 Authentication**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `POST` | `/api/v1/auth/login` | User authentication | `{ email, password }` |
-| `POST` | `/api/v1/auth/register` | User registration | `{ email, password, clientId }` |
-| `POST` | `/api/v1/auth/refresh` | Refresh JWT token | `{ refreshToken }` |
-| `POST` | `/api/v1/auth/logout` | User logout | `{ refreshToken }` |
+| **Method** | **Endpoint**            | **Description**     | **Body**                        |
+| ---------- | ----------------------- | ------------------- | ------------------------------- |
+| `POST`     | `/api/v1/auth/login`    | User authentication | `{ email, password }`           |
+| `POST`     | `/api/v1/auth/register` | User registration   | `{ email, password, clientId }` |
+| `POST`     | `/api/v1/auth/refresh`  | Refresh JWT token   | `{ refreshToken }`              |
+| `POST`     | `/api/v1/auth/logout`   | User logout         | `{ refreshToken }`              |
 
 #### **👤 User Management**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/users` | List all users (paginated) | N/A |
-| `GET` | `/api/v1/users/:id` | Get user by ID | N/A |
-| `POST` | `/api/v1/users` | Create new user | `{ email, password, role, clientId }` |
-| `PUT` | `/api/v1/users/:id` | Update user | `{ email, firstName, lastName }` |
-| `DELETE` | `/api/v1/users/:id` | Delete user | N/A |
+| **Method** | **Endpoint**        | **Description**            | **Body**                              |
+| ---------- | ------------------- | -------------------------- | ------------------------------------- |
+| `GET`      | `/api/v1/users`     | List all users (paginated) | N/A                                   |
+| `GET`      | `/api/v1/users/:id` | Get user by ID             | N/A                                   |
+| `POST`     | `/api/v1/users`     | Create new user            | `{ email, password, role, clientId }` |
+| `PUT`      | `/api/v1/users/:id` | Update user                | `{ email, firstName, lastName }`      |
+| `DELETE`   | `/api/v1/users/:id` | Delete user                | N/A                                   |
 
 #### **🏢 Client Management**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/clients` | List all clients | N/A |
-| `GET` | `/api/v1/clients/:id` | Get client by ID | N/A |
-| `POST` | `/api/v1/clients` | Create new client | `{ name, address, settings }` |
-| `PUT` | `/api/v1/clients/:id` | Update client | `{ name, address }` |
-| `DELETE` | `/api/v1/clients/:id` | Delete client | N/A |
+| **Method** | **Endpoint**          | **Description**   | **Body**                      |
+| ---------- | --------------------- | ----------------- | ----------------------------- |
+| `GET`      | `/api/v1/clients`     | List all clients  | N/A                           |
+| `GET`      | `/api/v1/clients/:id` | Get client by ID  | N/A                           |
+| `POST`     | `/api/v1/clients`     | Create new client | `{ name, address, settings }` |
+| `PUT`      | `/api/v1/clients/:id` | Update client     | `{ name, address }`           |
+| `DELETE`   | `/api/v1/clients/:id` | Delete client     | N/A                           |
 
 #### **🩺 Medical Diagnosis**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/diagnosis` | List all diagnoses | N/A |
-| `GET` | `/api/v1/diagnosis/:id` | Get diagnosis by ID | N/A |
-| `POST` | `/api/v1/diagnosis` | Create new diagnosis | `{ code, name, description, category }` |
-| `PUT` | `/api/v1/diagnosis/:id` | Update diagnosis | `{ name, description }` |
-| `DELETE` | `/api/v1/diagnosis/:id` | Delete diagnosis | N/A |
+| **Method** | **Endpoint**            | **Description**      | **Body**                                |
+| ---------- | ----------------------- | -------------------- | --------------------------------------- |
+| `GET`      | `/api/v1/diagnosis`     | List all diagnoses   | N/A                                     |
+| `GET`      | `/api/v1/diagnosis/:id` | Get diagnosis by ID  | N/A                                     |
+| `POST`     | `/api/v1/diagnosis`     | Create new diagnosis | `{ code, name, description, category }` |
+| `PUT`      | `/api/v1/diagnosis/:id` | Update diagnosis     | `{ name, description }`                 |
+| `DELETE`   | `/api/v1/diagnosis/:id` | Delete diagnosis     | N/A                                     |
 
 #### **💊 Medications**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/medications` | List all medications | N/A |
-| `GET` | `/api/v1/medications/:id` | Get medication by ID | N/A |
-| `POST` | `/api/v1/medications` | Create new medication | `{ name, dosage, instructions, sideEffects }` |
-| `PUT` | `/api/v1/medications/:id` | Update medication | `{ name, dosage, instructions }` |
-| `DELETE` | `/api/v1/medications/:id` | Delete medication | N/A |
+| **Method** | **Endpoint**              | **Description**       | **Body**                                      |
+| ---------- | ------------------------- | --------------------- | --------------------------------------------- |
+| `GET`      | `/api/v1/medications`     | List all medications  | N/A                                           |
+| `GET`      | `/api/v1/medications/:id` | Get medication by ID  | N/A                                           |
+| `POST`     | `/api/v1/medications`     | Create new medication | `{ name, dosage, instructions, sideEffects }` |
+| `PUT`      | `/api/v1/medications/:id` | Update medication     | `{ name, dosage, instructions }`              |
+| `DELETE`   | `/api/v1/medications/:id` | Delete medication     | N/A                                           |
 
 #### **🏃‍♂️ Exercises**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/exercises` | List all exercises | N/A |
-| `GET` | `/api/v1/exercises/:id` | Get exercise by ID | N/A |
-| `POST` | `/api/v1/exercises` | Create new exercise | `{ name, instructions, duration, difficulty }` |
-| `PUT` | `/api/v1/exercises/:id` | Update exercise | `{ name, instructions }` |
-| `DELETE` | `/api/v1/exercises/:id` | Delete exercise | N/A |
+| **Method** | **Endpoint**            | **Description**     | **Body**                                       |
+| ---------- | ----------------------- | ------------------- | ---------------------------------------------- |
+| `GET`      | `/api/v1/exercises`     | List all exercises  | N/A                                            |
+| `GET`      | `/api/v1/exercises/:id` | Get exercise by ID  | N/A                                            |
+| `POST`     | `/api/v1/exercises`     | Create new exercise | `{ name, instructions, duration, difficulty }` |
+| `PUT`      | `/api/v1/exercises/:id` | Update exercise     | `{ name, instructions }`                       |
+| `DELETE`   | `/api/v1/exercises/:id` | Delete exercise     | N/A                                            |
 
 #### **📋 Treatment Plans**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/plans` | List all plans | N/A |
-| `GET` | `/api/v1/plans/:id` | Get plan by ID | N/A |
-| `POST` | `/api/v1/plans` | Create new plan | `{ name, description, goals, duration }` |
-| `PUT` | `/api/v1/plans/:id` | Update plan | `{ name, description, goals }` |
-| `DELETE` | `/api/v1/plans/:id` | Delete plan | N/A |
+| **Method** | **Endpoint**        | **Description** | **Body**                                 |
+| ---------- | ------------------- | --------------- | ---------------------------------------- |
+| `GET`      | `/api/v1/plans`     | List all plans  | N/A                                      |
+| `GET`      | `/api/v1/plans/:id` | Get plan by ID  | N/A                                      |
+| `POST`     | `/api/v1/plans`     | Create new plan | `{ name, description, goals, duration }` |
+| `PUT`      | `/api/v1/plans/:id` | Update plan     | `{ name, description, goals }`           |
+| `DELETE`   | `/api/v1/plans/:id` | Delete plan     | N/A                                      |
 
 #### **👥 Patient Plans**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/plans/patient-plans` | List patient assignments | N/A |
-| `GET` | `/api/v1/plans/patient-plans/:id` | Get patient plan by ID | N/A |
-| `POST` | `/api/v1/plans/patient-plans` | Assign plan to patient | `{ planId, patientId, startDate, endDate }` |
-| `PUT` | `/api/v1/plans/patient-plans/:id` | Update patient plan | `{ status, notes }` |
-| `DELETE` | `/api/v1/plans/patient-plans/:id` | Remove plan assignment | N/A |
+| **Method** | **Endpoint**                      | **Description**          | **Body**                                    |
+| ---------- | --------------------------------- | ------------------------ | ------------------------------------------- |
+| `GET`      | `/api/v1/plans/patient-plans`     | List patient assignments | N/A                                         |
+| `GET`      | `/api/v1/plans/patient-plans/:id` | Get patient plan by ID   | N/A                                         |
+| `POST`     | `/api/v1/plans/patient-plans`     | Assign plan to patient   | `{ planId, patientId, startDate, endDate }` |
+| `PUT`      | `/api/v1/plans/patient-plans/:id` | Update patient plan      | `{ status, notes }`                         |
+| `DELETE`   | `/api/v1/plans/patient-plans/:id` | Remove plan assignment   | N/A                                         |
 
 #### **📅 Schedules**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/plans/schedules` | List all schedules | N/A |
-| `GET` | `/api/v1/plans/schedules/:id` | Get schedule by ID | N/A |
-| `POST` | `/api/v1/plans/schedules` | Create new schedule | `{ patientPlanId, scheduledDate, duration }` |
-| `PUT` | `/api/v1/plans/schedules/:id` | Update schedule | `{ scheduledDate, status }` |
-| `DELETE` | `/api/v1/plans/schedules/:id` | Delete schedule | N/A |
+| **Method** | **Endpoint**                  | **Description**     | **Body**                                     |
+| ---------- | ----------------------------- | ------------------- | -------------------------------------------- |
+| `GET`      | `/api/v1/plans/schedules`     | List all schedules  | N/A                                          |
+| `GET`      | `/api/v1/plans/schedules/:id` | Get schedule by ID  | N/A                                          |
+| `POST`     | `/api/v1/plans/schedules`     | Create new schedule | `{ patientPlanId, scheduledDate, duration }` |
+| `PUT`      | `/api/v1/plans/schedules/:id` | Update schedule     | `{ scheduledDate, status }`                  |
+| `DELETE`   | `/api/v1/plans/schedules/:id` | Delete schedule     | N/A                                          |
 
 #### **📝 Schedule Logs**
 
-| **Method** | **Endpoint** | **Description** | **Body** |
-|------------|--------------|-----------------|----------|
-| `GET` | `/api/v1/plans/schedule-logs` | List all logs | N/A |
-| `GET` | `/api/v1/plans/schedule-logs/:id` | Get log by ID | N/A |
-| `POST` | `/api/v1/plans/schedule-logs` | Create new log | `{ scheduleId, status, notes, completedAt }` |
-| `PUT` | `/api/v1/plans/schedule-logs/:id` | Update log | `{ status, notes }` |
-| `DELETE` | `/api/v1/plans/schedule-logs/:id` | Delete log | N/A |
+| **Method** | **Endpoint**                      | **Description** | **Body**                                     |
+| ---------- | --------------------------------- | --------------- | -------------------------------------------- |
+| `GET`      | `/api/v1/plans/schedule-logs`     | List all logs   | N/A                                          |
+| `GET`      | `/api/v1/plans/schedule-logs/:id` | Get log by ID   | N/A                                          |
+| `POST`     | `/api/v1/plans/schedule-logs`     | Create new log  | `{ scheduleId, status, notes, completedAt }` |
+| `PUT`      | `/api/v1/plans/schedule-logs/:id` | Update log      | `{ status, notes }`                          |
+| `DELETE`   | `/api/v1/plans/schedule-logs/:id` | Delete log      | N/A                                          |
 
 ### **🔒 Authentication Examples**
 
@@ -1214,12 +1221,12 @@ ReliaCare maintains high code quality through comprehensive testing strategies c
 
 ### **🎯 Testing Strategy**
 
-| **Test Type** | **Coverage** | **Tools** | **Purpose** |
-|---------------|--------------|-----------|-------------|
-| **Unit Tests** | Individual functions/methods | Jest + TypeScript | Validate business logic in isolation |
-| **Integration Tests** | API endpoints | Jest + Supertest | Test complete request/response cycles |
-| **Repository Tests** | Database operations | Jest + Test Database | Validate data layer functionality |
-| **Service Tests** | Business logic layer | Jest + Mocks | Test service orchestration |
+| **Test Type**         | **Coverage**                 | **Tools**            | **Purpose**                           |
+| --------------------- | ---------------------------- | -------------------- | ------------------------------------- |
+| **Unit Tests**        | Individual functions/methods | Jest + TypeScript    | Validate business logic in isolation  |
+| **Integration Tests** | API endpoints                | Jest + Supertest     | Test complete request/response cycles |
+| **Repository Tests**  | Database operations          | Jest + Test Database | Validate data layer functionality     |
+| **Service Tests**     | Business logic layer         | Jest + Mocks         | Test service orchestration            |
 
 ### **🚀 Running Tests**
 
@@ -1286,7 +1293,7 @@ describe('MedicationService', () => {
       const medicationData = {
         name: 'Aspirin',
         dosage: '100mg',
-        clientId: 'client-123'
+        clientId: 'client-123',
       };
       mockMedicationRepository.create.mockResolvedValue(medicationData as any);
 
@@ -1303,12 +1310,13 @@ describe('MedicationService', () => {
       const invalidData = {
         name: 'Aspirin',
         dosage: 'invalid-dosage',
-        clientId: 'client-123'
+        clientId: 'client-123',
       };
 
       // Act & Assert
-      await expect(medicationService.createMedication(invalidData))
-        .rejects.toThrow('Invalid dosage format');
+      await expect(medicationService.createMedication(invalidData)).rejects.toThrow(
+        'Invalid dosage format',
+      );
     });
   });
 });
@@ -1337,7 +1345,7 @@ describe('Medications API', () => {
         name: 'Aspirin',
         dosage: '100mg',
         instructions: 'Take with food',
-        sideEffects: 'May cause stomach upset'
+        sideEffects: 'May cause stomach upset',
       };
 
       const response = await request(app)
@@ -1354,7 +1362,7 @@ describe('Medications API', () => {
     it('should return 400 for invalid data', async () => {
       const invalidData = {
         name: '', // Invalid: empty name
-        dosage: '100mg'
+        dosage: '100mg',
       };
 
       const response = await request(app)
@@ -1370,13 +1378,10 @@ describe('Medications API', () => {
     it('should return 401 for unauthorized access', async () => {
       const medicationData = {
         name: 'Aspirin',
-        dosage: '100mg'
+        dosage: '100mg',
       };
 
-      await request(app)
-        .post('/api/v1/medications')
-        .send(medicationData)
-        .expect(401);
+      await request(app).post('/api/v1/medications').send(medicationData).expect(401);
     });
   });
 });
@@ -1393,20 +1398,12 @@ const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: [
-    '**/__tests__/**/*.test.ts',
-    '**/?(*.)+(spec|test).ts'
-  ],
+  testMatch: ['**/__tests__/**/*.test.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
   coverageDirectory: 'coverage',
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/test-*',
-    '!src/**/*.test.ts',
-  ],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/test-*', '!src/**/*.test.ts'],
   coverageThreshold: {
     global: {
       branches: 80,
@@ -1432,22 +1429,22 @@ ReliaCare is built with healthcare-grade security and HIPAA compliance as core r
 
 #### **🔐 Authentication & Authorization**
 
-| **Feature** | **Implementation** | **Standard** |
-|-------------|-------------------|--------------|
-| **Multi-Factor Authentication** | JWT + Refresh Tokens | OAuth 2.0 |
-| **Role-Based Access Control** | Hierarchical permissions | RBAC |
-| **Session Management** | Secure token storage | JWT Best Practices |
-| **Password Security** | bcrypt with salt rounds | OWASP Guidelines |
+| **Feature**                     | **Implementation**       | **Standard**       |
+| ------------------------------- | ------------------------ | ------------------ |
+| **Multi-Factor Authentication** | JWT + Refresh Tokens     | OAuth 2.0          |
+| **Role-Based Access Control**   | Hierarchical permissions | RBAC               |
+| **Session Management**          | Secure token storage     | JWT Best Practices |
+| **Password Security**           | bcrypt with salt rounds  | OWASP Guidelines   |
 
 #### **🏥 HIPAA Compliance**
 
-| **Requirement** | **Implementation** | **Status** |
-|-----------------|-------------------|------------|
+| **Requirement**     | **Implementation**                  | **Status**     |
+| ------------------- | ----------------------------------- | -------------- |
 | **Data Encryption** | AES-256 at rest, TLS 1.3 in transit | ✅ Implemented |
-| **Access Controls** | Multi-tenant isolation + RBAC | ✅ Implemented |
-| **Audit Logging** | Comprehensive activity logs | ✅ Implemented |
-| **Data Backup** | Encrypted automated backups | ✅ Implemented |
-| **User Training** | Security documentation | 📋 Documented |
+| **Access Controls** | Multi-tenant isolation + RBAC       | ✅ Implemented |
+| **Audit Logging**   | Comprehensive activity logs         | ✅ Implemented |
+| **Data Backup**     | Encrypted automated backups         | ✅ Implemented |
+| **User Training**   | Security documentation              | 📋 Documented  |
 
 #### **🔒 Data Protection**
 
@@ -1456,7 +1453,7 @@ ReliaCare is built with healthcare-grade security and HIPAA compliance as core r
 const encryptedData = await encryptService.encrypt({
   patientData: sensitiveInformation,
   algorithm: 'AES-256-GCM',
-  key: process.env.ENCRYPTION_KEY
+  key: process.env.ENCRYPTION_KEY,
 });
 
 // Example: Audit logging
@@ -1467,7 +1464,7 @@ await auditLogger.log({
   resourceId: patient.id,
   timestamp: new Date(),
   ipAddress: req.ip,
-  userAgent: req.headers['user-agent']
+  userAgent: req.headers['user-agent'],
 });
 ```
 
@@ -1494,7 +1491,7 @@ const medicationSchema = z.object({
   name: z.string().min(1).max(100).trim(),
   dosage: z.string().regex(/^\d+(\.\d+)?\s*(mg|g|ml|units?)$/i),
   instructions: z.string().max(500).trim(),
-  clientId: z.string().uuid()
+  clientId: z.string().uuid(),
 });
 ```
 
@@ -1507,9 +1504,9 @@ const medications = await prisma.medication_master.findMany({
     clientId: clientId, // Automatically sanitized
     name: {
       contains: searchTerm, // Safe parameterized query
-      mode: 'insensitive'
-    }
-  }
+      mode: 'insensitive',
+    },
+  },
 });
 ```
 
@@ -1526,21 +1523,23 @@ const medications = await prisma.medication_master.findMany({
 
 ```typescript
 // Implemented security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"]
-    }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
-  }
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+  }),
+);
 ```
 
 ### **🔐 Multi-Tenant Security**
@@ -1554,8 +1553,8 @@ class MedicationRepository {
     return await this.prisma.medication_master.findMany({
       where: {
         clientId: clientId, // Tenant isolation enforced
-        isActive: true
-      }
+        isActive: true,
+      },
     });
   }
 
@@ -1564,8 +1563,8 @@ class MedicationRepository {
       data: {
         ...data,
         clientId: clientId, // Always include tenant context
-        modUser: getCurrentUser().id
-      }
+        modUser: getCurrentUser().id,
+      },
     });
   }
 }

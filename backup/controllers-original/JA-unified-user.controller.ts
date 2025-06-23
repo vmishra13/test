@@ -7,14 +7,12 @@
  * - Role-based access control
  * - Consistent error handling patterns
  *
- * FUNCTION ORDER:
- * 1. 🛠️  Utility Functions
- * 2. 🔐 Authentication & Registration
- * 3. 📋 User Management (Admin Operations)
- * 4. 👤 Current User Profile Operations
- * 5. 🎯 Onboarding Operations
- * 6. 👨‍⚕️ Healthcare Provider Operations
- * 7. 🔒 Admin Client Management
+ * Consolidated from 5 separate controllers:
+ * - user.controller.ts (admin operations)
+ * - profile.controller.ts (current user profile)
+ * - registration.controller.ts (user registration)
+ * - doctor-selection.controller.ts (healthcare provider selection)
+ * - mobile-registration.controller.ts (mobile app registration)
  */
 
 import { Request, Response } from 'express';
@@ -22,53 +20,31 @@ import { StatusCodes } from 'http-status-codes';
 import { UploadedFile } from 'express-fileupload';
 import { ApiResponse } from '@shared/utils/api-response';
 import { getCurrentUserId } from '@features/auth/middlewares';
-import logger from '@config/logger';
 import type { ExtendedRequest, UserQuery } from '../types/extended-request';
-import type {
-  RegisterUserRequest,
-  MobileRegistrationRequest,
-  DoctorSelectionRequest,
-} from '../dto/user.dto';
-import {
-  deleteUserService,
-  getUserByIdService,
-  getUserProfileService,
-  getUsersService,
-  registerUserService,
-  registerMobileUserService,
-  updateUserService,
-  updateUserPasswordService,
-  updateUserProfileService,
-  updateUserStatusService,
-  updatePersonalInfoService,
-  uploadProfilePictureService,
-  getOnboardingStatusService,
-  completeOnboardingService,
-  getDoctorsService,
-  selectDoctorService,
-} from '../services/user.service';
+import type { RegisterUserRequest, MobileRegistrationRequest } from '../dto/registration.dto';
+import type { DoctorSelectionRequest } from '../dto/doctor.dto';
 
 // Service imports
-// import {
-//   getUsers,
-//   getUserById,
-//   updateUser,
-//   deleteUser,
-//   updateUserStatus,
-//   updateUserPassword,
-//   getUserProfile,
-//   updateUserProfile,
-//   updatePersonalInfo as updatePersonalInfoService,
-//   completeOnboarding as completeOnboardingService,
-//   getOnboardingStatus as getOnboardingStatusService,
-//   uploadProfilePicture as uploadProfilePictureService,
-// } from '../services/user.service';
-// import { registerUser } from '../services/registration.service';
-// import { registerUser as registerMobileUserService } from '../services/user-registration.service';
-// import {
-//   getDoctors as getDoctorsService,
-//   selectDoctor as selectDoctorService,
-// } from '../services/doctor-selection.service';
+import {
+  getUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+  updateUserStatus,
+  updateUserPassword,
+  getUserProfile,
+  updateUserProfile,
+  updatePersonalInfo as updatePersonalInfoService,
+  completeOnboarding as completeOnboardingService,
+  getOnboardingStatus as getOnboardingStatusService,
+  uploadProfilePicture as uploadProfilePictureService,
+} from '../services/user.service';
+import { registerUser } from '../services/registration.service';
+import { registerUser as registerMobileUserService } from '../services/user-registration.service';
+import {
+  getDoctors as getDoctorsService,
+  selectDoctor as selectDoctorService,
+} from '../services/doctor-selection.service';
 
 // ===================================================================
 // 🛠️ UTILITY FUNCTIONS
@@ -76,107 +52,99 @@ import {
 
 /**
  * Standardized error handling across all controller methods
- *
- * Handles different error types with consistent response format:
- * - AuthenticationError: 401 Unauthorized
- * - AuthorizationError: 403 Forbidden
- * - ValidationError: 400 Bad Request
- * - NotFoundError: 404 Not Found
- * - Generic errors: 500 Internal Server Error
- *
- * @param res - Express response object
- * @param error - The error object to handle
- * @param defaultMessage - Default message for generic errors
+ * Maintains consistent error response format and security
  */
 function handleError(res: Response, error: any, defaultMessage: string): void {
-  // Log error with detailed information for debugging
-  logger.error(`${defaultMessage}: ${error.message}`, {
-    error: error.name,
-    message: error.message,
-    stack: error.stack,
-    timestamp: new Date().toISOString(),
-    statusCode: error.statusCode,
-    details: error.details || null,
-  });
+  console.error(`${defaultMessage}:`, error);
 
   // Handle custom authentication errors
   if (error.name === 'AuthenticationError') {
-    res
-      .status(StatusCodes.UNAUTHORIZED)
-      .json(ApiResponse.error('Authentication required', 'AUTHENTICATION_ERROR', error.message));
+    res.status(StatusCodes.UNAUTHORIZED).json({
+      success: false,
+      error: 'Authentication required',
+      details: error.message,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Handle custom authorization errors
   if (error.name === 'AuthorizationError') {
-    res
-      .status(StatusCodes.FORBIDDEN)
-      .json(ApiResponse.error('Authorization failed', 'AUTHORIZATION_ERROR', error.message));
+    res.status(StatusCodes.FORBIDDEN).json({
+      success: false,
+      error: 'Authorization failed',
+      details: error.message,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Handle custom validation errors
   if (error.name === 'ValidationError') {
-    res
-      .status(StatusCodes.BAD_REQUEST)
-      .json(ApiResponse.error('Validation failed', 'VALIDATION_ERROR', error.details));
+    res.status(StatusCodes.BAD_REQUEST).json({
+      success: false,
+      error: 'Validation failed',
+      details: error.details,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Handle custom not found errors
   if (error.name === 'NotFoundError') {
-    res
-      .status(StatusCodes.NOT_FOUND)
-      .json(ApiResponse.error('Resource not found', 'NOT_FOUND_ERROR', error.message));
+    res.status(StatusCodes.NOT_FOUND).json({
+      success: false,
+      error: 'Resource not found',
+      details: error.message,
+      timestamp: new Date().toISOString(),
+    });
     return;
   }
 
   // Use specific status code if provided
   const statusCode = error.statusCode || StatusCodes.INTERNAL_SERVER_ERROR;
 
-  res
-    .status(statusCode)
-    .json(ApiResponse.error(defaultMessage, 'INTERNAL_ERROR', error.message || 'Unknown error'));
+  res.status(statusCode).json({
+    success: false,
+    error: defaultMessage,
+    details: error.message || 'Unknown error',
+    timestamp: new Date().toISOString(),
+  });
 }
+
+/**
+ * UNIFIED USER CONTROLLER - FUNCTION-BASED IMPLEMENTATION
+ *
+ * Converted from class-based to function-based implementation.
+ * Consolidates all user-related operations while maintaining:
+ * - Strict multi-tenant security isolation
+ * - HIPAA/PHI compliance
+ * - Role-based access control
+ * - Consistent error handling patterns
+ *
+ * Consolidated from 5 separate controllers:
+ * - user.controller.ts (admin operations)
+ * - profile.controller.ts (current user profile)
+ * - registration.controller.ts (user registration)
+ * - doctor-selection.controller.ts (healthcare provider selection)
+ * - mobile-registration.controller.ts (mobile app registration)
+ */
 
 // ===================================================================
 // 🔐 AUTHENTICATION & REGISTRATION
 // ===================================================================
 
 /**
- * Register a new user (Admin/Web Registration)
- *
- * Creates a new user account with role-based authorization.
- * Supports multi-role assignments based on user permissions.
- *
- * @route POST /api/v1/users/register
- * @access Private (requires authentication)
- * @param req - Extended request with RegisterUserRequest body
- * @param res - Express response object
+ * Register a new user (Admin/Web)
+ * POST /api/v1/users/register
  */
 export async function registerUserController(
   req: ExtendedRequest<any, RegisterUserRequest>,
   res: Response,
 ): Promise<void> {
   try {
-    logger.info('User registration attempt', {
-      clientId: req.body?.clientId,
-      loginName: req.body?.loginName,
-      timestamp: new Date().toISOString(),
-    });
-
-    const result = await registerUserService(req);
-
-    logger.info('User registration successful', {
-      userId: result.data?.user?.id,
-      loginName: result.data?.user?.loginName,
-      clientId: result.data?.user?.client?.id,
-      timestamp: new Date().toISOString(),
-    });
-
-    res
-      .status(StatusCodes.CREATED)
-      .json(ApiResponse.success(result, 'User registered successfully'));
+    const result = await registerUser(req);
+    res.status(StatusCodes.CREATED).json(result);
   } catch (error: any) {
     handleError(res, error, 'Registration failed');
   }
@@ -184,14 +152,7 @@ export async function registerUserController(
 
 /**
  * Register a new user via mobile app
- *
- * Handles mobile app user registration with simplified flow.
- * Validates client ID and creates user with default settings.
- *
- * @route POST /api/v1/users/register/mobile
- * @access Public
- * @param req - Extended request with MobileRegistrationRequest body
- * @param res - Express response object
+ * POST /api/v1/users/register/mobile
  */
 export async function registerMobileUserController(
   req: ExtendedRequest<any, MobileRegistrationRequest>,
@@ -222,22 +183,15 @@ export async function registerMobileUserController(
 
 /**
  * Get all users with filtering and pagination
- *
- * Retrieves users based on role permissions and client isolation.
- * Supports filtering by status, role, and client.
- *
- * @route GET /api/v1/users
- * @access Private (requires authentication)
- * @param req - Extended request with UserQuery parameters
- * @param res - Express response object
+ * GET /api/v1/users
  */
 export async function getUsersController(
   req: ExtendedRequest<UserQuery>,
   res: Response,
 ): Promise<void> {
   try {
-    const result = await getUsersService(req as any);
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'Users retrieved successfully'));
+    const result = await getUsers(req as any);
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve users');
   }
@@ -245,22 +199,15 @@ export async function getUsersController(
 
 /**
  * Get specific user by ID
- *
- * Retrieves detailed user information with role-based access control.
- * Enforces client isolation and permission checks.
- *
- * @route GET /api/v1/users/:userId
- * @access Private (requires authentication)
- * @param req - Extended request with userId parameter
- * @param res - Express response object
+ * GET /api/v1/users/:userId
  */
 export async function getUserByIdController(
   req: ExtendedRequest<any> & { params: { userId: string } },
   res: Response,
 ): Promise<void> {
   try {
-    const result = await getUserByIdService(req as any);
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User retrieved successfully'));
+    const result = await getUserById(req as any);
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to retrieve user');
   }
@@ -268,47 +215,47 @@ export async function getUserByIdController(
 
 /**
  * Update specific user by ID (Admin operation)
- *
- * Updates user information with proper authorization checks.
- * Supports partial updates and maintains audit trail.
- *
- * @route PUT /api/v1/users/:userId
- * @access Private (requires admin permissions)
- * @param req - Extended request with userId parameter and update data
- * @param res - Express response object
+ * PUT /api/v1/users/:userId
  */
 export async function updateUserController(
   req: ExtendedRequest<any> & { params: { userId: string } },
   res: Response,
 ): Promise<void> {
   try {
-    const result = await updateUserService(req as any);
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User updated successfully'));
+    const result = await updateUser(req as any);
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to update user');
   }
 }
 
 /**
+ * Delete user by ID (Admin operation)
+ * DELETE /api/v1/users/:userId
+ */
+export async function deleteUserController(
+  req: ExtendedRequest<any> & { params: { userId: string } },
+  res: Response,
+): Promise<void> {
+  try {
+    const result = await deleteUser(req as any);
+    res.status(StatusCodes.OK).json(result);
+  } catch (error: any) {
+    handleError(res, error, 'Failed to delete user');
+  }
+}
+
+/**
  * Update user status (activate/deactivate)
- *
- * Changes user status with proper authorization and audit logging.
- * Prevents self-deactivation and validates business rules.
- *
- * @route PATCH /api/v1/users/:userId/status
- * @access Private (requires admin permissions)
- * @param req - Extended request with userId parameter and status data
- * @param res - Express response object
+ * PATCH /api/v1/users/:userId/status
  */
 export async function updateUserStatusController(
   req: ExtendedRequest<any> & { params: { userId: string } },
   res: Response,
 ): Promise<void> {
   try {
-    const result = await updateUserStatusService(req as any);
-    res
-      .status(StatusCodes.OK)
-      .json(ApiResponse.success(result, 'User status updated successfully'));
+    const result = await updateUserStatus(req as any);
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to update user status');
   }
@@ -316,80 +263,17 @@ export async function updateUserStatusController(
 
 /**
  * Update user password
- *
- * Updates user password with security validations and audit logging.
- * Enforces password policies and client isolation.
- *
- * @route PUT /api/v1/users/:userId/password
- * @access Private (requires admin permissions)
- * @param req - Extended request with userId parameter and password data
- * @param res - Express response object
+ * PUT /api/v1/users/:userId/password
  */
 export async function updateUserPasswordController(
   req: ExtendedRequest<any> & { params: { userId: string } },
   res: Response,
 ): Promise<void> {
   try {
-    const userId = req.params.userId;
-
-    logger.info('Password update attempt', {
-      targetUserId: userId,
-      initiatedBy: req.user?.loginName || 'unknown',
-      timestamp: new Date().toISOString(),
-    });
-
-    const result = await updateUserPasswordService(req as any);
-
-    logger.info('Password update successful', {
-      targetUserId: userId,
-      initiatedBy: req.user?.loginName || 'unknown',
-      timestamp: new Date().toISOString(),
-    });
-
-    res
-      .status(StatusCodes.OK)
-      .json(ApiResponse.success(result, 'User password updated successfully'));
+    const result = await updateUserPassword(req as any);
+    res.status(StatusCodes.OK).json(result);
   } catch (error: any) {
     handleError(res, error, 'Failed to update user password');
-  }
-}
-
-/**
- * Delete user by ID (Admin operation)
- *
- * Permanently removes user account with strict authorization.
- * Includes comprehensive audit logging and validation checks.
- *
- * @route DELETE /api/v1/users/:userId
- * @access Private (requires admin permissions)
- * @param req - Extended request with userId parameter
- * @param res - Express response object
- */
-export async function deleteUserController(
-  req: ExtendedRequest<any> & { params: { userId: string } },
-  res: Response,
-): Promise<void> {
-  try {
-    const userId = req.params.userId;
-
-    logger.warn('User deletion attempt', {
-      targetUserId: userId,
-      initiatedBy: req.user?.loginName || 'unknown',
-      timestamp: new Date().toISOString(),
-    });
-
-    const result = await deleteUserService(req as any);
-
-    logger.warn('User deletion successful', {
-      targetUserId: userId,
-      deletedUserId: result.data?.deletedUserId,
-      initiatedBy: req.user?.loginName || 'unknown',
-      timestamp: new Date().toISOString(),
-    });
-
-    res.status(StatusCodes.OK).json(ApiResponse.success(result, 'User deleted successfully'));
-  } catch (error: any) {
-    handleError(res, error, 'Failed to delete user');
   }
 }
 
@@ -399,14 +283,7 @@ export async function deleteUserController(
 
 /**
  * Get current user's profile
- *
- * Retrieves authenticated user's complete profile information.
- * Includes personal details, preferences, and client information.
- *
- * @route GET /api/v1/users/profile
- * @access Private (requires authentication)
- * @param req - Express request object
- * @param res - Express response object
+ * GET /api/v1/users/profile
  */
 export async function getCurrentUserProfileController(req: Request, res: Response): Promise<void> {
   try {
@@ -419,7 +296,7 @@ export async function getCurrentUserProfileController(req: Request, res: Respons
       return;
     }
 
-    const profile = await getUserProfileService(userId);
+    const profile = await getUserProfile(userId);
     res
       .status(StatusCodes.OK)
       .json(ApiResponse.success(profile, 'User profile retrieved successfully'));
@@ -430,19 +307,9 @@ export async function getCurrentUserProfileController(req: Request, res: Respons
 
 /**
  * Update current user's profile
- *
- * Allows authenticated users to update their own profile information.
- * Validates data and maintains audit trail of changes.
- *
- * @route PUT /api/v1/users/profile
- * @access Private (requires authentication)
- * @param req - Express request object with profile data
- * @param res - Express response object
+ * PUT /api/v1/users/profile
  */
-export async function updateCurrentUserProfileController(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function updateCurrentUserProfileController(req: Request, res: Response): Promise<void> {
   try {
     const userId = getCurrentUserId(req);
 
@@ -460,7 +327,7 @@ export async function updateCurrentUserProfileController(
     }
 
     const profileData = req.body;
-    const updatedProfile = await updateUserProfileService(userId, profileData);
+    const updatedProfile = await updateUserProfile(userId, profileData);
 
     res
       .status(StatusCodes.OK)
@@ -472,14 +339,7 @@ export async function updateCurrentUserProfileController(
 
 /**
  * Update current user's personal information
- *
- * Updates specific personal information fields for the authenticated user.
- * Includes validation and HIPAA-compliant data handling.
- *
- * @route PUT /api/v1/users/profile/personal-info
- * @access Private (requires authentication)
- * @param req - Express request object with personal info data
- * @param res - Express response object
+ * PUT /api/v1/users/profile/personal-info
  */
 export async function updatePersonalInfoController(req: Request, res: Response): Promise<void> {
   try {
@@ -511,14 +371,7 @@ export async function updatePersonalInfoController(req: Request, res: Response):
 
 /**
  * Upload current user's profile picture
- *
- * Handles secure file upload for user profile pictures.
- * Validates file types, sizes, and stores securely.
- *
- * @route POST /api/v1/users/profile/upload-picture
- * @access Private (requires authentication)
- * @param req - Express request object with file upload
- * @param res - Express response object
+ * POST /api/v1/users/profile/upload-picture
  */
 export async function uploadProfilePictureController(req: Request, res: Response): Promise<void> {
   try {
@@ -568,14 +421,7 @@ export async function uploadProfilePictureController(req: Request, res: Response
 
 /**
  * Get current user's onboarding status
- *
- * Retrieves the onboarding progress and completion status.
- * Used to determine required onboarding steps.
- *
- * @route GET /api/v1/users/profile/onboarding-status
- * @access Private (requires authentication)
- * @param req - Express request object
- * @param res - Express response object
+ * GET /api/v1/users/profile/onboarding-status
  */
 export async function getOnboardingStatusController(req: Request, res: Response): Promise<void> {
   try {
@@ -606,14 +452,7 @@ export async function getOnboardingStatusController(req: Request, res: Response)
 
 /**
  * Complete current user's onboarding
- *
- * Marks onboarding as complete and processes final setup steps.
- * Validates all required information is provided.
- *
- * @route POST /api/v1/users/profile/complete-onboarding
- * @access Private (requires authentication)
- * @param req - Express request object with onboarding data
- * @param res - Express response object
+ * POST /api/v1/users/profile/complete-onboarding
  */
 export async function completeOnboardingController(req: Request, res: Response): Promise<void> {
   try {
@@ -644,19 +483,12 @@ export async function completeOnboardingController(req: Request, res: Response):
 }
 
 // ===================================================================
-// 👨‍⚕️ HEALTHCARE PROVIDER OPERATIONS
+// 👨‍⚕️ DOCTOR & HEALTHCARE PROVIDER OPERATIONS
 // ===================================================================
 
 /**
  * Get available doctors for selection
- *
- * Retrieves list of available healthcare providers within client scope.
- * Supports filtering by specialization and location.
- *
- * @route GET /api/v1/users/doctors
- * @access Private (requires authentication)
- * @param req - Extended request with optional query parameters
- * @param res - Express response object
+ * GET /api/v1/users/doctors
  */
 export async function getDoctorsController(req: ExtendedRequest, res: Response): Promise<void> {
   try {
@@ -680,15 +512,8 @@ export async function getDoctorsController(req: ExtendedRequest, res: Response):
 }
 
 /**
- * Select a doctor for care
- *
- * Associates a patient with a selected healthcare provider.
- * Validates provider availability and client relationships.
- *
- * @route POST /api/v1/users/select-doctor
- * @access Private (requires authentication)
- * @param req - Extended request with DoctorSelectionRequest body
- * @param res - Express response object
+ * Select a doctor
+ * POST /api/v1/users/select-doctor
  */
 export async function selectDoctorController(
   req: ExtendedRequest<any, DoctorSelectionRequest>,
@@ -720,19 +545,9 @@ export async function selectDoctorController(
 
 /**
  * Link user to a client (Admin operation)
- *
- * Associates a user with a specific client organization.
- * Requires super admin permissions and validates relationships.
- *
- * @route POST /api/v1/users/:userId/link-client
- * @access Private (requires super admin permissions)
- * @param req - Extended request with userId parameter and clientId body
- * @param res - Express response object
+ * POST /api/v1/users/:userId/link-client
  */
-export async function linkUserToClientController(
-  req: ExtendedRequest<any>,
-  res: Response,
-): Promise<void> {
+export async function linkUserToClientController(req: ExtendedRequest<any>, res: Response): Promise<void> {
   try {
     const { userId } = req.params;
     const { clientId } = req.body;
