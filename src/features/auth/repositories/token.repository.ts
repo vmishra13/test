@@ -7,7 +7,7 @@ import {
   ActiveTokenSummary,
   SecurityEvent,
   RefreshTokenPayload,
-  TokenRotationResult
+  TokenRotationResult,
 } from '../dto/auth.dto';
 
 // ===================================================================
@@ -39,7 +39,7 @@ export function createRefreshToken(payload: RefreshTokenPayload): string {
     }
 
     const tokenPayload = {
-      sub: payload.userId.toString(),
+      userId: payload.userId.toString(),
       clientId: payload.clientId,
       jti: payload.jti,
       family: payload.family,
@@ -47,8 +47,11 @@ export function createRefreshToken(payload: RefreshTokenPayload): string {
     };
 
     // Calculate expiration as a positive number of seconds and convert to string
-    const expiresInSeconds = Math.max(1, Math.floor((payload.expiresAt.getTime() - Date.now()) / 1000));
-    
+    const expiresInSeconds = Math.max(
+      1,
+      Math.floor((payload.expiresAt.getTime() - Date.now()) / 1000),
+    );
+
     const options: SignOptions = {
       algorithm: 'HS256',
       expiresIn: expiresInSeconds, // Use number directly instead of string
@@ -67,7 +70,7 @@ export function createAccessToken(
   userId: number,
   clientId: number,
   roles: string[],
-  expiresInSeconds: number = 15 * 60 // 15 minutes by default
+  expiresInSeconds: number = 15 * 60, // 15 minutes by default
 ): string {
   try {
     const secret = process.env.JWT_ACCESS_TOKEN_SECRET;
@@ -76,7 +79,7 @@ export function createAccessToken(
     }
 
     const tokenPayload = {
-      sub: userId.toString(),
+      userId: userId.toString(),
       clientId,
       roles,
       jti: generateJti(),
@@ -197,7 +200,7 @@ export async function logSecurityEvent(
   clientId: number,
   eventType: 'token_rotation' | 'suspicious_activity' | 'logout_all',
   details: Record<string, any>,
-  modUser: string
+  modUser: string,
 ): Promise<void> {
   try {
     // Update user's modDate to track last security event
@@ -247,7 +250,8 @@ export async function getUserSecurityInfo(userId: number): Promise<{
     const lastSecurityEvent = extraInfo?.lastSecurityEvent;
 
     // Check if there was recent suspicious activity (last 24 hours)
-    const suspiciousActivity = lastSecurityEvent &&
+    const suspiciousActivity =
+      lastSecurityEvent &&
       lastSecurityEvent.type === 'suspicious_activity' &&
       new Date(lastSecurityEvent.timestamp) > new Date(Date.now() - 24 * 60 * 60 * 1000);
 
@@ -298,7 +302,7 @@ export async function rotateRefreshToken(
         newJti: newTokenData.jti,
         family: oldPayload.family,
       },
-      rotatedBy
+      rotatedBy,
     );
 
     // 4. Create new token (stateless)
@@ -350,7 +354,7 @@ export async function revokeAllUserTokens(
       clientId,
       'logout_all',
       { timestamp: timestamp.toISOString() },
-      revokedBy
+      revokedBy,
     );
 
     return { success: true, timestamp };
@@ -364,7 +368,7 @@ export async function revokeAllUserTokens(
  */
 export async function isUserGloballyLoggedOut(
   userId: number,
-  tokenIssuedAt: Date
+  tokenIssuedAt: Date,
 ): Promise<boolean> {
   try {
     const user = await prismaPostgres.user.findUnique({
@@ -413,10 +417,10 @@ export async function validateRefreshToken(token: string): Promise<{
     // 2. Check if user exists and is active
     const user = await prismaPostgres.user.findUnique({
       where: { id: payload.userId },
-      select: { 
-        status: true, 
+      select: {
+        status: true,
         clientId: true,
-        extraInfo: true 
+        extraInfo: true,
       },
     });
 
@@ -434,11 +438,8 @@ export async function validateRefreshToken(token: string): Promise<{
     }
 
     // 3. Check global logout
-    const isGloballyLoggedOut = await isUserGloballyLoggedOut(
-      payload.userId, 
-      payload.issuedAt
-    );
-    
+    const isGloballyLoggedOut = await isUserGloballyLoggedOut(payload.userId, payload.issuedAt);
+
     if (isGloballyLoggedOut) {
       securityFlags.push('globally_logged_out');
       return { isValid: false, error: 'Session invalidated', securityFlags };
@@ -486,9 +487,9 @@ export async function validateAccessToken(token: string): Promise<{
     // 2. Check if user is still active
     const user = await prismaPostgres.user.findUnique({
       where: { id: userId },
-      select: { 
-        status: true, 
-        clientId: true 
+      select: {
+        status: true,
+        clientId: true,
       },
     });
 
@@ -507,7 +508,7 @@ export async function validateAccessToken(token: string): Promise<{
     // 3. Check global logout
     const tokenIssuedAt = new Date(verification.payload.iat * 1000);
     const isGloballyLoggedOut = await isUserGloballyLoggedOut(userId, tokenIssuedAt);
-    
+
     if (isGloballyLoggedOut) {
       return { isValid: false, error: 'Session invalidated' };
     }
@@ -631,20 +632,20 @@ const passwordResetTokens = new Map<string, PasswordResetToken>();
  * Store password reset token in memory
  */
 export async function storePasswordResetToken(
-  userId: number, 
-  token: string, 
-  expiresAt: Date
+  userId: number,
+  token: string,
+  expiresAt: Date,
 ): Promise<void> {
   try {
     // Clean up expired tokens
     cleanupExpiredTokens();
-    
+
     passwordResetTokens.set(token, {
       userId,
       token,
       expiresAt,
       createdAt: new Date(),
-      used: false
+      used: false,
     });
   } catch (error) {
     console.error('Failed to store password reset token:', error);
@@ -668,7 +669,7 @@ export async function verifyPasswordResetToken(token: string): Promise<{
 
     return {
       userId: resetToken.userId,
-      expiresAt: resetToken.expiresAt
+      expiresAt: resetToken.expiresAt,
     };
   } catch (error) {
     console.error('Failed to verify password reset token:', error);
@@ -704,7 +705,7 @@ export async function invalidateAllUserTokens(userId: number): Promise<void> {
         passwordResetTokens.set(token, tokenData);
       }
     });
-    
+
     // Note: For stateless JWT tokens, we can't invalidate them in the DB
     // In a production system, you might want to maintain a blacklist
     // or use shorter token expiration times
@@ -772,7 +773,7 @@ export async function createTokenPair(
   userId: number,
   clientId: number,
   roles: string[],
-  refreshExpiresIn: number = 7 * 24 * 60 * 60 * 1000 // 7 days
+  refreshExpiresIn: number = 7 * 24 * 60 * 60 * 1000, // 7 days
 ): Promise<{
   accessToken: string;
   refreshToken: string;
@@ -783,7 +784,7 @@ export async function createTokenPair(
   try {
     const family = generateTokenFamily();
     const refreshExpiresAt = new Date(Date.now() + refreshExpiresIn);
-    
+
     const refreshToken = createRefreshToken({
       userId,
       clientId,
