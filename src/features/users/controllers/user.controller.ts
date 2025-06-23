@@ -375,6 +375,7 @@ export async function deleteUserController(
     logger.warn('User deletion attempt', {
       targetUserId: userId,
       initiatedBy: req.user?.loginName || 'unknown',
+      clientId: req.user?.clientId || 'unknown',
       timestamp: new Date().toISOString(),
     });
 
@@ -383,6 +384,7 @@ export async function deleteUserController(
     logger.warn('User deletion successful', {
       targetUserId: userId,
       deletedUserId: result.data?.deletedUserId,
+      deletedAt: result.data?.deletedAt,
       initiatedBy: req.user?.loginName || 'unknown',
       timestamp: new Date().toISOString(),
     });

@@ -39,7 +39,8 @@ export function createRefreshToken(payload: RefreshTokenPayload): string {
     }
 
     const tokenPayload = {
-      userId: payload.userId.toString(),
+      sub: payload.userId.toString(), // Standard JWT subject field
+      userId: payload.userId, // Keep for backward compatibility
       clientId: payload.clientId,
       jti: payload.jti,
       family: payload.family,
@@ -79,7 +80,8 @@ export function createAccessToken(
     }
 
     const tokenPayload = {
-      userId: userId.toString(),
+      sub: userId.toString(), // Standard JWT subject field
+      userId, // Keep for backward compatibility
       clientId,
       roles,
       jti: generateJti(),
@@ -119,13 +121,18 @@ export function verifyRefreshToken(token: string): {
     }
 
     const payload: RefreshTokenPayload = {
-      userId: parseInt(decoded.sub),
+      userId: decoded.userId ? parseInt(decoded.userId) : parseInt(decoded.sub),
       clientId: decoded.clientId,
       jti: decoded.jti,
       family: decoded.family,
       expiresAt: new Date(decoded.exp * 1000),
       issuedAt: new Date(decoded.iat * 1000),
     };
+
+    // Validate that userId is a valid number
+    if (isNaN(payload.userId) || payload.userId <= 0) {
+      return { isValid: false, error: 'Invalid user ID in token' };
+    }
 
     return { isValid: true, payload };
   } catch (error: any) {
@@ -167,13 +174,18 @@ export function verifyAccessToken(token: string): {
     }
 
     const payload = {
-      userId: parseInt(decoded.sub),
+      userId: decoded.userId ? parseInt(decoded.userId) : parseInt(decoded.sub),
       clientId: decoded.clientId,
       roles: decoded.roles || [],
       jti: decoded.jti,
       exp: decoded.exp,
       iat: decoded.iat,
     };
+
+    // Validate that userId is a valid number
+    if (isNaN(payload.userId) || payload.userId <= 0) {
+      return { isValid: false, error: 'Invalid user ID in token' };
+    }
 
     return { isValid: true, payload };
   } catch (error: any) {
@@ -483,6 +495,11 @@ export async function validateAccessToken(token: string): Promise<{
     }
 
     const { userId, clientId, roles, jti } = verification.payload;
+
+    // Add validation to ensure userId is properly extracted
+    if (!userId || typeof userId !== 'number' || userId <= 0) {
+      return { isValid: false, error: 'Invalid user ID in token payload' };
+    }
 
     // 2. Check if user is still active
     const user = await prismaPostgres.user.findUnique({
