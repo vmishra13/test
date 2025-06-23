@@ -108,7 +108,7 @@ const config: Config = {
   ],
 
   // Setup files to run before tests
-  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts']
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts']
 };
 
 export default config;

@@ -26,7 +26,6 @@ model client {
   modDate                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
   locations                 client_location[]
   contacts                  contact[]
-  form_master               form_master[]
   medication_master         medication_master[]
   patient_form              patient_form[]
   patient_plan              patient_plan[]
@@ -174,7 +173,7 @@ model diagnosis_master {
   modDate                                                   DateTime?      @default(now()) @postgresDb.Timestamp(6)
   patient_plan_patient_plan_diagnosisIdTodiagnosis_master   patient_plan[] @relation("patient_plan_diagnosisIdTodiagnosis_master")
   patient_plan_patient_plan_diagnosisNameTodiagnosis_master patient_plan[] @relation("patient_plan_diagnosisNameTodiagnosis_master")
-  plan_plan_diagnosisIdTodiagnosis_master                   plan[]         @relation("plan_diagnosisIdTodiagnosis_master")
+  plan_plan_diagnosisCodeTodiagnosis_master                 plan[]         @relation("plan_diagnosisCodeTodiagnosis_master")
   plan_plan_diagnosisNameTodiagnosis_master                 plan[]         @relation("plan_diagnosisNameTodiagnosis_master")
 }
 
@@ -184,14 +183,14 @@ model exercise_master {
   description     String?
   purpose         String?              @postgresDb.VarChar(255)
   media_type      media_type_enum?
-  media_url       String?              @postgresDb.VarChar(2048)
+  media_url       String?              @postgresDb.VarChar(255)
   frequencyPeriod frequency_unit_type? @default(Day)
   unit            unit_type?           @default(Set)
   value           Int?                 @default(1)
   setUnit         Int?                 @default(1)
   repetition      Int?                 @default(0)
-  procedure       String?              @postgresDb.VarChar(1024)
-  note            String?
+  procedures      String?              @postgresDb.VarChar
+  notes           String?
   show_checkbox   Boolean?
   crUser          String               @postgresDb.VarChar(50)
   crDate          DateTime?            @default(now()) @postgresDb.Timestamp(6)
@@ -294,7 +293,7 @@ model patient_plan_schedule_log {
   scheduleDate          DateTime?              @postgresDb.Timestamp(6)
   frequencyUnit         frequency_unit_type?
   frequencyValue        Int?
-  scheduleUnit          String?                @postgresDb.VarChar(50)
+  scheduleUnit          String?                @postgresDb.VarChar
   scheduleUnitValue     Decimal?               @postgresDb.Decimal(10, 2)
   measurementUnit       measurement_unit_type?
   validFrom             DateTime?              @postgresDb.Date
@@ -315,7 +314,7 @@ model plan {
   clientId                                              Int
   name                                                  String           @postgresDb.VarChar(100)
   description                                           String?
-  diagnosisId                                           Int
+  diagnosisCode                                         Int
   diagnosisName                                         String           @postgresDb.VarChar(100)
   version                                               Int?             @default(1)
   model                                                 Json?            @postgresDb.Json
@@ -325,20 +324,8 @@ model plan {
   modDate                                               DateTime?        @default(now()) @postgresDb.Timestamp(6)
   patient_plan                                          patient_plan[]
   client                                                client           @relation(fields: [clientId], references: [id], map: "fk_plan_client")
-  diagnosis_master_plan_diagnosisIdTodiagnosis_master   diagnosis_master @relation("plan_diagnosisIdTodiagnosis_master", fields: [diagnosisId], references: [id], map: "fk_plan_diagnosis_master")
+  diagnosis_master_plan_diagnosisCodeTodiagnosis_master diagnosis_master @relation("plan_diagnosisCodeTodiagnosis_master", fields: [diagnosisCode], references: [id], map: "fk_plan_diagnosis_master")
   diagnosis_master_plan_diagnosisNameTodiagnosis_master diagnosis_master @relation("plan_diagnosisNameTodiagnosis_master", fields: [diagnosisName], references: [name], map: "fk_plan_diagnosis_name")
-}
-
-model form_master {
-  id          Int       @id @default(autoincrement())
-  name        String    @postgresDb.VarChar(255)
-  description String?
-  clientid    Int?      @default(1)
-  cruser      String    @postgresDb.VarChar(50)
-  crdate      DateTime? @default(now()) @postgresDb.Timestamp(6)
-  moduser     String    @postgresDb.VarChar(50)
-  moddate     DateTime? @default(now()) @postgresDb.Timestamp(6)
-  client      client?   @relation(fields: [clientid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_form_master_client")
 }
 
 enum dosage_form_type {
