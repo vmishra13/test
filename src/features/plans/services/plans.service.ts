@@ -1,17 +1,17 @@
 /**
  * Plans Service Layer
- * 
+ *
  * This service handles business logic for plan-related operations:
  * - plan (treatment plans)
- * - patient_plan 
+ * - patient_plan
  * - patient_plan_schedule
  * - patient_plan_schedule_log
  */
 
 import { PlansRepository } from '../repositories/plans.repository';
-import { 
-  CreatePlanInput, 
-  UpdatePlanInput, 
+import {
+  CreatePlanInput,
+  UpdatePlanInput,
   PlanFilters,
   CreatePatientPlanInput,
   UpdatePatientPlanInput,
@@ -20,11 +20,10 @@ import {
   UpdatePatientPlanScheduleInput,
   ScheduleFilters,
   CreatePatientPlanScheduleLogInput,
-  ScheduleLogFilters
+  ScheduleLogFilters,
 } from '../dto/plans.dto';
 import { ApiResponse } from '@/shared/utils/api-response';
-import { getCurrentUser } from '@/shared/authorization';
-import type { AuthenticatedUser } from '@/features/auth/dto/auth.dto';
+import { getCurrentUser } from '@features/auth';
 import type { ExtendedRequest } from '../types/extended-request';
 
 // ===================================================================
@@ -37,7 +36,7 @@ import type { ExtendedRequest } from '../types/extended-request';
 export async function createPlan(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -49,17 +48,13 @@ export async function createPlan(req: ExtendedRequest) {
       ...data,
       clientId: currentUser.clientId,
       crUser: currentUser.userId.toString(),
-      modUser: currentUser.userId.toString()
+      modUser: currentUser.userId.toString(),
     });
 
     return ApiResponse.success(plan, 'Treatment plan created successfully');
   } catch (error: any) {
     console.error('Create plan error:', error);
-    return ApiResponse.error(
-      'Failed to create treatment plan',
-      'PLAN_CREATE_ERROR',
-      error.message
-    );
+    return ApiResponse.error('Failed to create treatment plan', 'PLAN_CREATE_ERROR', error.message);
   }
 }
 
@@ -69,7 +64,7 @@ export async function createPlan(req: ExtendedRequest) {
 export async function getPlans(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -84,7 +79,7 @@ export async function getPlans(req: ExtendedRequest) {
       diagnosisId: query.diagnosisId,
       diagnosisName: query.diagnosisName,
       version: query.version,
-      sort: query.sort || 'desc' as const,
+      sort: query.sort || ('desc' as const),
     };
 
     const result = await repository.getPlans(params, currentUser.clientId);
@@ -95,7 +90,7 @@ export async function getPlans(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve treatment plans',
       'PLAN_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -106,7 +101,7 @@ export async function getPlans(req: ExtendedRequest) {
 export async function getPlanById(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -129,7 +124,7 @@ export async function getPlanById(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve treatment plan',
       'PLAN_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -140,7 +135,7 @@ export async function getPlanById(req: ExtendedRequest) {
 export async function updatePlan(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -154,21 +149,22 @@ export async function updatePlan(req: ExtendedRequest) {
     const repository = new PlansRepository();
 
     const existingPlan = await repository.getPlanById(id, currentUser.clientId);
-    
+
     if (!existingPlan) {
       return ApiResponse.error('Treatment plan not found', 'PLAN_NOT_FOUND');
     }
 
-    const updatedPlan = await repository.updatePlan(id, data, currentUser.clientId, currentUser.userId.toString());
+    const updatedPlan = await repository.updatePlan(
+      id,
+      data,
+      currentUser.clientId,
+      currentUser.userId.toString(),
+    );
 
     return ApiResponse.success(updatedPlan, 'Treatment plan updated successfully');
   } catch (error: any) {
     console.error('Update plan error:', error);
-    return ApiResponse.error(
-      'Failed to update treatment plan',
-      'PLAN_UPDATE_ERROR',
-      error.message
-    );
+    return ApiResponse.error('Failed to update treatment plan', 'PLAN_UPDATE_ERROR', error.message);
   }
 }
 
@@ -178,7 +174,7 @@ export async function updatePlan(req: ExtendedRequest) {
 export async function deletePlan(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -190,7 +186,7 @@ export async function deletePlan(req: ExtendedRequest) {
 
     const repository = new PlansRepository();
     const existingPlan = await repository.getPlanById(id, currentUser.clientId);
-    
+
     if (!existingPlan) {
       return ApiResponse.error('Treatment plan not found', 'PLAN_NOT_FOUND');
     }
@@ -200,11 +196,7 @@ export async function deletePlan(req: ExtendedRequest) {
     return ApiResponse.success(null, 'Treatment plan deleted successfully');
   } catch (error: any) {
     console.error('Delete plan error:', error);
-    return ApiResponse.error(
-      'Failed to delete treatment plan',
-      'PLAN_DELETE_ERROR',
-      error.message
-    );
+    return ApiResponse.error('Failed to delete treatment plan', 'PLAN_DELETE_ERROR', error.message);
   }
 }
 
@@ -218,7 +210,7 @@ export async function deletePlan(req: ExtendedRequest) {
 export async function createPatientPlan(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -230,7 +222,7 @@ export async function createPatientPlan(req: ExtendedRequest) {
       ...data,
       clientId: currentUser.clientId,
       crUser: currentUser.userId.toString(),
-      modUser: currentUser.userId.toString()
+      modUser: currentUser.userId.toString(),
     });
 
     return ApiResponse.success(patientPlan, 'Patient plan created successfully');
@@ -239,7 +231,7 @@ export async function createPatientPlan(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to create patient plan',
       'PATIENT_PLAN_CREATE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -250,7 +242,7 @@ export async function createPatientPlan(req: ExtendedRequest) {
 export async function getPatientPlans(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -268,7 +260,7 @@ export async function getPatientPlans(req: ExtendedRequest) {
       planId: query.planId,
       surgeryDate: query.surgeryDate,
       literality: query.literality,
-      sort: query.sort || 'desc' as const,
+      sort: query.sort || ('desc' as const),
     };
 
     const result = await repository.getPatientPlans(params, currentUser.clientId);
@@ -279,7 +271,7 @@ export async function getPatientPlans(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve patient plans',
       'PATIENT_PLAN_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -290,7 +282,7 @@ export async function getPatientPlans(req: ExtendedRequest) {
 export async function getPatientPlanById(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -313,7 +305,7 @@ export async function getPatientPlanById(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve patient plan',
       'PATIENT_PLAN_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -324,7 +316,7 @@ export async function getPatientPlanById(req: ExtendedRequest) {
 export async function updatePatientPlan(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -338,12 +330,17 @@ export async function updatePatientPlan(req: ExtendedRequest) {
     const repository = new PlansRepository();
 
     const existingPatientPlan = await repository.getPatientPlanById(id, currentUser.clientId);
-    
+
     if (!existingPatientPlan) {
       return ApiResponse.error('Patient plan not found', 'PATIENT_PLAN_NOT_FOUND');
     }
 
-    const updatedPatientPlan = await repository.updatePatientPlan(id, data, currentUser.clientId, currentUser.userId.toString());
+    const updatedPatientPlan = await repository.updatePatientPlan(
+      id,
+      data,
+      currentUser.clientId,
+      currentUser.userId.toString(),
+    );
 
     return ApiResponse.success(updatedPatientPlan, 'Patient plan updated successfully');
   } catch (error: any) {
@@ -351,7 +348,7 @@ export async function updatePatientPlan(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to update patient plan',
       'PATIENT_PLAN_UPDATE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -362,7 +359,7 @@ export async function updatePatientPlan(req: ExtendedRequest) {
 export async function deletePatientPlan(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -374,7 +371,7 @@ export async function deletePatientPlan(req: ExtendedRequest) {
 
     const repository = new PlansRepository();
     const existingPatientPlan = await repository.getPatientPlanById(id, currentUser.clientId);
-    
+
     if (!existingPatientPlan) {
       return ApiResponse.error('Patient plan not found', 'PATIENT_PLAN_NOT_FOUND');
     }
@@ -387,7 +384,7 @@ export async function deletePatientPlan(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to delete patient plan',
       'PATIENT_PLAN_DELETE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -402,7 +399,7 @@ export async function deletePatientPlan(req: ExtendedRequest) {
 export async function createSchedule(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -414,7 +411,7 @@ export async function createSchedule(req: ExtendedRequest) {
       ...data,
       clientId: currentUser.clientId,
       crUser: currentUser.userId.toString(),
-      modUser: currentUser.userId.toString()
+      modUser: currentUser.userId.toString(),
     });
 
     return ApiResponse.success(schedule, 'Patient plan schedule created successfully');
@@ -423,7 +420,7 @@ export async function createSchedule(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to create patient plan schedule',
       'SCHEDULE_CREATE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -434,7 +431,7 @@ export async function createSchedule(req: ExtendedRequest) {
 export async function getSchedules(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -450,7 +447,7 @@ export async function getSchedules(req: ExtendedRequest) {
       type: query.type,
       scheduleDate: query.scheduleDate,
       status: query.status,
-      sort: query.sort || 'desc' as const,
+      sort: query.sort || ('desc' as const),
     };
 
     const result = await repository.getSchedules(params, currentUser.clientId);
@@ -461,7 +458,7 @@ export async function getSchedules(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve patient plan schedules',
       'SCHEDULE_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -472,7 +469,7 @@ export async function getSchedules(req: ExtendedRequest) {
 export async function getScheduleById(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -495,7 +492,7 @@ export async function getScheduleById(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve patient plan schedule',
       'SCHEDULE_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -506,7 +503,7 @@ export async function getScheduleById(req: ExtendedRequest) {
 export async function updateSchedule(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -520,12 +517,17 @@ export async function updateSchedule(req: ExtendedRequest) {
     const repository = new PlansRepository();
 
     const existingSchedule = await repository.getScheduleById(id, currentUser.clientId);
-    
+
     if (!existingSchedule) {
       return ApiResponse.error('Patient plan schedule not found', 'SCHEDULE_NOT_FOUND');
     }
 
-    const updatedSchedule = await repository.updateSchedule(id, data, currentUser.clientId, currentUser.userId.toString());
+    const updatedSchedule = await repository.updateSchedule(
+      id,
+      data,
+      currentUser.clientId,
+      currentUser.userId.toString(),
+    );
 
     return ApiResponse.success(updatedSchedule, 'Patient plan schedule updated successfully');
   } catch (error: any) {
@@ -533,7 +535,7 @@ export async function updateSchedule(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to update patient plan schedule',
       'SCHEDULE_UPDATE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -544,7 +546,7 @@ export async function updateSchedule(req: ExtendedRequest) {
 export async function deleteSchedule(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -556,7 +558,7 @@ export async function deleteSchedule(req: ExtendedRequest) {
 
     const repository = new PlansRepository();
     const existingSchedule = await repository.getScheduleById(id, currentUser.clientId);
-    
+
     if (!existingSchedule) {
       return ApiResponse.error('Patient plan schedule not found', 'SCHEDULE_NOT_FOUND');
     }
@@ -569,7 +571,7 @@ export async function deleteSchedule(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to delete patient plan schedule',
       'SCHEDULE_DELETE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -584,7 +586,7 @@ export async function deleteSchedule(req: ExtendedRequest) {
 export async function createScheduleLog(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -594,15 +596,15 @@ export async function createScheduleLog(req: ExtendedRequest) {
 
     // Check if log already exists
     const exists = await repository.checkScheduleExists(
-      data.patientPlanScheduleId, 
-      data.patientId, 
-      currentUser.clientId
+      data.patientPlanScheduleId,
+      data.patientId,
+      currentUser.clientId,
     );
 
     if (exists) {
       return ApiResponse.error(
         'Schedule log entry already exists for this patient and schedule',
-        'SCHEDULE_LOG_EXISTS'
+        'SCHEDULE_LOG_EXISTS',
       );
     }
 
@@ -610,7 +612,7 @@ export async function createScheduleLog(req: ExtendedRequest) {
       ...data,
       clientId: currentUser.clientId,
       crUser: currentUser.userId.toString(),
-      modUser: currentUser.userId.toString()
+      modUser: currentUser.userId.toString(),
     });
 
     return ApiResponse.success(scheduleLog, 'Schedule log entry created successfully');
@@ -619,7 +621,7 @@ export async function createScheduleLog(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to create schedule log entry',
       'SCHEDULE_LOG_CREATE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -630,7 +632,7 @@ export async function createScheduleLog(req: ExtendedRequest) {
 export async function getScheduleLogs(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -645,7 +647,7 @@ export async function getScheduleLogs(req: ExtendedRequest) {
       patientId: query.patientId,
       startDate: query.startDate,
       endDate: query.endDate,
-      sort: query.sort || 'desc' as const,
+      sort: query.sort || ('desc' as const),
     };
 
     const result = await repository.getScheduleLogs(params, currentUser.clientId);
@@ -656,7 +658,7 @@ export async function getScheduleLogs(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve schedule logs',
       'SCHEDULE_LOG_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -667,7 +669,7 @@ export async function getScheduleLogs(req: ExtendedRequest) {
 export async function getScheduleLogById(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -690,7 +692,7 @@ export async function getScheduleLogById(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve schedule log entry',
       'SCHEDULE_LOG_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -701,7 +703,7 @@ export async function getScheduleLogById(req: ExtendedRequest) {
 export async function updateScheduleLog(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -721,7 +723,7 @@ export async function updateScheduleLog(req: ExtendedRequest) {
 
     const scheduleLog = await repository.updateScheduleLog(id, req.body, {
       id: currentUser.userId,
-      username: currentUser.loginName
+      username: currentUser.loginName,
     });
 
     return ApiResponse.success(scheduleLog, 'Schedule log entry updated successfully');
@@ -730,7 +732,7 @@ export async function updateScheduleLog(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to update schedule log entry',
       'SCHEDULE_LOG_UPDATE_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -741,7 +743,7 @@ export async function updateScheduleLog(req: ExtendedRequest) {
 export async function deleteScheduleLog(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -767,7 +769,7 @@ export async function deleteScheduleLog(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to delete schedule log entry',
       'SCHEDULE_LOG_DELETE_ERROR',
-      error.message
+      error.message,
     );
   }
 }

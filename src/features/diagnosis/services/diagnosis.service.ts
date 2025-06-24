@@ -1,19 +1,19 @@
 /**
  * DIAGNOSIS SERVICE - Business logic layer
- * 
+ *
  * This file contains all business logic for diagnosis master operations.
  * It handles validation, authorization, and coordinates with the repository layer.
  */
 
 import { ApiResponse } from '@/shared/utils/api-response';
 import { StatusCodes } from 'http-status-codes';
-import { getCurrentUser } from '@/shared/authorization';
+import { getCurrentUser } from '@features/auth';
 import type { AuthenticatedUser } from '@/features/auth/dto/auth.dto';
 import type { ExtendedRequest } from '@features/users/types/extended-request';
-import type { 
-  CreateDiagnosisInput, 
+import type {
+  CreateDiagnosisInput,
   UpdateDiagnosisInput,
-  DiagnosisQuery
+  DiagnosisQuery,
 } from '../dto/diagnosis.dto';
 import * as diagnosisRepository from '../repositories/diagnosis.repository';
 
@@ -28,7 +28,7 @@ import * as diagnosisRepository from '../repositories/diagnosis.repository';
 export async function getDiagnoses(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     // Only authenticated users can access diagnosis master data
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
@@ -36,14 +36,14 @@ export async function getDiagnoses(req: ExtendedRequest) {
 
     // Parse and validate query parameters
     const query = req.query as unknown as DiagnosisQuery;
-    
+
     const params = {
       page: query.page || 1,
       limit: Math.min(query.limit || 20, 100), // Cap at 100 for performance
       search: query.search,
       bodyArea: query.bodyArea,
       groupType: query.groupType,
-      sort: query.sort || 'asc' as const,
+      sort: query.sort || ('asc' as const),
     };
 
     const result = await diagnosisRepository.getDiagnoses(params);
@@ -54,7 +54,7 @@ export async function getDiagnoses(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve diagnoses',
       'DIAGNOSIS_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -66,7 +66,7 @@ export async function getDiagnoses(req: ExtendedRequest) {
 export async function getDiagnosisById(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -88,7 +88,7 @@ export async function getDiagnosisById(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve diagnosis',
       'DIAGNOSIS_FETCH_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -100,43 +100,29 @@ export async function getDiagnosisById(req: ExtendedRequest) {
 export async function createDiagnosis(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
 
     // Only SUPER_ADMIN and CLINICAL_STAFF can create diagnoses
     if (!hasRequiredRole(currentUser, ['SUPER_ADMIN', 'CLIENT_ADMIN', 'CLINICAL_STAFF'])) {
-      return ApiResponse.error(
-        'Insufficient permissions to create diagnosis'
-      );
+      return ApiResponse.error('Insufficient permissions to create diagnosis');
     }
 
     const data = req.body as CreateDiagnosisInput;
 
     // Check if diagnosis name already exists
-    if (data.name && await diagnosisRepository.diagnosisNameExists(data.name)) {
-      return ApiResponse.error(
-        'Diagnosis with this name already exists'
-      );
+    if (data.name && (await diagnosisRepository.diagnosisNameExists(data.name))) {
+      return ApiResponse.error('Diagnosis with this name already exists');
     }
 
-    const diagnosis = await diagnosisRepository.createDiagnosis(
-      data,
-      currentUser.loginName
-    );
+    const diagnosis = await diagnosisRepository.createDiagnosis(data, currentUser.loginName);
 
-    return ApiResponse.success(
-      diagnosis,
-      'Diagnosis created successfully'
-    );
+    return ApiResponse.success(diagnosis, 'Diagnosis created successfully');
   } catch (error: any) {
     console.error('Create diagnosis error:', error);
-    return ApiResponse.error(
-      'Failed to create diagnosis',
-      'DIAGNOSIS_CREATE_ERROR',
-      error.message
-    );
+    return ApiResponse.error('Failed to create diagnosis', 'DIAGNOSIS_CREATE_ERROR', error.message);
   }
 }
 
@@ -147,16 +133,14 @@ export async function createDiagnosis(req: ExtendedRequest) {
 export async function updateDiagnosis(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
 
     // Only SUPER_ADMIN and CLINICAL_STAFF can update diagnoses
     if (!hasRequiredRole(currentUser, ['SUPER_ADMIN', 'CLIENT_ADMIN', 'CLINICAL_STAFF'])) {
-      return ApiResponse.error(
-        'Insufficient permissions to update diagnosis'
-      );
+      return ApiResponse.error('Insufficient permissions to update diagnosis');
     }
 
     const diagnosisId = parseInt(req.params.id);
@@ -173,26 +157,20 @@ export async function updateDiagnosis(req: ExtendedRequest) {
     const data = req.body as UpdateDiagnosisInput;
 
     // Check if new name conflicts with existing diagnosis
-    if (data.name && await diagnosisRepository.diagnosisNameExists(data.name, diagnosisId)) {
-      return ApiResponse.error(
-        'Diagnosis with this name already exists'
-      );
+    if (data.name && (await diagnosisRepository.diagnosisNameExists(data.name, diagnosisId))) {
+      return ApiResponse.error('Diagnosis with this name already exists');
     }
 
     const updatedDiagnosis = await diagnosisRepository.updateDiagnosis(
       diagnosisId,
       data,
-      currentUser.loginName
+      currentUser.loginName,
     );
 
     return ApiResponse.success(updatedDiagnosis, 'Diagnosis updated successfully');
   } catch (error: any) {
     console.error('Update diagnosis error:', error);
-    return ApiResponse.error(
-      'Failed to update diagnosis',
-      'DIAGNOSIS_UPDATE_ERROR',
-      error.message
-    );
+    return ApiResponse.error('Failed to update diagnosis', 'DIAGNOSIS_UPDATE_ERROR', error.message);
   }
 }
 
@@ -203,16 +181,14 @@ export async function updateDiagnosis(req: ExtendedRequest) {
 export async function deleteDiagnosis(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
 
     // Only SUPER_ADMIN can delete diagnoses (hard delete)
     if (!hasRequiredRole(currentUser, ['SUPER_ADMIN'])) {
-      return ApiResponse.error(
-        'Insufficient permissions to delete diagnosis'
-      );
+      return ApiResponse.error('Insufficient permissions to delete diagnosis');
     }
 
     const diagnosisId = parseInt(req.params.id);
@@ -221,7 +197,7 @@ export async function deleteDiagnosis(req: ExtendedRequest) {
     }
 
     // Check if diagnosis exists
-    if (!await diagnosisRepository.diagnosisExists(diagnosisId)) {
+    if (!(await diagnosisRepository.diagnosisExists(diagnosisId))) {
       return ApiResponse.error('Diagnosis not found');
     }
 
@@ -230,19 +206,13 @@ export async function deleteDiagnosis(req: ExtendedRequest) {
     return ApiResponse.success({}, 'Diagnosis deleted successfully');
   } catch (error: any) {
     console.error('Delete diagnosis error:', error);
-    
+
     // Handle foreign key constraints
     if (error.code === 'P2003') {
-      return ApiResponse.error(
-        'Cannot delete diagnosis as it is being used in treatment plans'
-      );
+      return ApiResponse.error('Cannot delete diagnosis as it is being used in treatment plans');
     }
 
-    return ApiResponse.error(
-      'Failed to delete diagnosis',
-      'DIAGNOSIS_DELETE_ERROR',
-      error.message
-    );
+    return ApiResponse.error('Failed to delete diagnosis', 'DIAGNOSIS_DELETE_ERROR', error.message);
   }
 }
 
@@ -252,7 +222,7 @@ export async function deleteDiagnosis(req: ExtendedRequest) {
 export async function getBodyAreas(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -265,7 +235,7 @@ export async function getBodyAreas(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve body areas',
       'DIAGNOSIS_BODY_AREAS_ERROR',
-      error.message
+      error.message,
     );
   }
 }
@@ -276,7 +246,7 @@ export async function getBodyAreas(req: ExtendedRequest) {
 export async function getGroupTypes(req: ExtendedRequest) {
   try {
     const currentUser = getCurrentUser(req);
-    
+
     if (!currentUser) {
       return ApiResponse.error('Authentication required');
     }
@@ -289,7 +259,7 @@ export async function getGroupTypes(req: ExtendedRequest) {
     return ApiResponse.error(
       'Failed to retrieve group types',
       'DIAGNOSIS_GROUP_TYPES_ERROR',
-      error.message
+      error.message,
     );
   }
 }

@@ -48,28 +48,6 @@ import {
   selectDoctorService,
 } from '../services/user.service';
 
-// Service imports
-// import {
-//   getUsers,
-//   getUserById,
-//   updateUser,
-//   deleteUser,
-//   updateUserStatus,
-//   updateUserPassword,
-//   getUserProfile,
-//   updateUserProfile,
-//   updatePersonalInfo as updatePersonalInfoService,
-//   completeOnboarding as completeOnboardingService,
-//   getOnboardingStatus as getOnboardingStatusService,
-//   uploadProfilePicture as uploadProfilePictureService,
-// } from '../services/user.service';
-// import { registerUser } from '../services/registration.service';
-// import { registerUser as registerMobileUserService } from '../services/user-registration.service';
-// import {
-//   getDoctors as getDoctorsService,
-//   selectDoctor as selectDoctorService,
-// } from '../services/doctor-selection.service';
-
 // ===================================================================
 // 🛠️ UTILITY FUNCTIONS
 // ===================================================================
