@@ -140,7 +140,8 @@ export const PlanSchema = z.object({
   journey: JourneySchema,
   preOpLearning: LearningContentSchema,
   postOpLearning: LearningContentSchema,
-  milestones: z.array(MilestoneSchema),
+  preMilestones: z.array(MilestoneSchema),
+  postMilestones: z.array(MilestoneSchema),
   careJourney: z.array(CareJourneySchema),
   medication: z.array(MedicationSchema),
 });
