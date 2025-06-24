@@ -24,7 +24,7 @@
                 "na_IDC10" : "NA"
                 
             },
-             {
+            {
                 "id": 97,
                 "title" : "General ACL Sprin",
                 "body_area" : "Knee",
@@ -38,9 +38,9 @@
         ],   
         "note": "Please do not eat after midnight the night before surgery Continue clear liquid after midnight until 4 hrs before surgery. If your surgery is the 1st morning case, please do not eat or drink after midnight the night before surgeryPlease see additional Fasting (NPO) Gudlines",
         "journey": {
-            "type":"Surgical", //Non-Surgical
+            "type":"Surgical", 
             "recoveryTime": "12-24",
-            "recoveryTimeUnit": "Week" //Months
+            "recoveryTimeUnit": "Week" 
         },
         "preOpLearning": {
             "id": 1,
@@ -446,7 +446,7 @@
                     "media": {
                         "name": "NA",
                         "type": "Image",
-                        "url": "S3://dietImage.jpeg"
+                        "url": "S3:"
                     },
                     "items": [
                         {
@@ -471,7 +471,7 @@
                     "media": {
                         "name": "NA",
                         "type": "Image",
-                        "url": "S3://anesthesiaImage.jpeg"
+                        "url": "S3:"
                     },
                     "items": [
                         {
@@ -490,7 +490,7 @@
                 }
             ]
         },
-		"milestones": [
+		"preMilestones": [
             {
                 "id": 1,
                 "durationUnit": "Week",
@@ -506,13 +506,44 @@
                     {
                         "id": 1,
                         "title": "Exercise goals ",
-                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence",
+                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence"
                     }
                 ],
                 "precaution": {
                     "id": 1,
                     "title": "Precautions",
-                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait",
+                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait"
+                },
+                "media": {
+                    "name": "NA",
+                    "type": "NA",
+                    "url": "NULL"
+                }
+            }
+        ],
+		"postMilestones": [
+            {
+                "id": 1,
+                "durationUnit": "Week",
+                "fromDuration": -4,
+                "toDuration": 0
+            },
+            {
+                "id": 2,
+                "durationUnit": "Week",
+                "fromDuration": 0,
+                "toDuration": 4,
+                "goals": [
+                    {
+                        "id": 1,
+                        "title": "Exercise goals ",
+                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence"
+                    }
+                ],
+                "precaution": {
+                    "id": 1,
+                    "title": "Precautions",
+                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait"
                 },
                 "media": {
                     "name": "NA",
@@ -523,7 +554,6 @@
         ],
         "careJourney": [
             {
-                
                 "title": "Standard",
                 "description": "Standard ACL Protocol",
                 "selected": true,
@@ -554,9 +584,9 @@
                                 "media": {
                                     "name": "Stool Rotation",
                                     "type": "Video",
-                                    "url": "S3://stoolRotation.mp4"
+                                    "url": "S3:"
                                 },
-                                "purpose": "Purpose", //addition
+                                "purpose": "Purpose", 
                                 "procedure": {
                                     "title": "Procedure:",
                                     "text": "1. Place the involved knee on stool. \n 2. Then, rotate your leg outwords and hold for 10 seconds. \n 3. Then, rotate your leg inword and hold for 10 seconds. \n Note: Keep your hips facing down so the rotation comes from the surgical hip. \n Note: Progress range without any pain and minimal discomfort."
@@ -572,7 +602,7 @@
                                 "media": {
                                     "name": "Stool Rotation",
                                     "type": "Video",
-                                    "url": "S3://stoolRotation.mp4"
+                                    "url": "S3:"
                                 },
                                 "purpose": "Purpose of excerise",
                                 "procedure": {

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./dist",
+    "paths": {
+      "@/*": ["*"],
+      "@config/logger": ["config/logger"],
+      "@config": ["config/index"],
+      "@config/*": ["config/*"],
+      "@db": ["db/index"],
+      "@db/*": ["db/*"],
+      "@features/*": ["features/*"],
+      "@shared": ["shared/index"],
+      "@shared/*": ["shared/*"],
+      "@api/*": ["api/*"],
+      "@middleware/*": ["middleware/*"],
+      "@utils/*": ["shared/utils/*"],
+      "@types/*": ["shared/types/*"],
+      "@constants/*": ["shared/constants/*"],
+      "@services/*": ["services/*"]
+    }
+  }
+}

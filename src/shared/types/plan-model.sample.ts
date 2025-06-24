@@ -507,7 +507,38 @@ export const samplePlanModel: CompletePlanModel = {
         }
       ]
     },
-    milestones: [
+    preMilestones: [
+      {
+        id: 1,
+        durationUnit: "Week",
+        fromDuration: -4,
+        toDuration: 0
+      },
+      {
+        id: 2,
+        durationUnit: "Week",
+        fromDuration: 0,
+        toDuration: 4,
+        goals: [
+          {
+            id: 1,
+            title: "Exercise goals ",
+            text: "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence"
+          }
+        ],
+        precaution: {
+          id: 1,
+          title: "Precautions",
+          text: "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait"
+        },
+        media: {
+          name: "NA",
+          type: "NA",
+          url: "NULL"
+        }
+      }
+    ],
+    postMilestones: [
       {
         id: 1,
         durationUnit: "Week",
