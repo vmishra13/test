@@ -467,14 +467,19 @@ function validateUserEditAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
       ? [oAuthReq.actionUserRoles as CoreRole]
       : [];
 
-  // SUPER_ADMIN can edit any user
+  logger.debug(
+    `🔍 validateUserEditAccess: Current roles: [${currentUserRoles.join(', ')}], Target user: ${oAuthReq.actionUserId}, Target type: ${oAuthReq.actionUserTypeId}, Target roles: [${targetUserRoles.join(', ')}]`,
+  );
+
+  // SUPER_ADMIN can edit any user (including other SUPER_ADMIN users)
   if (currentUserRoles.includes(CoreRole.SUPER_ADMIN)) {
+    logger.debug(`✅ SUPER_ADMIN authorized to edit any user`);
     return true;
   }
 
-  // CLIENT_ADMIN can edit users in their client, but NOT SUPER_ADMIN users
+  // CLIENT_ADMIN (with or without additional roles) can edit users in their client, but NOT SUPER_ADMIN users
   if (currentUserRoles.includes(CoreRole.CLIENT_ADMIN)) {
-    // Check client boundary
+    // Check client boundary first
     if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
       logger.error(
         `❌ CLIENT_ADMIN cannot edit users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
@@ -488,37 +493,24 @@ function validateUserEditAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
       return false;
     }
 
+    logger.debug(`✅ CLIENT_ADMIN authorized to edit user within same client`);
     return true;
   }
 
-  // CLINICAL_STAFF and OFFICE_STAFF can only edit PATIENT users in their client
+  // CLINICAL_STAFF (without CLIENT_ADMIN) can only edit PATIENT users in their client
   if (
-    currentUserRoles.includes(CoreRole.CLINICAL_STAFF) ||
-    currentUserRoles.includes(CoreRole.OFFICE_STAFF)
+    currentUserRoles.includes(CoreRole.CLINICAL_STAFF) &&
+    !currentUserRoles.includes(CoreRole.CLIENT_ADMIN)
   ) {
-    // Check client boundary
-    if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
-      logger.error(
-        `❌ CLINICAL_STAFF/OFFICE_STAFF cannot edit users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
-      );
-      return false;
-    }
+    return validateStaffEditAccess(oAuthReq, targetUserRoles, 'CLINICAL_STAFF');
+  }
 
-    // Can only edit PATIENT accounts (userTypeId = 5)
-    if (oAuthReq.actionUserTypeId && oAuthReq.actionUserTypeId !== 5) {
-      logger.error(
-        `❌ CLINICAL_STAFF/OFFICE_STAFF can only edit PATIENT accounts, attempted to edit userTypeId: ${oAuthReq.actionUserTypeId}`,
-      );
-      return false;
-    }
-
-    // Also check roles - must have PATIENT role
-    if (targetUserRoles.length > 0 && !targetUserRoles.includes(CoreRole.PATIENT)) {
-      logger.error(`❌ CLINICAL_STAFF/OFFICE_STAFF can only edit users with PATIENT role`);
-      return false;
-    }
-
-    return true;
+  // OFFICE_STAFF (without CLIENT_ADMIN) can only edit PATIENT users in their client
+  if (
+    currentUserRoles.includes(CoreRole.OFFICE_STAFF) &&
+    !currentUserRoles.includes(CoreRole.CLIENT_ADMIN)
+  ) {
+    return validateStaffEditAccess(oAuthReq, targetUserRoles, 'OFFICE_STAFF');
   }
 
   // PATIENT users can only edit their own profile
@@ -529,6 +521,7 @@ function validateUserEditAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
       );
       return false;
     }
+    logger.debug(`✅ PATIENT authorized to edit own profile`);
     return true;
   }
 
@@ -537,6 +530,40 @@ function validateUserEditAccess(oAuthReq: AuthRequest, currentUserRoles: CoreRol
     `❌ Unknown or invalid role combination for edit access: ${currentUserRoles.join(', ')}`,
   );
   return false;
+}
+
+/**
+ * Helper function to validate staff edit access (CLINICAL_STAFF or OFFICE_STAFF without CLIENT_ADMIN)
+ */
+function validateStaffEditAccess(
+  oAuthReq: AuthRequest,
+  targetUserRoles: CoreRole[],
+  staffType: string,
+): boolean {
+  // Check client boundary
+  if (oAuthReq.actionClientId && oAuthReq.actionClientId !== oAuthReq.reqClientId) {
+    logger.error(
+      `❌ ${staffType} cannot edit users in a different client: ${oAuthReq.actionClientId} !== ${oAuthReq.reqClientId}`,
+    );
+    return false;
+  }
+
+  // Can only edit PATIENT accounts (userTypeId = 5)
+  if (oAuthReq.actionUserTypeId && oAuthReq.actionUserTypeId !== 5) {
+    logger.error(
+      `❌ ${staffType} can only edit PATIENT accounts, attempted to edit userTypeId: ${oAuthReq.actionUserTypeId}`,
+    );
+    return false;
+  }
+
+  // Also check roles - must have PATIENT role
+  if (targetUserRoles.length > 0 && !targetUserRoles.includes(CoreRole.PATIENT)) {
+    logger.error(`❌ ${staffType} can only edit users with PATIENT role`);
+    return false;
+  }
+
+  logger.debug(`✅ ${staffType} authorized to edit PATIENT user within same client`);
+  return true;
 }
 
 /**
