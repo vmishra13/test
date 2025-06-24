@@ -446,7 +446,7 @@
                     "media": {
                         "name": "NA",
                         "type": "Image",
-                        "url": "S3:
+                        "url": "S3:"
                     },
                     "items": [
                         {
@@ -471,7 +471,7 @@
                     "media": {
                         "name": "NA",
                         "type": "Image",
-                        "url": "S3:
+                        "url": "S3:"
                     },
                     "items": [
                         {
@@ -506,13 +506,13 @@
                     {
                         "id": 1,
                         "title": "Exercise goals ",
-                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence",
+                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence"
                     }
                 ],
                 "precaution": {
                     "id": 1,
                     "title": "Precautions",
-                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait",
+                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait"
                 },
                 "media": {
                     "name": "NA",
@@ -537,13 +537,13 @@
                     {
                         "id": 1,
                         "title": "Exercise goals ",
-                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence",
+                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence"
                     }
                 ],
                 "precaution": {
                     "id": 1,
                     "title": "Precautions",
-                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait",
+                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait"
                 },
                 "media": {
                     "name": "NA",
@@ -584,7 +584,7 @@
                                 "media": {
                                     "name": "Stool Rotation",
                                     "type": "Video",
-                                    "url": "S3:
+                                    "url": "S3:"
                                 },
                                 "purpose": "Purpose", 
                                 "procedure": {
@@ -602,7 +602,7 @@
                                 "media": {
                                     "name": "Stool Rotation",
                                     "type": "Video",
-                                    "url": "S3:
+                                    "url": "S3:"
                                 },
                                 "purpose": "Purpose of excerise",
                                 "procedure": {
