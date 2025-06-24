@@ -177,8 +177,8 @@ This document defines the comprehensive authorization rules for user update and 
 - [User Registration Authorization](./register-user.md)
 - [User View Authorization](./view-user.md)
 - [User Deletion Authorization](./delete-user.md)
-- [HIPAA Compliance Guidelines](../docs/hipaa-compliance.md)
-- [Multi-Tenant Security](../docs/multi-tenant-security.md)
+- [HIPAA Compliance Guidelines](../../../../docs/hipaa-compliance.md)
+- [Multi-Tenant Security](../../../../docs/multi-tenant-security.md)
 
 ---
 
