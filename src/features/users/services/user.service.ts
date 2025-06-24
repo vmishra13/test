@@ -192,7 +192,7 @@ export async function getUsersService(req: ExtendedRequest<UserQuery>): Promise<
     const currentUser = getCurrentUser(req);
 
     // First validate query parameters to ensure proper type conversion
-    const queryParams = validateQueryParameters(req.query);
+    const queryParams = validateGetUsersQuery(req.query);
 
     const actionUserId = null; // No specific user ID for view action
     const actionClientId = queryParams.clientId || currentUser.clientId; // Now it's properly typed as number
@@ -1363,7 +1363,7 @@ function validateRegisterRequestBody(body: any): RegisterUserRequest {
  * @param query - Raw query parameters from request
  * @returns GetUsersQueryRequest - Validated and typed query parameters
  */
-function validateQueryParameters(query: UserQuery): GetUsersQueryRequest {
+function validateGetUsersQuery(query: UserQuery): GetUsersQueryRequest {
   logger.debug('Validating query parameters', {
     page: query.page,
     limit: query.limit,
