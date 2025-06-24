@@ -33,6 +33,7 @@
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"],
+      "@config/logger": ["config/logger"],
       "@config": ["config/index"],
       "@config/*": ["config/*"],
       "@db": ["db/index"],
