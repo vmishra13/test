@@ -1,13 +1,13 @@
 import {
   RequestUserAction,
   type AuthRequest,
-  type ExtendedRequest,
   //   type UserAction,
 } from '@features/users/types/extended-request';
 import { CoreRole, RoleUtils } from '@shared/constants';
 import type { AuthenticatedUser } from '@/features/auth/dto/auth.dto';
 import { createAuthError, createAuthorizationError } from '@/shared/errors/application-error';
 import logger from '@/config/logger';
+import type { ExtendedRequest } from '@shared/types';
 
 export function performAuthorization(oAuthReq: AuthRequest): boolean {
   //   const currentUserRole = getCurrentUserPrimaryRole(oAuthReq.reqUserRoles);

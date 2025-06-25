@@ -1,6 +1,6 @@
 /**
  * EXERCISE CONTROLLER - HTTP request handlers
- * 
+ *
  * This file contains all HTTP request handlers for exercise master operations.
  * It handles request validation, calls business logic, and formats responses.
  */
@@ -8,7 +8,7 @@
 import { Response, NextFunction } from 'express';
 import * as exerciseService from '../services/exercise.service';
 import { CreateExerciseSchema, UpdateExerciseSchema } from '../dto/exercise.dto';
-import { ExtendedRequest } from '../types/extended-request';
+import type { ExtendedRequest } from '@shared/types';
 
 // ===================================================================
 // 🎯 CONTROLLER FUNCTIONS
@@ -20,7 +20,7 @@ import { ExtendedRequest } from '../types/extended-request';
 export async function getAllExercises(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const result = await exerciseService.getAllExercises(req.query);
@@ -41,7 +41,7 @@ export async function getAllExercises(
 export async function getExerciseById(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const { id } = req.params;
@@ -71,11 +71,11 @@ export async function getExerciseById(
 export async function createExercise(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const userId = req.user?.userId;
-    
+
     if (!userId) {
       res.status(401).json({
         success: false,
@@ -87,10 +87,7 @@ export async function createExercise(
     // Validate request body
     const validatedData = CreateExerciseSchema.parse(req.body);
 
-    const exercise = await exerciseService.createExercise(
-      validatedData,
-      userId.toString()
-    );
+    const exercise = await exerciseService.createExercise(validatedData, userId.toString());
 
     res.status(201).json({
       success: true,
@@ -115,12 +112,12 @@ export async function createExercise(
 export async function updateExercise(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const { id } = req.params;
     const userId = req.user?.userId;
-    
+
     if (!userId) {
       res.status(401).json({
         success: false,
@@ -132,11 +129,7 @@ export async function updateExercise(
     // Validate request body
     const validatedData = UpdateExerciseSchema.parse(req.body);
 
-    const exercise = await exerciseService.updateExercise(
-      id,
-      validatedData,
-      userId.toString()
-    );
+    const exercise = await exerciseService.updateExercise(id, validatedData, userId.toString());
 
     res.status(200).json({
       success: true,
@@ -170,7 +163,7 @@ export async function updateExercise(
 export async function deleteExercise(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const { id } = req.params;
@@ -199,7 +192,7 @@ export async function deleteExercise(
 export async function getExerciseStats(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const stats = await exerciseService.getExerciseStats();

@@ -24,7 +24,7 @@ import {
 } from '../dto/plans.dto';
 import { ApiResponse } from '@/shared/utils/api-response';
 import { getCurrentUser } from '@features/auth';
-import type { ExtendedRequest } from '../types/extended-request';
+import type { ExtendedRequest } from '@shared/types';
 
 // ===================================================================
 // 🎯 PLAN (TREATMENT PLAN) SERVICES

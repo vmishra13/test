@@ -1,5 +1,3 @@
-import { Request } from 'express';
-import type { AuthenticatedUser } from '../../auth/dto/auth.dto';
 import type { CoreRole } from '../../../shared/constants';
 
 export enum RequestUserAction {
@@ -11,13 +9,6 @@ export enum RequestUserAction {
   userEdit = 'userEdit', // Edit an existing user
   userView = 'userView', // View user details
   userDelete = 'userDelete', // Delete a user
-}
-
-export interface ExtendedRequest<TQuery = any, TBody = any>
-  extends Omit<Request, 'body' | 'query'> {
-  user: AuthenticatedUser;
-  query: TQuery;
-  body: TBody;
 }
 
 export interface AuthRequest {

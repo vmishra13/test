@@ -1,6 +1,6 @@
 /**
  * MEDICATION CONTROLLER - HTTP request handlers
- * 
+ *
  * This file contains all HTTP request handlers for medication master operations.
  * It handles request validation, calls business logic, and formats responses.
  */
@@ -8,7 +8,7 @@
 import { Response, NextFunction } from 'express';
 import * as medicationService from '../services/medication.service';
 import { CreateMedicationSchema, UpdateMedicationSchema } from '../dto/medication.dto';
-import { ExtendedRequest } from '../types/extended-request';
+import type { ExtendedRequest } from '@shared/types';
 
 // ===================================================================
 // 🎯 CONTROLLER FUNCTIONS
@@ -20,7 +20,7 @@ import { ExtendedRequest } from '../types/extended-request';
 export async function getAllMedications(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const clientId = req.user?.clientId;
@@ -50,12 +50,12 @@ export async function getAllMedications(
 export async function getMedicationById(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const { id } = req.params;
     const clientId = req.user?.clientId;
-    
+
     if (!clientId) {
       res.status(401).json({
         success: false,
@@ -89,12 +89,12 @@ export async function getMedicationById(
 export async function createMedication(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const clientId = req.user?.clientId;
     const userId = req.user?.userId;
-    
+
     if (!clientId || !userId) {
       res.status(401).json({
         success: false,
@@ -109,7 +109,7 @@ export async function createMedication(
     const medication = await medicationService.createMedication(
       validatedData,
       clientId,
-      userId.toString()
+      userId.toString(),
     );
 
     res.status(201).json({
@@ -135,13 +135,13 @@ export async function createMedication(
 export async function updateMedication(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const { id } = req.params;
     const clientId = req.user?.clientId;
     const userId = req.user?.userId;
-    
+
     if (!clientId || !userId) {
       res.status(401).json({
         success: false,
@@ -157,7 +157,7 @@ export async function updateMedication(
       id,
       validatedData,
       clientId,
-      userId.toString()
+      userId.toString(),
     );
 
     res.status(200).json({
@@ -192,12 +192,12 @@ export async function updateMedication(
 export async function deleteMedication(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const { id } = req.params;
     const clientId = req.user?.clientId;
-    
+
     if (!clientId) {
       res.status(401).json({
         success: false,
@@ -230,11 +230,11 @@ export async function deleteMedication(
 export async function getMedicationStats(
   req: ExtendedRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): Promise<void> {
   try {
     const clientId = req.user?.clientId;
-    
+
     if (!clientId) {
       res.status(401).json({
         success: false,

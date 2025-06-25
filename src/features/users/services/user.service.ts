@@ -38,12 +38,8 @@ import type {
 import type { AuthenticatedUser } from '@features/auth/dto/auth.dto';
 import { validateEmailDomain, registerUserSchema } from '../validators/registration.validators';
 import * as userRepository from '../repositories/user.repository';
-import {
-  ExtendedRequest,
-  RequestUserAction,
-  type AuthRequest,
-  type UserQuery,
-} from '../types/extended-request';
+import { RequestUserAction, type AuthRequest, type UserQuery } from '../types/extended-request';
+import type { ExtendedRequest } from '@shared/types';
 import {
   createAuthError,
   createAuthorizationError,

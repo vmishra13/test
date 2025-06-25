@@ -6,10 +6,9 @@
  */
 
 import { ApiResponse } from '@/shared/utils/api-response';
-import { StatusCodes } from 'http-status-codes';
 import { getCurrentUser } from '@features/auth';
 import type { AuthenticatedUser } from '@/features/auth/dto/auth.dto';
-import type { ExtendedRequest } from '@features/users/types/extended-request';
+import type { ExtendedRequest } from '@shared/types';
 import type {
   CreateDiagnosisInput,
   UpdateDiagnosisInput,
