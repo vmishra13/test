@@ -1,8 +1,7 @@
-import prismaPostgres from '@db/postgres/client';
+import { prismaPostgres } from '@/db/postgres/client'; // ✅ Fixed import
 import bcrypt from 'bcrypt';
 import {
   UserWithAuthData,
-  UserWithPassword,
   UserUpdateInput,
   UserRoleAssignment,
 } from '../validators/user.validators';
@@ -18,7 +17,7 @@ import type {
   CreateUserResult,
   ClientValidationResult,
   UserTypeValidationResult,
-} from '../dto/registration.dto';
+} from '../dto/user.dto';
 import type { CoreRole } from '@shared/constants';
 
 // ===================================================================
@@ -42,8 +41,9 @@ export async function findUserWithAuthData(
       },
       include: {
         client: true,
-        userType: true,
-        userRole: {
+        user_type: true,
+        user_role: {
+          // Fixed: using user_role (singular) as per schema
           include: {
             role: true,
           },
@@ -52,45 +52,15 @@ export async function findUserWithAuthData(
     });
 
     return user as UserWithAuthData | null;
-  } catch (error) {
-    throw new Error(`Failed to find user with auth data: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to find user with auth data: ${error.message}`);
   }
 }
 
 /**
- * Find user with password for authentication validation
- */
-// export async function findUserWithPassword(
-//   loginName: string,
-//   clientId?: number,
-// ): Promise<UserWithPassword | null> {
-//   try {
-//     const user = await prismaPostgres.user.findFirst({
-//       where: {
-//         loginName,
-//         ...(clientId && { clientId }),
-//         status: { not: -99 },
-//       },
-//       include: {
-//         password: {
-//           orderBy: { crDate: 'desc' },
-//           take: 1, // Get most recent password
-//         },
-//         client: true,
-//         userType: true,
-//       },
-//     });
-
-//     return user as UserWithPassword | null;
-//   } catch (error) {
-//     throw new Error(`Failed to find user with password: ${error}`);
-//   }
-// }
-
-/**
  * Find user by ID with authentication context
  */
-export async function findUserById(userId: number): Promise<UserWithAuthData | null> {
+export async function findUserById(userId: number) {
   try {
     const user = await prismaPostgres.user.findUnique({
       where: {
@@ -98,8 +68,9 @@ export async function findUserById(userId: number): Promise<UserWithAuthData | n
       },
       include: {
         client: true,
-        userType: true,
-        userRole: {
+        user_type: true,
+        user_role: {
+          // Fixed relationship name
           include: {
             role: true,
           },
@@ -107,9 +78,9 @@ export async function findUserById(userId: number): Promise<UserWithAuthData | n
       },
     });
 
-    return user as UserWithAuthData | null;
-  } catch (error) {
-    throw new Error(`Failed to find user by ID: ${error}`);
+    return user;
+  } catch (error: any) {
+    throw new Error(`Failed to find user by ID: ${error.message}`);
   }
 }
 
@@ -121,16 +92,22 @@ export async function findUserByEmail(
   clientId?: number,
 ): Promise<UserWithAuthData | null> {
   try {
+    // ✅ Fixed: Handle unique constraint on email + clientId
+    const whereClause: any = {
+      email,
+      status: { not: -99 },
+    };
+
+    if (clientId) {
+      whereClause.clientId = clientId;
+    }
+
     const user = await prismaPostgres.user.findFirst({
-      where: {
-        email,
-        ...(clientId && { clientId }),
-        status: { not: -99 },
-      },
+      where: whereClause,
       include: {
         client: true,
-        userType: true,
-        userRole: {
+        user_type: true,
+        user_role: {
           include: {
             role: true,
           },
@@ -139,8 +116,50 @@ export async function findUserByEmail(
     });
 
     return user as UserWithAuthData | null;
-  } catch (error) {
-    throw new Error(`Failed to find user by email: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to find user by email: ${error.message}`);
+  }
+}
+
+/**
+ * Find user with password data (for authentication)
+ * Includes: user + client + userType + roles + passwords
+ * Note: This function includes sensitive password data - use with caution
+ */
+export async function findUserWithPassword(
+  loginName: string,
+  clientId?: number,
+): Promise<UserWithAuthData | null> {
+  try {
+    const user = await prismaPostgres.user.findFirst({
+      where: {
+        loginName,
+        ...(clientId && { clientId }),
+        status: { not: -99 }, // Exclude deleted users
+      },
+      include: {
+        client: true,
+        user_type: true,
+        user_role: {
+          include: {
+            role: true,
+          },
+        },
+        password: {
+          where: {
+            status: 1, // Only active passwords
+          },
+          orderBy: {
+            crDate: 'desc',
+          },
+          take: 1, // Get the most recent password
+        },
+      },
+    });
+
+    return user as UserWithAuthData | null;
+  } catch (error: any) {
+    throw new Error(`Failed to find user with password: ${error.message}`);
   }
 }
 
@@ -157,13 +176,13 @@ export async function createUser(
 ): Promise<CreatedUserSummary> {
   try {
     return await prismaPostgres.$transaction(async tx => {
-      // 1. Create the user
+      // ✅ Fixed: Handle nullable fields properly
       const newUser = await tx.user.create({
         data: {
           clientId: userData.clientId,
           userTypeId: userData.userTypeId,
           loginName: userData.loginName,
-          firstName: userData.firstName || null,
+          firstName: userData.firstName || null, // ✅ Allow null
           middleName: userData.middleName || null,
           lastName: userData.lastName || null,
           email: userData.email || null,
@@ -173,6 +192,7 @@ export async function createUser(
           timeZone: userData.timeZone || null,
           status: 1, // Active status
           crUser,
+          modUser: crUser, // ✅ Added required field
         },
       });
 
@@ -184,7 +204,9 @@ export async function createUser(
         data: {
           userId: newUser.id,
           password: hashedPassword,
+          status: 1, // ✅ Added status field
           crUser,
+          modUser: crUser, // ✅ Added required field
         },
       });
 
@@ -195,6 +217,7 @@ export async function createUser(
           roleId,
           clientId: userData.clientId,
           crUser,
+          modUser: crUser, // ✅ Added required field
         }));
 
         await tx.user_role.createMany({
@@ -210,7 +233,7 @@ export async function createUser(
         email: newUser.email,
         clientId: newUser.clientId,
         userTypeId: newUser.userTypeId,
-        status: newUser.status,
+        status: newUser.status || 1, // ✅ Handle nullable status
         createdAt: newUser.crDate,
       };
     });
@@ -218,13 +241,13 @@ export async function createUser(
     if (error.code === 'P2002') {
       const target = error.meta?.target;
       if (target?.includes('loginName')) {
-        throw new Error('Login name already exists');
+        throw new Error('Login name already exists for this client');
       }
       if (target?.includes('email')) {
-        throw new Error('Email already exists');
+        throw new Error('Email already exists for this client');
       }
     }
-    throw new Error(`Failed to create user: ${error}`);
+    throw new Error(`Failed to create user: ${error.message}`);
   }
 }
 
@@ -233,17 +256,19 @@ export async function createUser(
  */
 export async function isLoginNameTaken(loginName: string, clientId?: number): Promise<boolean> {
   try {
+    const whereClause: any = { loginName };
+    if (clientId) {
+      whereClause.clientId = clientId;
+    }
+
     const user = await prismaPostgres.user.findFirst({
-      where: {
-        loginName,
-        ...(clientId && { clientId }),
-      },
+      where: whereClause,
       select: { id: true },
     });
 
     return !!user;
-  } catch (error) {
-    throw new Error(`Failed to check login name: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to check login name: ${error.message}`);
   }
 }
 
@@ -252,17 +277,19 @@ export async function isLoginNameTaken(loginName: string, clientId?: number): Pr
  */
 export async function isEmailTaken(email: string, clientId?: number): Promise<boolean> {
   try {
+    const whereClause: any = { email };
+    if (clientId) {
+      whereClause.clientId = clientId;
+    }
+
     const user = await prismaPostgres.user.findFirst({
-      where: {
-        email,
-        ...(clientId && { clientId }),
-      },
+      where: whereClause,
       select: { id: true },
     });
 
     return !!user;
-  } catch (error) {
-    throw new Error(`Failed to check email: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to check email: ${error.message}`);
   }
 }
 
@@ -286,14 +313,15 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
             logo: true,
           },
         },
-        userType: {
+        user_type: {
           select: {
             id: true,
             name: true,
             description: true,
           },
         },
-        userRole: {
+        user_role: {
+          // Fixed relationship name
           include: {
             role: {
               select: {
@@ -305,6 +333,7 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
           },
         },
         contact: {
+          // ✅ Fixed: using contact (singular) as per schema
           select: {
             id: true,
             type: true,
@@ -331,8 +360,9 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
       passExpireInDays: user.passExpireInDays,
       status: user.status,
       client: user.client,
-      userType: user.userType,
-      roles: user.userRole.map(ur => ({
+      userType: user.user_type,
+      roles: user.user_role.map(ur => ({
+        // Fixed property name
         id: ur.role.id,
         name: ur.role.name,
         description: ur.role.description,
@@ -347,8 +377,8 @@ export async function getUserProfile(userId: number): Promise<UserProfile | null
       createdAt: user.crDate,
       updatedAt: user.modDate,
     };
-  } catch (error) {
-    throw new Error(`Failed to get user profile: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get user profile: ${error.message}`);
   }
 }
 
@@ -377,14 +407,14 @@ export async function updateUserProfile(
             logo: true,
           },
         },
-        userType: {
+        user_type: {
           select: {
             id: true,
             name: true,
             description: true,
           },
         },
-        userRole: {
+        user_role: {
           include: {
             role: {
               select: {
@@ -420,8 +450,8 @@ export async function updateUserProfile(
       passExpireInDays: updatedUser.passExpireInDays,
       status: updatedUser.status,
       client: updatedUser.client,
-      userType: updatedUser.userType,
-      roles: updatedUser.userRole.map(ur => ({
+      userType: updatedUser.user_type,
+      roles: updatedUser.user_role.map(ur => ({
         id: ur.role.id,
         name: ur.role.name,
         description: ur.role.description,
@@ -436,8 +466,8 @@ export async function updateUserProfile(
       createdAt: updatedUser.crDate,
       updatedAt: updatedUser.modDate,
     };
-  } catch (error) {
-    throw new Error(`Failed to update user profile: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update user profile: ${error.message}`);
   }
 }
 
@@ -485,7 +515,8 @@ export async function searchUsers(
     if (status !== undefined) where.status = status;
 
     if (roleId) {
-      where.userRole = {
+      where.user_role = {
+        // Fixed relationship name
         some: {
           roleId,
         },
@@ -497,10 +528,11 @@ export async function searchUsers(
       prismaPostgres.user.findMany({
         where,
         include: {
-          userType: {
+          user_type: {
             select: { name: true },
           },
-          userRole: {
+          user_role: {
+            // Fixed relationship name
             include: {
               role: {
                 select: { name: true },
@@ -522,15 +554,15 @@ export async function searchUsers(
       lastName: user.lastName,
       email: user.email,
       status: user.status,
-      userType: user.userType.name,
-      roles: user.userRole.map(ur => ur.role.name),
+      userType: user.user_type.name,
+      roles: user.user_role.map(ur => ur.role.name), // Fixed property name
       createdAt: user.crDate,
       // Note: lastLogin would need to be tracked separately
     }));
 
     return { users: searchResults, total };
-  } catch (error) {
-    throw new Error(`Failed to search users: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to search users: ${error.message}`);
   }
 }
 
@@ -544,13 +576,16 @@ export async function searchUsers(
 export async function assignRole(assignment: UserRoleAssignment): Promise<void> {
   try {
     await prismaPostgres.user_role.create({
-      data: assignment,
+      data: {
+        ...assignment,
+        modUser: assignment.crUser, // ✅ Added required field
+      },
     });
   } catch (error: any) {
     if (error.code === 'P2002') {
       throw new Error('User already has this role assigned');
     }
-    throw new Error(`Failed to assign role: ${error}`);
+    throw new Error(`Failed to assign role: ${error.message}`);
   }
 }
 
@@ -566,8 +601,8 @@ export async function removeRole(userId: number, roleId: number, clientId: numbe
         clientId,
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to remove role: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to remove role: ${error.message}`);
   }
 }
 
@@ -589,8 +624,8 @@ export async function getUserRoles(userId: number, clientId?: number): Promise<s
     });
 
     return userRoles.map(ur => ur.role.name);
-  } catch (error) {
-    throw new Error(`Failed to get user roles: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get user roles: ${error.message}`);
   }
 }
 
@@ -614,11 +649,13 @@ export async function updatePassword(
       data: {
         userId,
         password: hashedPassword,
+        status: 1, // ✅ Added required status field
         crUser,
+        modUser: crUser, // ✅ Added required field
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to update password: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update password: ${error.message}`);
   }
 }
 
@@ -628,7 +665,10 @@ export async function updatePassword(
 export async function verifyPassword(userId: number, password: string): Promise<boolean> {
   try {
     const userPassword = await prismaPostgres.password.findFirst({
-      where: { userId },
+      where: {
+        userId,
+        status: 1, // ✅ Only check active passwords
+      },
       orderBy: { crDate: 'desc' },
       take: 1,
     });
@@ -636,8 +676,8 @@ export async function verifyPassword(userId: number, password: string): Promise<
     if (!userPassword) return false;
 
     return await bcrypt.compare(password, userPassword.password);
-  } catch (error) {
-    throw new Error(`Failed to verify password: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to verify password: ${error.message}`);
   }
 }
 
@@ -662,8 +702,8 @@ export async function updateUserStatus(
         modDate: new Date(),
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to update user status: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to update user status: ${error.message}`);
   }
 }
 
@@ -680,8 +720,8 @@ export async function softDeleteUser(userId: number, modUser: string): Promise<v
         modDate: new Date(),
       },
     });
-  } catch (error) {
-    throw new Error(`Failed to delete user: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to delete user: ${error.message}`);
   }
 }
 
@@ -743,8 +783,8 @@ export async function getUserAnalytics(clientId?: number): Promise<any> {
       ),
       recentRegistrations,
     };
-  } catch (error) {
-    throw new Error(`Failed to get user analytics: ${error}`);
+  } catch (error: any) {
+    throw new Error(`Failed to get user analytics: ${error.message}`);
   }
 }
 
@@ -763,7 +803,13 @@ export async function createUserWithRoles(
     return await prismaPostgres.$transaction(async tx => {
       // 1. Create user
       const user = await tx.user.create({
-        data: data.userData,
+        data: {
+          ...data.userData,
+          firstName: data.userData.firstName || null, // ✅ Handle nullable
+          lastName: data.userData.lastName || null,
+          email: data.userData.email || null,
+          modUser: data.userData.crUser || data.userData.modUser || 'system', // ✅ Ensure modUser is set
+        },
         include: {
           client: {
             select: {
@@ -772,7 +818,7 @@ export async function createUserWithRoles(
               timeZone: true,
             },
           },
-          userType: {
+          user_type: {
             select: {
               id: true,
               name: true,
@@ -789,15 +835,17 @@ export async function createUserWithRoles(
           password: data.password,
           status: 1, // Active
           crUser: data.createdBy,
+          modUser: data.createdBy, // ✅ Added required field
         },
       });
 
       // 3. Assign roles
-      const roleAssignments = data.roleIds.map(roleId => ({
+      const roleAssignments = data.roleIds.map((roleId: any) => ({
         userId: user.id,
         clientId: data.userData.clientId,
         roleId: roleId,
         crUser: data.createdBy,
+        modUser: data.createdBy, // ✅ Added required field
       }));
 
       await tx.user_role.createMany({
@@ -831,7 +879,7 @@ export async function createUserWithRoles(
           profilePicture: user.profilePicture,
           clientId: user.clientId,
           userTypeId: user.userTypeId,
-          status: user.status,
+          status: user.status || 1, // ✅ Handle nullable status
           crUser: user.crUser,
           crDate: user.crDate,
           modUser: user.modUser,
@@ -842,9 +890,9 @@ export async function createUserWithRoles(
             timeZone: user.client.timeZone,
           },
           userType: {
-            id: user.userType.id,
-            name: user.userType.name,
-            description: user.userType.description,
+            id: user.user_type.id,
+            name: user.user_type.name,
+            description: user.user_type.description,
           },
         },
         roles: roles,
@@ -1022,7 +1070,7 @@ export async function getUserRegistrationStats(clientId: number): Promise<{
  */
 export async function findUserByLoginName(loginName: string) {
   try {
-    return await prismaPostgres.user.findUnique({
+    return await prismaPostgres.user.findFirst({
       where: { loginName },
       select: {
         id: true,
@@ -1188,7 +1236,7 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
         };
       }
 
-      where.userRole = roleConditions;
+      where.user_role = roleConditions; // Fixed relationship name
     }
 
     // Get total count
@@ -1207,13 +1255,14 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
             name: true,
           },
         },
-        userType: {
+        user_type: {
           select: {
             id: true,
             name: true,
           },
         },
-        userRole: {
+        user_role: {
+          // Fixed relationship name
           include: {
             role: {
               select: {
@@ -1233,11 +1282,11 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        status: user.status!,
+        status: user.status || 1, // ✅ Handle nullable status
         crDate: user.crDate,
         client: user.client,
-        userType: user.userType,
-        roles: user.userRole.map(ur => ur.role),
+        userType: user.user_type,
+        roles: user.user_role.map((ur: any) => ur.role), // Fixed relationship name
       })),
       pagination: {
         page,
@@ -1247,5 +1296,47 @@ export async function getUsersWithFilters(filters: GetUsersFilters): Promise<Get
     };
   } catch (error: any) {
     throw new Error(`Failed to get users with filters: ${error.message}`);
+  }
+}
+
+// ===================================================================
+// 🎯 EXTRA INFO MANAGEMENT (for mobile app profile/onboarding)
+// ===================================================================
+
+/**
+ * Update user's extraInfo field (used for onboarding status, profile extensions, etc.)
+ */
+export async function updateUserExtraInfo(
+  userId: number,
+  extraInfo: Record<string, any>,
+  modUser: string,
+): Promise<void> {
+  try {
+    await prismaPostgres.user.update({
+      where: { id: userId },
+      data: {
+        extraInfo,
+        modUser,
+        modDate: new Date(),
+      },
+    });
+  } catch (error: any) {
+    throw new Error(`Failed to update user extra info: ${error.message}`);
+  }
+}
+
+/**
+ * Get user's extraInfo field
+ */
+export async function getUserExtraInfo(userId: number): Promise<Record<string, any> | null> {
+  try {
+    const user = await prismaPostgres.user.findUnique({
+      where: { id: userId },
+      select: { extraInfo: true },
+    });
+
+    return user?.extraInfo as Record<string, any> | null;
+  } catch (error: any) {
+    throw new Error(`Failed to get user extra info: ${error.message}`);
   }
 }

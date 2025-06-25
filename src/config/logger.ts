@@ -69,7 +69,7 @@ const logFormat = ENV.isDevelopment ? developmentFormat : productionFormat;
 
 // Create the logger with enhanced production capabilities
 const logger = winston.createLogger({
-  level: ENV.isProduction ? 'info' : 'debug',
+  level: ENV.isProduction ? 'error' : 'info',
   format: logFormat,
   defaultMeta: { service: 'reliacare-api' },
   transports: [
@@ -106,12 +106,10 @@ const logger = winston.createLogger({
           }),
         ]
       : [
-          // Development file logging
-          new winston.transports.File({ 
-            filename: 'logs/dev.log',
-            level: 'debug'
-          }),
-        ]),
+          new winston.transports.File({ filename: 'logs/info.log', level: 'info' }),
+          new winston.transports.File({ filename: 'logs/combined.log' }),
+        ]
+      ),
   ],
   
   // ✅ Handle uncaught exceptions with stack traces

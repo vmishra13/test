@@ -1,4 +1,5 @@
-import bcrypt from 'bcrypt';
+import * as bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import {
   LoginResponse,
   PublicUserData,
@@ -16,8 +17,8 @@ import {
   UserProfile,
   UserUpdateRequest,
   UserUpdateResponse,
-} from '@features/users/dto/user.dto';
-import * as userRepository from '@features/users/repositories/user.repository';
+} from '../../users/dto/user.dto';
+import * as userRepository from '../../users/repositories/user.repository';
 import * as tokenService from './token.service';
 import * as tokenRepository from '../repositories/token.repository';
 import {
@@ -27,8 +28,36 @@ import {
   type PasswordChangeRequest,
   type LoginCredentials,
 } from '../validators/auth.validators';
-import type { UserUpdateInput } from '@features/users/validators/user.validators';
-import type { CoreRole } from '@/shared/constants';
+import type { UserUpdateInput } from '../../users/validators/user.validators';
+import type { CoreRole } from '../../../shared/constants';
+
+// ===================================================================
+// 🔒 TEMPORARY PASSWORD RESET STORAGE (IN-MEMORY)
+// ===================================================================
+
+interface ResetTokenData {
+  userId: number;
+  email: string;
+  expiresAt: Date;
+  used: boolean;
+}
+
+// Temporary in-memory storage for reset tokens
+// TODO: Replace with database storage when passwordResetToken table is available
+const temporaryResetTokens = new Map<string, ResetTokenData>();
+
+// Clean up expired tokens every hour
+setInterval(
+  () => {
+    const now = new Date();
+    temporaryResetTokens.forEach((data, token) => {
+      if (data.expiresAt < now || data.used) {
+        temporaryResetTokens.delete(token);
+      }
+    });
+  },
+  60 * 60 * 1000,
+);
 
 // ===================================================================
 // 🎯 AUTHENTICATION FLOWS
@@ -106,11 +135,11 @@ export async function authenticateUser(
         timeZone: user.client.timeZone || undefined,
       },
       userType: {
-        id: user.userType.id,
-        name: user.userType.name,
-        description: user.userType.description || undefined,
+        id: user.user_type.id,
+        name: user.user_type.name,
+        description: user.user_type.description || undefined,
       },
-      roles: user.userRole?.map(ur => ur.role.name as CoreRole) || [],
+      roles: user.user_role?.map(ur => ur.role.name as CoreRole) || [],
     };
 
     // Extract permissions (if available)
@@ -162,11 +191,11 @@ export async function refreshToken(
             timeZone: user.client.timeZone || undefined,
           },
           userType: {
-            id: user.userType.id,
-            name: user.userType.name,
-            description: user.userType.description || undefined,
+            id: user.user_type.id,
+            name: user.user_type.name,
+            description: user.user_type.description || undefined,
           },
-          roles: user.userRole?.map(ur => ur.role.name as CoreRole) || [],
+          roles: user.user_role?.map((ur: any) => ur.role.name as CoreRole) || [],
         };
       }
     }
@@ -526,7 +555,13 @@ export async function processOAuth2TokenRequest(
  */
 export async function logSecurityEvent(event: SecurityEvent): Promise<void> {
   try {
-    await tokenRepository.logSecurityEvent(event);
+    await tokenRepository.logSecurityEvent(
+      event.userId,
+      event.clientId,
+      event.type as 'token_rotation' | 'suspicious_activity' | 'logout_all',
+      event.details,
+      'system', // modUser - could be passed as parameter or derived from context
+    );
   } catch (error) {
     // Don't throw errors for logging failures
     console.error('Failed to log security event:', error);
@@ -583,6 +618,159 @@ export async function revokeUserTokensForSecurity(
   } catch (error) {
     throw new Error(`Failed to revoke tokens for security: ${error}`);
   }
+}
+
+// ===================================================================
+// 🔒 PASSWORD RESET FUNCTIONALITY
+// ===================================================================
+
+/**
+ * Initiate password reset process
+ */
+export async function initiatePasswordReset(email: string): Promise<{ requestId: string }> {
+  try {
+    // Check if user exists with this email
+    const user = await userRepository.findUserByEmail(email);
+
+    if (!user) {
+      // For security, we don't reveal if the email exists
+      // But we still return success to prevent email enumeration
+      return { requestId: generateRequestId() };
+    }
+
+    // Generate reset token
+    const resetToken = generateSecureToken();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Store reset token in memory (temporary solution)
+    // TODO: Store in database when passwordResetToken table is available
+    temporaryResetTokens.set(resetToken, {
+      userId: user.id,
+      email: user.email || '',
+      expiresAt,
+      used: false,
+    });
+
+    // TODO: Send reset email (integrate with email service)
+    // await emailService.sendPasswordResetEmail(user.email, resetToken);
+
+    // Log security event
+    await logSecurityEvent({
+      type: 'suspicious_activity', // Using existing type for now
+      userId: user.id,
+      clientId: user.clientId,
+      details: { reason: 'Password reset requested' },
+      timestamp: new Date(),
+      severity: 'medium',
+    });
+
+    return { requestId: generateRequestId() };
+  } catch (error) {
+    console.error('Password reset initiation failed:', error);
+    throw new Error('Failed to initiate password reset');
+  }
+}
+
+/**
+ * Reset password using reset token
+ */
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<{ success: boolean }> {
+  try {
+    // Verify reset token from temporary storage
+    const resetData = temporaryResetTokens.get(token);
+
+    if (!resetData || resetData.expiresAt < new Date() || resetData.used) {
+      throw new Error('invalid_token');
+    }
+
+    // Get user
+    const user = await userRepository.findUserById(resetData.userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update user password using the correct method name
+    await userRepository.updatePassword(user.id, hashedPassword, 'system-password-reset');
+
+    // Mark reset token as used
+    resetData.used = true;
+    temporaryResetTokens.set(token, resetData);
+
+    // Log security event
+    await logSecurityEvent({
+      type: 'suspicious_activity', // Using existing type
+      userId: user.id,
+      clientId: user.clientId,
+      details: { reason: 'Password reset completed' },
+      timestamp: new Date(),
+      severity: 'high',
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Password reset failed:', error);
+    if (error instanceof Error && error.message === 'invalid_token') {
+      throw error;
+    }
+    throw new Error('Failed to reset password');
+  }
+}
+
+/**
+ * Verify if reset token is valid
+ */
+export async function verifyResetToken(token: string): Promise<{
+  valid: boolean;
+  email?: string;
+  expiresAt?: Date;
+}> {
+  try {
+    const resetData = temporaryResetTokens.get(token);
+
+    if (!resetData || resetData.expiresAt < new Date() || resetData.used) {
+      return { valid: false };
+    }
+
+    // Get user email
+    const user = await userRepository.findUserById(resetData.userId);
+    if (!user) {
+      return { valid: false };
+    }
+
+    return {
+      valid: true,
+      email: user.email || undefined,
+      expiresAt: resetData.expiresAt,
+    };
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return { valid: false };
+  }
+}
+
+// ===================================================================
+// 🔧 HELPER FUNCTIONS
+// ===================================================================
+
+/**
+ * Generate a secure random token
+ */
+function generateSecureToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * Generate a request ID for tracking
+ */
+function generateRequestId(): string {
+  return crypto.randomBytes(16).toString('hex');
 }
 
 // ===================================================================

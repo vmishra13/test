@@ -41,3 +41,10 @@ export function createValidationError(
   error.details = details;
   return error;
 }
+
+export function createNotFoundError(message: string): CustomError {
+  const error = new Error(message) as CustomError;
+  error.name = 'NotFoundError';
+  error.statusCode = StatusCodes.NOT_FOUND;
+  return error;
+}

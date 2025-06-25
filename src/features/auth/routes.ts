@@ -4,6 +4,9 @@ import {
   oauth2Token,
   refreshToken,
   logout,
+  forgotPassword,
+  resetPassword,
+  verifyResetToken,
   // registerUserController
 } from './controllers';
 import { authenticate } from './middlewares';
@@ -21,5 +24,10 @@ router.post('/logout', authenticate, logout);
 
 router.post('/token', oauth2Token); // Standard OAuth 2.0 token endpoint
 router.post('/revoke', authenticate, logout); // OAuth 2.0 revocation endpoint
+
+// Password reset endpoints
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
+router.get('/verify-reset-token/:token', verifyResetToken);
 
 export default router;

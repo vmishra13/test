@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import * as authService from '../services/auth.service';
 import { AuthenticatedUser } from '../dto/auth.dto';
-import type { CoreRole } from '@/shared/constants';
+import type { CoreRole } from '../../../shared/constants';
+import logger from '@config/logger';
 
 // Extend Express Request interface to include user context
 declare global {
@@ -33,6 +34,7 @@ export const authenticate = async (
     const token = extractTokenFromHeader(req);
 
     if (!token) {
+      logger.error('Authentication token is missing');
       res.status(StatusCodes.UNAUTHORIZED).json({
         error: 'unauthorized',
         message: 'Authentication token is required',

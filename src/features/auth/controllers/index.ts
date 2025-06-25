@@ -8,6 +8,9 @@ import {
   getSession,
   validateToken,
   checkAuth,
+  forgotPassword,
+  resetPassword,
+  verifyResetToken,
 } from './auth.controller';
 
 // Import registration controllers
@@ -37,6 +40,11 @@ export {
   getSession,
   validateToken,
   checkAuth,
+
+  // Password reset
+  forgotPassword,
+  resetPassword,
+  verifyResetToken,
 };
 
 // ===================================================================

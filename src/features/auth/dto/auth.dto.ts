@@ -2,7 +2,7 @@
 // 🎯 AUTHENTICATION DTOs (Pure authentication types only)
 // ===================================================================
 
-import type { CoreRole } from '@/shared/constants';
+import type { CoreRole } from '../../../shared/constants';
 
 // Token-related DTOs
 export interface TokenPair {
@@ -271,3 +271,23 @@ export interface DecodedTokenPayload extends TokenPayload {
   exp: number; // ✅ JWT library populates this
   sub: string; // ✅ JWT library populates this
 }
+
+// Define RefreshTokenPayload interface locally since it's not exported from auth.dto
+export interface RefreshTokenPayload {
+  userId: number;
+  clientId: number;
+  jti: string;
+  family: string;
+  expiresAt: Date;
+  issuedAt: Date;
+}
+
+// Define TokenRotationResult interface locally since it's not exported from auth.dto
+export interface TokenRotationResult {
+  newToken: string;
+  newJti: string;
+  family: string;
+  expiresAt: Date;
+  rotatedAt: Date;
+}
+

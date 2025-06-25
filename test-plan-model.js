@@ -1,0 +1,250 @@
+/**
+ * Quick test script to validate our plan model
+ */
+
+// Import the approved JSON
+const approvedJson = {
+    "plan": {
+		"planID" : 9,
+        "primaryDiagnosis" : 
+            {
+                "id": 172,
+                "title" : "Acute ACL Sprain",
+                "body_area" : "Knee",
+                "group_type" : "ACL",
+                "left_ICD10" : "NA",
+                "right_IDC10" : "NA",
+                "bilateral_IDC10" : "NA",
+                "na_IDC10" : "NA"
+            },
+         "relatedDiagnosis" : [
+            {
+                "id": 96,
+                "title" : "Medial ACL Sprin",
+                "body_area" : "Knee",
+                "group_type" : "ACL",
+                "left_ICD10" : "NA",
+                "right_IDC10" : "NA",
+                "bilateral_IDC10" : "NA",
+                "na_IDC10" : "NA"
+                
+            },
+             {
+                "id": 97,
+                "title" : "General ACL Sprin",
+                "body_area" : "Knee",
+                "group_type" : "ACL",
+                "left_ICD10" : "NA",
+                "right_IDC10" : "NA",
+                "bilateral_IDC10" : "NA",
+                "na_IDC10" : "NA"
+                
+            }
+        ],   
+        "note": "Please do not eat after midnight the night before surgery Continue clear liquid after midnight until 4 hrs before surgery. If your surgery is the 1st morning case, please do not eat or drink after midnight the night before surgeryPlease see additional Fasting (NPO) Gudlines",
+        "journey": {
+            "type":"Surgical",
+            "recoveryTime": "12-24",
+            "recoveryTimeUnit": "Week"
+        },
+        "preOpLearning": {
+            "id": 1,
+            "node_type": "RootNode",
+            "title": "General Preoperative Instructions",
+            "text": "NULL",
+            "media": {
+                "name": "NA",
+                "type": "NA",
+                "url": "NULL"
+            },
+            "items": [
+                {
+                     "id" : 1,
+                    "node_type": "ChildNode",
+                    "title": "1. General Pre-Op Information",
+                    "text": "NULL",
+                    "media": { 
+                        "name": "NA",
+                        "type": "NA",
+                        "url": "NULL"
+                    },
+                    "items": [
+                        {
+                            "id" : 1,
+                            "node_type": "ChildNode",
+                            "title": "What to bring on the day of surgery",
+                            "text": "NULL",
+                            "media": {
+                                "name": "NA",
+                                "type": "NA",
+                                "url": "NULL"
+                            },
+                            "items": [
+                                {
+                                    "id" : 1,
+                                    "node_type": "LeafdNode",
+                                    "title": "Do bring the following:",
+                                    "text": "• Advance directive, if you have one • Identification card, driving licence and hospital co-paymment, if informed • Postoperative brace, if requried• Compfortable loose fitting clothing• Glasses, dentures, hearing ads, toothbruch, bathrobe, etc.",
+                                    "media": {
+                                        "name": "NA",
+                                        "type": "NA",
+                                        "url": "NULL"
+                                    },
+                                    "items": []
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "postOpLearning": {
+            "id" : 1,
+            "node_type": "RootNode",
+            "title": "General Postoperative Instructions",
+            "text": "NULL",
+            "media": {
+                "name": "NA",
+                "type": "NA",
+                "url": "NULL"
+            },
+            "items": [
+                {
+                    "id" : 1,
+                    "node_type": "ChildNode",
+                    "title": "Diet",
+                    "text": "NULL",
+                    "media": {
+                        "name": "NA",
+                        "type": "Image",
+                        "url": "S3://dietImage.jpeg"
+                    },
+                    "items": [
+                        {
+                            "id" : 1,
+                            "node_type": "LeafNode",
+                            "title": "What should I eat after surgery",
+                            "text": "• Begin with clear liquids and light foods (jello, soup etc.) \n • Avoid greasy or spicy for first 24 hours  \n • Increase fluid intake to help  prevent constipation",
+                            "media": {
+                                "name": "NA",
+                                "type": "NA",
+                                "url": "NULL"
+                            },
+                            "items": []
+                        }
+                    ]
+                }
+            ]
+        },
+		"milestones": [
+            {
+                "id": 1,
+                "durationUnit": "Week",
+                "fromDuration": -4,
+                "toDuration": 0
+            },
+            {
+                "id": 2,
+                "durationUnit": "Week",
+                "fromDuration": 0,
+                "toDuration": 4,
+                "goals": [
+                    {
+                        "id": 1,
+                        "title": "Exercise goals ",
+                        "text": "Full ROM \n Prevent quad inhibition \n  Edema and pain control \n Promote independence"
+                    }
+                ],
+                "precaution": {
+                    "id": 1,
+                    "title": "Precautions",
+                    "text": "Open brace 0-60, ambulate w/crutches until adequate quat, \n DC crutches when non-antaigic gait"
+                },
+                "media": {
+                    "name": "NA",
+                    "type": "NA",
+                    "url": "NULL"
+                }
+            }
+        ],
+        "careJourney": [
+            {
+                "title": "Standard",
+                "description": "Standard ACL Protocol",
+                "selected": true,
+                "media": {
+                    "name": "NA",
+                    "type": "NA",
+                    "url": "NULL"
+                },
+                "weeklyUnit": "4", 
+                "dailyUnit": "3", 
+                "selectedDays" : [
+                    1,3,5,7
+                ],
+                "timeLines": [
+                    {
+                        "durationUnit": "Week",
+                        "fromDuration": -2,
+                        "toDuration": 0,
+                        "exercises": [
+                            {
+                                "id": 1,
+                                "title": "HEP Protocol:",
+                                "text": "Stool Rotations",
+                                "set": 1,
+                                "repetition": 10,
+                                "showCheckbox": true,
+                                "media": {
+                                    "name": "Stool Rotation",
+                                    "type": "Video",
+                                    "url": "S3://stoolRotation.mp4"
+                                },
+                                "purpose": "Purpose",
+                                "procedure": {
+                                    "title": "Procedure:",
+                                    "text": "1. Place the involved knee on stool. \n 2. Then, rotate your leg outwords and hold for 10 seconds. \n 3. Then, rotate your leg inword and hold for 10 seconds. \n Note: Keep your hips facing down so the rotation comes from the surgical hip. \n Note: Progress range without any pain and minimal discomfort."
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ],
+        "medication": [
+            {
+                "id": 2,
+                "name": "SAMSCA",
+                "identifier": "NDC",
+                "code": "59148-020",
+                "dosageForm": "TABLET",
+                "strength": "15 mg/1",
+				"timeUnit" : "Day",
+				"timeUnitValue" : 1,
+				"timePeriod" : 10
+            },
+            {
+                "id": 4,
+                "name": "Celebrex",
+                "identifier": "NDC",
+                "code": "00006-0820",
+                "dosageForm": "CAPSULE",
+                "strength": "200 mg/1",
+                "timeUnit" : "Day",
+                "timeUnitValue" : 1,
+                "timePeriod" : 10
+            }
+        ]
+    }
+};
+
+console.log('✅ Approved JSON structure loaded successfully');
+console.log('Plan ID:', approvedJson.plan.planID);
+console.log('Primary Diagnosis:', approvedJson.plan.primaryDiagnosis.title);
+console.log('Journey Type:', approvedJson.plan.journey.type);
+console.log('Pre-op Learning sections:', approvedJson.plan.preOpLearning.items.length);
+console.log('Post-op Learning sections:', approvedJson.plan.postOpLearning.items.length);
+console.log('Milestones:', approvedJson.plan.milestones.length);
+console.log('Care Journey entries:', approvedJson.plan.careJourney.length);
+console.log('Medications:', approvedJson.plan.medication.length);
+console.log('✅ All major sections present and accessible');

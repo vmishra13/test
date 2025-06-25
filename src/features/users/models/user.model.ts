@@ -11,7 +11,6 @@ import type {
   password,
   contact,
   client_location,
-  refresh_token,
 } from '@db/postgres/generated/postgres-client';
 
 // Re-export Prisma generated types (using your custom client path)
@@ -22,7 +21,6 @@ export type {
   role,
   user_role,
   password,
-  refresh_token,
   contact,
   client_location,
 } from '@db/postgres/generated/postgres-client';
@@ -35,8 +33,7 @@ export type {
 export type UserWithAuthData = user & {
   client: client;
   user_type: user_type;
-  userType?: user_type; // ✅ ADD THIS LINE - Alias for compatibility
-  userRole: (user_role & {
+  user_role: (user_role & {
     role: role;
   })[];
   password: password[];
@@ -51,7 +48,7 @@ export type UserWithClient = user & {
 export type UserWithRoles = user & {
   client: client;
   user_type: user_type;
-  userRole: (user_role & {
+  user_role: (user_role & {
     role: role;
   })[];
 };
@@ -60,7 +57,7 @@ export type UserWithRoles = user & {
 export type UserWithFullProfile = user & {
   client: client;
   user_type: user_type;
-  userRole: (user_role & {
+  user_role: (user_role & {
     role: role;
   })[];
   contact: contact[];
@@ -73,24 +70,9 @@ export type ClientWithRelations = client & {
   user?: user[];
 };
 
-// Refresh token with user context
-export type RefreshTokenWithUser = refresh_token & {
-  user: {
-    id: number;
-    loginName: string;
-    clientId: number;
-    status: number | null;
-  };
-  client: {
-    id: number;
-    name: string;
-    timeZone: string | null;
-  };
-};
-
 // Role with user assignments
 export type RoleWithRelations = role & {
-  userRole: (user_role & {
+  user_role: (user_role & {
     user: {
       id: number;
       loginName: string;
@@ -174,19 +156,6 @@ export type UserRoleAssignmentData = {
   crDate: Date;
 };
 
-// Refresh token creation data (matches schema exactly)
-export type RefreshTokenCreationData = {
-  userId: number;
-  clientId: number;
-  jti: string; // JWT ID (36 chars)
-  family: string; // Token family (36 chars)
-  token: string; // Hashed token (500 chars max)
-  expiresAt: Date;
-  isRevoked?: boolean | null;
-  crUser: string;
-  crDate?: Date | null;
-};
-
 // Contact creation data
 export type ContactCreationData = {
   type: string; // max 50 chars
@@ -240,7 +209,7 @@ export type UserListOptions = {
   includePasswords?: boolean;
 };
 
-// Token search filters
+// Token search filters - using generic object since no refresh_token table exists
 export type TokenSearchFilters = {
   userId?: number;
   clientId?: number;
@@ -322,7 +291,7 @@ export type UserRolesSummary = {
   }>;
 };
 
-// Active tokens summary (for security monitoring)
+// Active tokens summary (for security monitoring) - using generic object
 export type ActiveTokensSummary = {
   userId: number;
   clientId: number;
@@ -399,24 +368,16 @@ export function hasRequiredUserData(user: Partial<user>): user is user {
   return !!(user.id && user.loginName && user.clientId && user.userTypeId);
 }
 
-export function isValidRefreshToken(token: refresh_token): boolean {
-  return !(token.isRevoked === true) && token.expiresAt > new Date();
-}
-
-export function isTokenExpired(token: refresh_token): boolean {
-  return token.expiresAt <= new Date();
-}
-
-export function canUserAuthenticate(user: user): boolean {
-  return user.status === USER_STATUS.ACTIVE;
-}
-
 export function isUserInClient(user: user, clientId: number): boolean {
   return user.clientId === clientId;
 }
 
 export function hasValidEmail(user: user): boolean {
   return !!(user.email && user.email.includes('@'));
+}
+
+export function canUserAuthenticate(user: user): boolean {
+  return user.status === USER_STATUS.ACTIVE;
 }
 
 export function isActivePassword(password: password): boolean {
@@ -482,13 +443,6 @@ export const UserUtils = {
   hasValidData: hasRequiredUserData,
   hasValidEmail: hasValidEmail,
   calculatePasswordExpiry: calculatePasswordExpiry,
-} as const;
-
-export const TokenUtils = {
-  isValid: isValidRefreshToken,
-  isExpired: isTokenExpired,
-  generateFamily: generateTokenFamily,
-  calculateExpiration: calculateTokenExpiration,
 } as const;
 
 export const PasswordUtils = {
@@ -574,7 +528,7 @@ export const ModelConverters = {
       name: user.user_type.name,
       description: user.user_type.description,
     },
-    roles: user.userRole.map(ur => ur.role.name),
+    roles: user.user_role.map((ur: any) => ur.role.name),
   }),
 
   // Convert user to summary (for JWT)
@@ -589,22 +543,5 @@ export const ModelConverters = {
     timeZone: user.timeZone,
     profilePicture: user.profilePicture,
     status: user.status,
-  }),
-
-  // Convert token with relations to summary
-  tokenToSummary: (token: RefreshTokenWithUser) => ({
-    id: token.id,
-    jti: token.jti,
-    family: token.family,
-    expiresAt: token.expiresAt,
-    crDate: token.crDate,
-    user: {
-      id: token.user.id,
-      loginName: token.user.loginName,
-    },
-    client: {
-      id: token.client.id,
-      name: token.client.name,
-    },
   }),
 } as const;

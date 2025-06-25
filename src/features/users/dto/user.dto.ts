@@ -1,6 +1,864 @@
+/**
+ * UNIFIED USER DTOs - HIPAA COMPLIANT & MULTI-TENANT
+ *
+ * This file contains all user-related Data Transfer Objects organized by functionality:
+ * - Strict multi-tenant security isolation
+ * - HIPAA/PHI compliance
+ * - Role-based access control
+ * - Consistent validation and typing
+ *
+ * CATEGORIES:
+ * 1. 🔐 Authentication & Registration DTOs
+ * 2. 👤 User Profile & Management DTOs
+ * 3. 🔍 User Search & Query DTOs
+ * 4. 🔒 Role & Permission Management DTOs
+ * 5. 🔑 Password & Security DTOs
+ * 6. 📱 Mobile Application DTOs
+ * 7. 🎯 Onboarding & Profile Setup DTOs
+ * 8. 👨‍⚕️ Healthcare Provider DTOs
+ * 9. 📊 Analytics & Reporting DTOs
+ * 10. 🔧 Internal Service DTOs
+ * 11. ✅ Validation Schemas
+ */
+
+import { z } from 'zod';
+import { CoreRole } from '@shared/constants';
+import { userExtraInfoSchema } from '../validators/user.validators';
+
 // ===================================================================
-// 🎯 USER MANAGEMENT DTOs (User CRUD and registration types)
+// 🔐 AUTHENTICATION & REGISTRATION DTOs
 // ===================================================================
+
+/**
+ * Standard user registration request for admin/web applications
+ */
+export interface RegisterUserRequest {
+  // Required user data
+  loginName: string;
+  password: string;
+  clientId: number;
+  userTypeId: number;
+  roles: CoreRole[];
+
+  // Optional user data
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  sendWelcomeEmail?: boolean;
+  temporaryPassword?: boolean;
+  timeZone?: string;
+  profilePicture?: string;
+}
+
+/**
+ * Registration response to client
+ */
+export interface RegisterUserResponse {
+  success: boolean;
+  data: {
+    user: {
+      id: number;
+      loginName: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string | null;
+      timeZone: string | null;
+      profilePicture: string | null;
+      status: number | null;
+      crDate: string; // ISO string for API
+      client: {
+        id: number;
+        name: string;
+        timeZone: string | null;
+      };
+      userType: {
+        id: number;
+        name: string;
+        description: string | null;
+      };
+      roles: string[];
+    };
+    temporaryPassword?: string;
+  };
+  message: string;
+  timestamp: string;
+}
+
+/**
+ * Summary of created user for registration responses
+ */
+export interface CreatedUserSummary {
+  id: number;
+  loginName: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  clientId: number;
+  userTypeId: number;
+  status: number | null;
+  createdAt: Date;
+}
+
+// ===================================================================
+// 📱 MOBILE APPLICATION DTOs
+// ===================================================================
+
+/**
+ * Mobile app registration request
+ */
+export interface MobileRegistrationRequest {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  clientId: number; // Required for multi-tenancy
+}
+
+/**
+ * Mobile app registration response
+ */
+export interface MobileRegistrationResponse {
+  success: boolean;
+  data: {
+    user: {
+      id: number;
+      email: string;
+      firstName: string;
+      lastName: string;
+      loginName: string;
+    };
+    tokens: {
+      accessToken: string;
+      refreshToken: string;
+      expiresIn: number;
+    };
+    onboardingRequired: boolean;
+  };
+}
+
+// ===================================================================
+// 👤 USER PROFILE & MANAGEMENT DTOs
+// ===================================================================
+
+/**
+ * Complete user profile with all related data
+ */
+export interface UserProfile {
+  id: number;
+  loginName: string;
+  firstName: string | null;
+  middleName: string | null;
+  lastName: string | null;
+  email: string | null;
+  dob: Date | null;
+  mrn: string | null;
+  gender: string | null;
+  timeZone: string | null;
+  profilePicture: string | null;
+  passExpireInDays: number | null;
+  status: number | null;
+  client: {
+    id: number;
+    name: string;
+    timeZone: string | null;
+    logo: string | null;
+  };
+  userType: {
+    id: number;
+    name: string;
+    description: string | null;
+  };
+  roles: UserRoleInfo[];
+  contacts: UserContactInfo[];
+  createdAt: Date;
+  updatedAt: Date | null;
+}
+
+/**
+ * User role information
+ */
+export interface UserRoleInfo {
+  id: number;
+  name: string;
+  description: string | null;
+  assignedAt: Date;
+  assignedBy: string;
+}
+
+/**
+ * User contact information
+ */
+export interface UserContactInfo {
+  id: number;
+  type: string;
+  value: any; // Json field
+  isPrimary?: boolean;
+  isVerified?: boolean;
+}
+
+/**
+ * User update request
+ */
+export interface UserUpdateRequest {
+  firstName?: string | null;
+  middleName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  dob?: string | null; // ISO date string, allow null
+  mrn?: string | null;
+  gender?: string | null;
+  timeZone?: string | null;
+  profilePicture?: string | null;
+  passExpireInDays?: number | null;
+  status?: number | null;
+}
+
+/**
+ * User update response
+ */
+export interface UserUpdateResponse {
+  success: boolean;
+  data: {
+    user: UserProfile;
+    updatedFields: string[];
+  };
+  message: string;
+  timestamp: string;
+}
+
+/**
+ * User summary for listings
+ */
+export interface UserSummary {
+  id: number;
+  loginName: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  status: number;
+  roles: string[];
+  client: {
+    id: number;
+    name: string;
+  };
+  userType: {
+    id: number;
+    name: string;
+  };
+  crDate: string;
+}
+
+/**
+ * Status update request
+ */
+export interface UserStatusUpdateRequest {
+  userId: number;
+  status: number | null;
+  reason?: string;
+}
+
+/**
+ * Status update response
+ */
+export interface UserStatusUpdateResponse {
+  success: boolean;
+  data: {
+    userId: number;
+    previousStatus: number | null;
+    newStatus: number | null;
+    reason: string | null;
+    effectiveDate: Date;
+  };
+  message: string;
+  timestamp: string;
+}
+
+// ===================================================================
+// � USER SEARCH & QUERY DTOs
+// ===================================================================
+
+/**
+ * User search query parameters
+ */
+export interface UserSearchQuery {
+  query?: string;
+  clientId?: number;
+  userTypeId?: number;
+  roleId?: number;
+  status?: number;
+  page?: number;
+  limit?: number;
+  sortBy?: 'loginName' | 'firstName' | 'lastName' | 'email' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * User search result item
+ */
+export interface UserSearchResult {
+  id: number;
+  loginName: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  status: number | null;
+  userType: string;
+  roles: string[];
+  createdAt: Date;
+  lastLogin?: Date;
+}
+
+/**
+ * User search response
+ */
+export interface UserSearchResponse {
+  success: boolean;
+  data: {
+    users: UserSearchResult[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      hasPrev: boolean;
+    };
+  };
+  message: string;
+  timestamp: string;
+}
+
+/**
+ * Get users request
+ */
+export interface GetUsersRequest {
+  page?: number;
+  limit?: number;
+  clientId?: number;
+  role?: string;
+  status?: string;
+  search?: string;
+}
+
+/**
+ * Get users response
+ */
+export interface GetUsersResponse {
+  success: boolean;
+  data: {
+    users: UserSummary[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+    filters: {
+      clientId?: number;
+      role?: string;
+      status?: string;
+    };
+  };
+  message: string;
+  timestamp: string;
+}
+
+// ===================================================================
+// 🔒 ROLE & PERMISSION MANAGEMENT DTOs
+// ===================================================================
+
+/**
+ * Assign role request
+ */
+export interface AssignRoleRequest {
+  userId: number;
+  roleId: number;
+  clientId: number;
+}
+
+/**
+ * Remove role request
+ */
+export interface RemoveRoleRequest {
+  userId: number;
+  roleId: number;
+  clientId: number;
+}
+
+/**
+ * Role assignment response
+ */
+export interface RoleAssignmentResponse {
+  success: boolean;
+  data: {
+    userId: number;
+    roleId: number;
+    action: 'assigned' | 'removed';
+    currentRoles: UserRoleInfo[];
+  };
+  message: string;
+  timestamp: string;
+}
+
+// ===================================================================
+// 🔑 PASSWORD & SECURITY DTOs
+// ===================================================================
+
+/**
+ * Set password request
+ */
+export interface SetPasswordRequest {
+  userId: number;
+  password: string;
+  confirmPassword: string;
+  mustChange?: boolean;
+  temporaryPassword?: boolean;
+}
+
+/**
+ * Password reset request
+ */
+export interface PasswordResetRequest {
+  email: string;
+  clientId?: number;
+}
+
+/**
+ * Password reset response
+ */
+export interface PasswordResetResponse {
+  success: boolean;
+  message: string;
+  data: {
+    resetToken: string;
+    expiresAt: Date;
+  } | null;
+  timestamp: string;
+}
+
+// ===================================================================
+// 🎯 ONBOARDING & PROFILE SETUP DTOs
+// ===================================================================
+
+/**
+ * Personal information request
+ */
+export interface PersonalInfoRequest {
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;
+  phoneNumber?: string;
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+  emergencyContact?: {
+    name: string;
+    relationship: string;
+    phoneNumber: string;
+    email?: string;
+  };
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country?: string;
+  };
+}
+
+/**
+ * Personal information response
+ */
+export interface PersonalInfoResponse {
+  success: boolean;
+  data: {
+    personalInfo: {
+      firstName: string;
+      lastName: string;
+      dateOfBirth?: string;
+      phoneNumber?: string;
+      gender?: string;
+      emergencyContact?: any;
+      address?: any;
+    };
+    onboardingProgress: {
+      currentStep: string;
+      completedSteps: string[];
+      totalSteps: number;
+      isComplete: boolean;
+    };
+  };
+}
+
+/**
+ * Onboarding status response
+ */
+export interface OnboardingStatusResponse {
+  success: boolean;
+  data: {
+    currentStep: string;
+    completedSteps: string[];
+    totalSteps: number;
+    isComplete: boolean;
+    progress: number; // 0-100
+    nextSteps: string[];
+  };
+}
+
+/**
+ * Onboarding complete response
+ */
+export interface OnboardingCompleteResponse {
+  success: boolean;
+  data: {
+    completedAt: string;
+    user: {
+      id: number;
+      email: string;
+      firstName: string;
+      lastName: string;
+      onboardingComplete: boolean;
+    };
+    nextSteps: string[];
+  };
+}
+
+// ===================================================================
+// 👨‍⚕️ HEALTHCARE PROVIDER DTOs
+// ===================================================================
+
+/**
+ * Doctor selection request
+ */
+export interface DoctorSelectionRequest {
+  doctorId: number;
+  preferredAppointmentTime?: string;
+  notes?: string;
+}
+
+/**
+ * Doctor information
+ */
+export interface Doctor {
+  id: number;
+  firstName: string;
+  lastName: string;
+  specialization: string;
+  title: string;
+  bio?: string;
+  rating?: number;
+  reviewCount?: number;
+  profilePictureUrl?: string;
+  availableSlots?: string[];
+  clientId: number; // Multi-tenant support
+  location?: {
+    clinic: string;
+    address: string;
+    city: string;
+    state: string;
+  };
+}
+
+/**
+ * Doctor selection response
+ */
+export interface DoctorSelectionResponse {
+  success: boolean;
+  data: {
+    selectedDoctor: Doctor;
+    appointmentScheduled?: boolean;
+    nextSteps: string[];
+  };
+}
+
+/**
+ * Doctors list response
+ */
+export interface DoctorsListResponse {
+  success: boolean;
+  data: {
+    doctors: Doctor[];
+    total: number;
+    filters: {
+      specializations: string[];
+      locations: string[];
+    };
+  };
+}
+
+// ===================================================================
+// 📊 ANALYTICS & REPORTING DTOs
+// ===================================================================
+
+/**
+ * User analytics data
+ */
+export interface UserAnalytics {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  usersByType: Record<string, number>;
+  usersByRole: Record<string, number>;
+  recentRegistrations: number;
+  loginActivity: {
+    last24Hours: number;
+    last7Days: number;
+    last30Days: number;
+  };
+}
+
+/**
+ * User import request
+ */
+export interface UserImportRequest {
+  users: RegisterUserRequest[];
+  clientId: number;
+  defaultUserTypeId: number;
+  defaultRoleIds?: number[];
+  validateOnly?: boolean;
+}
+
+/**
+ * User import result
+ */
+export interface UserImportResult {
+  userId: number | null;
+  loginName: string;
+  status: 'success' | 'error' | 'warning';
+  errors: string[] | null;
+  warnings: string[] | null;
+}
+
+/**
+ * User import response
+ */
+export interface UserImportResponse {
+  success: boolean;
+  data: {
+    total: number;
+    successful: number;
+    failed: number;
+    warnings: number;
+    results: UserImportResult[];
+  };
+  message: string;
+  timestamp: string;
+}
+
+// ===================================================================
+// 🔧 INTERNAL SERVICE DTOs
+// ===================================================================
+
+/**
+ * Internal service data for user creation
+ */
+export interface CreateUserData {
+  loginName: string;
+  clientId: number;
+  userTypeId: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string | null;
+  timeZone?: string | null;
+  profilePicture?: string | null;
+  status: number | null;
+  crUser: string;
+  crDate?: Date;
+  modUser?: string | null;
+  modDate?: Date | null;
+}
+
+/**
+ * Internal service data for password creation
+ */
+export interface CreatePasswordData {
+  userId: number;
+  password: string;
+  status: number | null;
+  crUser: string;
+  crDate?: Date;
+  modUser?: string | null;
+  modDate?: Date | null;
+}
+
+/**
+ * Internal service data for role assignment
+ */
+export interface AssignRoleData {
+  userId: number;
+  clientId: number;
+  roleId: number;
+  crUser: string;
+  crDate?: Date;
+  modUser?: string | null;
+  modDate?: Date | null;
+}
+
+/**
+ * Repository layer transaction data
+ */
+export interface CreateUserWithRolesData {
+  userData: CreateUserData;
+  password: string;
+  roleIds: number[];
+  createdBy: string;
+}
+
+/**
+ * User creation result from repository
+ */
+export interface CreateUserResult {
+  user: {
+    id: number;
+    loginName: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+    timeZone: string | null;
+    profilePicture: string | null;
+    clientId: number;
+    userTypeId: number;
+    status: number | null;
+    crUser: string;
+    crDate: Date;
+    modUser: string | null;
+    modDate: Date | null;
+    client: {
+      id: number;
+      name: string;
+      timeZone: string | null;
+    };
+    userType: {
+      id: number;
+      name: string;
+      description: string | null;
+    };
+  };
+  roles: {
+    id: number;
+    name: string;
+    description: string | null;
+  }[];
+}
+
+/**
+ * Registration business rules validation
+ */
+export interface RegistrationValidationRules {
+  currentUser: {
+    role: CoreRole;
+    clientId: number;
+    loginName: string;
+  };
+  targetClientId: number;
+  targetRoles: CoreRole[];
+  targetUserTypeId: number;
+}
+
+/**
+ * Client validation result
+ */
+export interface ClientValidationResult {
+  id: number;
+  name: string;
+  status: number;
+  isActive: boolean;
+}
+
+/**
+ * User type validation result
+ */
+export interface UserTypeValidationResult {
+  id: number;
+  name: string;
+  description?: string;
+  isValid: boolean;
+}
+
+/**
+ * User creation data for internal use
+ */
+export interface UserCreationData {
+  clientId: number;
+  userTypeId: number;
+  loginName: string;
+  password: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  email?: string;
+  dob?: Date;
+  mrn?: string;
+  gender?: string;
+  timeZone?: string;
+  roleIds?: number[];
+}
+
+/**
+ * Contact creation request
+ */
+export interface ContactCreateRequest {
+  type: string;
+  value: any;
+  userId: number | null;
+  clientId: number | null;
+  locationId: number | null;
+}
+
+/**
+ * Contact update request
+ */
+export interface ContactUpdateRequest {
+  id: number;
+  type?: string;
+  value?: any;
+}
+
+/**
+ * Contact response
+ */
+export interface ContactResponse {
+  success: boolean;
+  data: {
+    contact: UserContactInfo;
+  };
+  message: string;
+  timestamp: string;
+}
+
+// ===================================================================
+// ✅ VALIDATION SCHEMAS
+// ===================================================================
+
+/**
+ * User update validation schema
+ */
+export const updateUserSchema = z.object({
+  firstName: z.string().min(1).max(50).optional(),
+  lastName: z.string().min(1).max(50).optional(),
+  email: z.string().email().optional(),
+  timeZone: z.string().optional(),
+  profilePicture: z.string().url().optional(),
+  extraInfo: userExtraInfoSchema.optional(),
+});
+
+/**
+ * User creation validation schema
+ */
+export const createUserSchema = z.object({
+  clientId: z.number().int().positive(),
+  userTypeId: z.number().int().positive(),
+  loginName: z.string().min(3).max(50),
+  firstName: z.string().min(1).max(50),
+  lastName: z.string().min(1).max(50),
+  email: z.string().email(),
+  password: z.string().min(8),
+  extraInfo: userExtraInfoSchema.optional(),
+});
+
+/**
+ * Inferred types from validation schemas
+ */
+export type UpdateUserRequestSchema = z.infer<typeof updateUserSchema>;
+export type CreateUserRequestSchema = z.infer<typeof createUserSchema>;
 
 // User Registration DTOs
 export interface UserRegistrationRequest {
@@ -36,338 +894,6 @@ export interface UserRegistrationResponse {
       refreshToken: string;
       expiresIn: number;
       tokenType: 'Bearer';
-    };
-  };
-  message: string;
-  timestamp: string;
-}
-
-export interface CreatedUserSummary {
-  id: number;
-  loginName: string;
-  firstName: string | null; // Changed from undefined to null
-  lastName: string | null; // Changed from undefined to null
-  email: string | null; // Changed from undefined to null
-  clientId: number;
-  userTypeId: number;
-  status: number | null; // Changed from undefined to null
-  createdAt: Date;
-}
-
-// UPDATED: UserProfile to match Prisma schema
-export interface UserProfile {
-  id: number;
-  loginName: string;
-  firstName: string | null; // Changed from undefined to null
-  middleName: string | null; // Changed from undefined to null
-  lastName: string | null; // Changed from undefined to null
-  email: string | null; // Changed from undefined to null
-  dob: Date | null; // Changed from undefined to null
-  mrn: string | null; // Changed from undefined to null
-  gender: string | null; // Changed from undefined to null
-  timeZone: string | null; // Changed from undefined to null
-  profilePicture: string | null; // Changed from undefined to null
-  passExpireInDays: number | null; // Changed from undefined to null
-  status: number | null; // Changed from undefined to null
-  client: {
-    id: number;
-    name: string;
-    timeZone: string | null; // Changed from undefined to null
-    logo: string | null; // Changed from undefined to null
-  };
-  userType: {
-    id: number;
-    name: string;
-    description: string | null; // Changed from undefined to null
-  };
-  roles: UserRoleInfo[];
-  contacts: UserContactInfo[];
-  createdAt: Date;
-  updatedAt: Date | null; // Changed from undefined to null
-}
-
-export interface UserRoleInfo {
-  id: number;
-  name: string;
-  description: string | null; // Changed from undefined to null
-  assignedAt: Date;
-  assignedBy: string;
-}
-
-export interface UserContactInfo {
-  id: number;
-  type: string;
-  value: any; // Json field
-  isPrimary?: boolean;
-  isVerified?: boolean;
-}
-
-// UPDATED: UserUpdateRequest to match Prisma schema
-export interface UserUpdateRequest {
-  firstName?: string | null; // Allow explicit null
-  middleName?: string | null; // Allow explicit null
-  lastName?: string | null; // Allow explicit null
-  email?: string | null; // Allow explicit null
-  dob?: string | null; // ISO date string, allow null
-  mrn?: string | null; // Allow explicit null
-  gender?: string | null; // Allow explicit null
-  timeZone?: string | null; // Allow explicit null
-  profilePicture?: string | null; // Allow explicit null
-  passExpireInDays?: number | null; // Allow explicit null
-  status?: number | null; // Allow explicit null
-}
-
-export interface UserUpdateResponse {
-  success: boolean;
-  data: {
-    user: UserProfile;
-    updatedFields: string[];
-  };
-  message: string;
-  timestamp: string;
-}
-
-// UPDATED: UserSearchResult to match Prisma schema
-export interface UserSearchResult {
-  id: number;
-  loginName: string;
-  firstName: string | null; // Changed from undefined to null
-  lastName: string | null; // Changed from undefined to null
-  email: string | null; // Changed from undefined to null
-  status: number | null; // Changed from undefined to null
-  userType: string;
-  roles: string[];
-  createdAt: Date;
-  lastLogin?: Date; // Make it optional if not always needed
-}
-
-export interface UserSearchQuery {
-  query?: string;
-  clientId?: number;
-  userTypeId?: number;
-  roleId?: number;
-  status?: number;
-  page?: number;
-  limit?: number;
-  sortBy?: 'loginName' | 'firstName' | 'lastName' | 'email' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
-}
-
-export interface UserSearchResponse {
-  success: boolean;
-  data: {
-    users: UserSearchResult[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-      hasNext: boolean;
-      hasPrev: boolean;
-    };
-  };
-  message: string;
-  timestamp: string;
-}
-
-// User Role Management DTOs
-export interface AssignRoleRequest {
-  userId: number;
-  roleId: number;
-  clientId: number;
-}
-
-export interface RemoveRoleRequest {
-  userId: number;
-  roleId: number;
-  clientId: number;
-}
-
-export interface RoleAssignmentResponse {
-  success: boolean;
-  data: {
-    userId: number;
-    roleId: number;
-    action: 'assigned' | 'removed';
-    currentRoles: UserRoleInfo[];
-  };
-  message: string;
-  timestamp: string;
-}
-
-// UPDATED: UserStatusUpdateRequest to match Prisma schema
-export interface UserStatusUpdateRequest {
-  userId: number;
-  status: number | null; // Allow explicit null
-  reason?: string;
-}
-
-export interface UserStatusUpdateResponse {
-  success: boolean;
-  data: {
-    userId: number;
-    previousStatus: number | null; // Changed from undefined to null
-    newStatus: number | null; // Changed from undefined to null
-    reason: string | null; // Changed from undefined to null
-    effectiveDate: Date;
-  };
-  message: string;
-  timestamp: string;
-}
-
-// Password Management DTOs
-export interface SetPasswordRequest {
-  userId: number;
-  password: string;
-  confirmPassword: string;
-  mustChange?: boolean;
-  temporaryPassword?: boolean;
-}
-
-export interface PasswordResetRequest {
-  email: string;
-  clientId?: number;
-}
-
-export interface PasswordResetResponse {
-  success: boolean;
-  message: string;
-  data: {
-    resetToken: string;
-    expiresAt: Date;
-  } | null; // Changed from undefined to null
-  timestamp: string;
-}
-
-// User Import/Export DTOs
-export interface UserImportRequest {
-  users: UserRegistrationRequest[];
-  clientId: number;
-  defaultUserTypeId: number;
-  defaultRoleIds?: number[];
-  validateOnly?: boolean;
-}
-
-export interface UserImportResult {
-  userId: number | null; // Changed from undefined to null
-  loginName: string;
-  status: 'success' | 'error' | 'warning';
-  errors: string[] | null; // Changed from undefined to null
-  warnings: string[] | null; // Changed from undefined to null
-}
-
-export interface UserImportResponse {
-  success: boolean;
-  data: {
-    total: number;
-    successful: number;
-    failed: number;
-    warnings: number;
-    results: UserImportResult[];
-  };
-  message: string;
-  timestamp: string;
-}
-
-// User Analytics DTOs
-export interface UserAnalytics {
-  totalUsers: number;
-  activeUsers: number;
-  inactiveUsers: number;
-  usersByType: Record<string, number>;
-  usersByRole: Record<string, number>;
-  recentRegistrations: number;
-  loginActivity: {
-    last24Hours: number;
-    last7Days: number;
-    last30Days: number;
-  };
-}
-
-// Contact Management DTOs
-export interface ContactCreateRequest {
-  type: string;
-  value: any;
-  userId: number | null; // Changed from undefined to null
-  clientId: number | null; // Changed from undefined to null
-  locationId: number | null; // Changed from undefined to null
-}
-
-export interface ContactUpdateRequest {
-  id: number;
-  type?: string;
-  value?: any;
-}
-
-export interface ContactResponse {
-  success: boolean;
-  data: {
-    contact: UserContactInfo;
-  };
-  message: string;
-  timestamp: string;
-}
-
-// In your user.dto.ts or user.model.ts file
-export interface UserCreationData {
-  clientId: number;
-  userTypeId: number;
-  loginName: string;
-  password: string;
-  firstName?: string;
-  middleName?: string;
-  lastName?: string;
-  email?: string;
-  dob?: Date;
-  mrn?: string;
-  gender?: string;
-  timeZone?: string;
-  roleIds?: number[];
-}
-
-// src/features/users/dto/user.dto.ts
-export interface GetUsersRequest {
-  page?: number;
-  limit?: number;
-  clientId?: number;
-  role?: string;
-  status?: string;
-  search?: string;
-}
-
-export interface UserSummary {
-  id: number;
-  loginName: string;
-  firstName: string | null;
-  lastName: string | null;
-  email: string | null;
-  status: number;
-  roles: string[];
-  client: {
-    id: number;
-    name: string;
-  };
-  userType: {
-    id: number;
-    name: string;
-  };
-  crDate: string;
-}
-
-export interface GetUsersResponse {
-  success: boolean;
-  data: {
-    users: UserSummary[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-    filters: {
-      clientId?: number;
-      role?: string;
-      status?: string;
     };
   };
   message: string;

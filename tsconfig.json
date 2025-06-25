@@ -27,20 +27,19 @@
 
     /* Modules */
     "module": "NodeNext" /* Specify what module code is generated. */,
-    // "rootDir": "./",                                  /* Specify the root folder within your source files. */
     "moduleResolution": "NodeNext" /* Specify how TypeScript looks up a file from a given module specifier. */,
     "rootDir": "./src",
     "outDir": "./dist",
-    // "baseUrl": "./",                                  /* Specify the base directory to resolve non-relative module names. */
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"],
-      "@config": ["config/index"], // For clean config imports
+      "@config/logger": ["config/logger"],
+      "@config": ["config/index"],
       "@config/*": ["config/*"],
-      "@db": ["db/index"], // For clean db imports
+      "@db": ["db/index"],
       "@db/*": ["db/*"],
       "@features/*": ["features/*"],
-      "@shared": ["shared/index"], // If you have a shared/index.ts
+      "@shared": ["shared/index"],
       "@shared/*": ["shared/*"],
       "@api/*": ["api/*"],
       "@middleware/*": ["middleware/*"],
@@ -51,7 +50,7 @@
     },
     // "rootDirs": [],                                   /* Allow multiple folders to be treated as one when resolving modules. */
     // "typeRoots": [],                                  /* Specify multiple folders that act like './node_modules/@types'. */
-    "types": ["node", "express"],
+    "types": ["node", "express", "jest"],
     // "allowUmdGlobalAccess": true,                     /* Allow accessing UMD globals from modules. */
     // "moduleSuffixes": [],                             /* List of file name suffixes to search when resolving a module. */
     // "allowImportingTsExtensions": true,               /* Allow imports to include TypeScript file extensions. Requires '--moduleResolution bundler' and either '--noEmit' or '--emitDeclarationOnly' to be set. */
@@ -132,5 +131,5 @@
     "require": ["tsconfig-paths/register"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "**/*.original.ts"]
 }

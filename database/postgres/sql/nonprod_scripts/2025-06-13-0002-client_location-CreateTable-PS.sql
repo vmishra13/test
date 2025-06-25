@@ -21,9 +21,13 @@ BEGIN
     "logo" varchar(2000),
     "extraInfo" json,
     "crUser" varchar(50) NOT NULL,
-    "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "modUser" varchar(50),
+    "crDate" timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,    "modUser" varchar(50) NOT NULL,
     "modDate" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_client_location_client 
+        FOREIGN KEY ("clientId") REFERENCES client(id) 
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT uk_client_location_client_name 
+        UNIQUE ("clientId", "name"),
     CONSTRAINT client_location_name_check CHECK ((length(TRIM(BOTH FROM "name")) > 0))
 );
 END IF;
@@ -33,3 +37,4 @@ $$;
 
 -- Call the stored procedure
 CALL CreateOrUpdateTable();
+

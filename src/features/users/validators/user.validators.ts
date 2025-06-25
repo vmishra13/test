@@ -1,258 +1,58 @@
 import { z } from 'zod';
 import { CoreRole } from '@shared/constants/roles';
 
-// ===================================================================
-// 🎯 CORE ENTITY SCHEMAS (Matching Prisma Schema)
-// ===================================================================
-
-// Client Schema
-export const ClientSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string().max(100).min(1),
-  description: z.string().nullable(),
-  timeZone: z.string().max(100).nullable(),
-  status: z.number().int().nullable().default(-1),
-  logo: z.string().max(2000).nullable(),
-  favIcon: z.string().max(2000).nullable(),
-  language: z.string().max(50).nullable(),
-  website: z.string().max(2000).url().nullable(),
-  extraInfo: z.any().nullable(), // Json field
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// User Type Schema
-export const UserTypeSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string().max(100).min(1),
-  description: z.string().max(100).nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// Role Schema
-export const RoleSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string().max(100).min(1),
-  description: z.string().max(100).nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// User Schema (Core user data)
-export const UserSchema = z.object({
-  id: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  userTypeId: z.number().int().positive(),
-  loginName: z.string().max(50).min(1),
-  firstName: z.string().max(50).nullable(),
-  middleName: z.string().max(50).nullable(),
-  lastName: z.string().max(50).nullable(),
-  email: z.string().email().max(100).nullable(),
-  dob: z.date().nullable(),
-  mrn: z.string().max(50).nullable(),
-  gender: z.string().max(50).nullable(),
-  timeZone: z.string().max(100).nullable(),
-  profilePicture: z.string().max(2000).nullable(),
-  passExpireInDays: z.number().int().positive().nullable(),
-  extraInfo: z.any().nullable(), // Json field
-  status: z.number().int().nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// Password Schema
-export const PasswordSchema = z.object({
-  id: z.number().int().positive(),
-  userId: z.number().int().positive(),
-  password: z.string().max(500),
-  salt: z.string().max(100).nullable(),
-  lastChanged: z.date().nullable(),
-  mustChange: z.boolean().default(false),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// User Role Schema (Junction table)
-export const UserRoleSchema = z.object({
-  id: z.number().int().positive(),
-  userId: z.number().int().positive(),
-  roleId: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// Contact Schema
-export const ContactSchema = z.object({
-  id: z.number().int().positive(),
-  type: z.string().max(50),
-  value: z.any(), // Json field
-  userId: z.number().int().positive().nullable(),
-  clientId: z.number().int().positive().nullable(),
-  locationId: z.number().int().positive().nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// Client Location Schema
-export const ClientLocationSchema = z.object({
-  id: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  name: z.string().max(100),
-  description: z.string().nullable(),
-  status: z.number().int().nullable(),
-  logo: z.string().max(2000).nullable(),
-  extraInfo: z.any().nullable(), // Json field
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
-
-// Refresh Token Schema (for JWT token rotation)
-export const RefreshTokenSchema = z.object({
-  id: z.number().int().positive(),
-  userId: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  jti: z.string().max(36), // JWT ID
-  family: z.string().max(36), // Token family for rotation tracking
-  token: z.string().max(500), // Hashed refresh token
-  expiresAt: z.date(),
-  isRevoked: z.boolean().default(false),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-});
+/**
+ * OPTIMIZED USER VALIDATORS - HIPAA COMPLIANT & MULTI-TENANT
+ *
+ * This file uses DRY principles with schema composition to eliminate repetition:
+ * - Base field schemas for reusability
+ * - Schema composition with merge/pick/omit
+ * - Shared audit fields and common patterns
+ * - Type-safe inference with minimal duplication
+ */
 
 // ===================================================================
-// 🎯 INPUT SCHEMAS (For Create/Update Operations)
+// 🧱 BASE FIELD SCHEMAS (Building Blocks)
 // ===================================================================
 
-// User Create Input (for registration)
-export const UserCreateInputSchema = z.object({
-  clientId: z.number().int().positive(),
-  userTypeId: z.number().int().positive(),
-  loginName: z.string().max(50).min(1),
-  firstName: z.string().max(50).optional(),
-  middleName: z.string().max(50).optional(),
-  lastName: z.string().max(50).optional(),
-  email: z.string().email().max(100).optional(),
-  dob: z.date().optional(),
-  mrn: z.string().max(50).optional(),
-  gender: z.string().max(50).optional(),
-  timeZone: z.string().max(100).optional(),
-  profilePicture: z.string().max(2000).optional(),
-  passExpireInDays: z.number().int().positive().optional(),
-  extraInfo: z.any().optional(),
-  status: z.number().int().optional(),
+// Common audit fields used across all entities
+const auditFieldsSchema = z.object({
+  crUser: z.string().max(50),
+  crDate: z.date(),
+  modUser: z.string().max(50).nullable(),
+  modDate: z.date().nullable(),
+});
+
+// Common create audit fields (only crUser required)
+const createAuditFieldsSchema = z.object({
   crUser: z.string().max(50),
 });
 
-// Password Create Input
-export const PasswordCreateInputSchema = z.object({
-  userId: z.number().int().positive(),
-  password: z.string().max(500),
-  salt: z.string().max(100).optional(),
-  lastChanged: z.date().optional(),
-  mustChange: z.boolean().default(false),
-  crUser: z.string().max(50),
-});
-
-// User Update Input
-export const UserUpdateInputSchema = z.object({
-  firstName: z.string().max(50).optional(),
-  middleName: z.string().max(50).optional(),
-  lastName: z.string().max(50).optional(),
-  email: z.string().email().max(100).optional(),
-  dob: z.date().optional(),
-  mrn: z.string().max(50).optional(),
-  gender: z.string().max(50).optional(),
-  timeZone: z.string().max(100).optional(),
-  profilePicture: z.string().max(2000).optional(),
-  passExpireInDays: z.number().int().positive().optional(),
-  extraInfo: z.any().optional(),
-  status: z.number().int().optional(),
+// Common update audit fields (only modUser required)
+const updateAuditFieldsSchema = z.object({
   modUser: z.string().max(50),
 });
 
-// Contact Create Input
-export const ContactCreateInputSchema = z.object({
-  type: z.string().max(50),
-  value: z.any(),
-  userId: z.number().int().positive().optional(),
-  clientId: z.number().int().positive().optional(),
-  locationId: z.number().int().positive().optional(),
-  crUser: z.string().max(50),
-});
-
-// User Role Assignment Input
-export const UserRoleAssignmentSchema = z.object({
-  userId: z.number().int().positive(),
-  roleId: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  crUser: z.string().max(50),
-});
-
-// Refresh Token Create Input
-export const RefreshTokenCreateInputSchema = z.object({
-  userId: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  jti: z.string().max(36),
-  family: z.string().max(36),
-  token: z.string().max(500),
-  expiresAt: z.date(),
-  isRevoked: z.boolean().default(false),
-  crUser: z.string().max(50),
-});
-
-// ===================================================================
-// 🎯 TYPE INFERENCE (TypeScript Types Only)
-// ===================================================================
-
-export type Client = z.infer<typeof ClientSchema>;
-export type UserType = z.infer<typeof UserTypeSchema>;
-export type Role = z.infer<typeof RoleSchema>;
-export type User = z.infer<typeof UserSchema>;
-export type Password = z.infer<typeof PasswordSchema>;
-export type UserRole = z.infer<typeof UserRoleSchema>;
-export type Contact = z.infer<typeof ContactSchema>;
-export type ClientLocation = z.infer<typeof ClientLocationSchema>;
-export type RefreshToken = z.infer<typeof RefreshTokenSchema>;
-
-// Input Types
-export type UserCreateInput = z.infer<typeof UserCreateInputSchema>;
-export type PasswordCreateInput = z.infer<typeof PasswordCreateInputSchema>;
-export type UserUpdateInput = z.infer<typeof UserUpdateInputSchema>;
-export type ContactCreateInput = z.infer<typeof ContactCreateInputSchema>;
-export type UserRoleAssignment = z.infer<typeof UserRoleAssignmentSchema>;
-export type RefreshTokenCreateInput = z.infer<typeof RefreshTokenCreateInputSchema>;
-
-// ===================================================================
-// 🎯 RELATION SCHEMAS (Complex schemas with database relations)
-// ===================================================================
-
-// User with Authentication Data (Most important for JWT generation)
-export const UserWithAuthDataSchema = z.object({
+// Standard ID field
+const idFieldSchema = z.object({
   id: z.number().int().positive(),
+});
+
+// Common entity name pattern
+const nameDescriptionSchema = z.object({
+  name: z.string().max(100).min(1),
+  description: z.string().max(100).nullable(),
+});
+
+// User identification fields
+const userIdentitySchema = z.object({
   clientId: z.number().int().positive(),
   userTypeId: z.number().int().positive(),
   loginName: z.string().max(50).min(1),
+});
+
+// User personal information fields
+const userPersonalSchema = z.object({
   firstName: z.string().max(50).nullable(),
   middleName: z.string().max(50).nullable(),
   lastName: z.string().max(50).nullable(),
@@ -265,64 +65,14 @@ export const UserWithAuthDataSchema = z.object({
   passExpireInDays: z.number().int().positive().nullable(),
   extraInfo: z.any().nullable(),
   status: z.number().int().nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-
-  // Relations for authentication
-  client: ClientSchema,
-  userType: UserTypeSchema,
-  userRole: z.array(
-    z.object({
-      id: z.number().int().positive(),
-      userId: z.number().int().positive(),
-      roleId: z.number().int().positive(),
-      clientId: z.number().int().positive(),
-      crUser: z.string().max(50),
-      crDate: z.date(),
-      modUser: z.string().max(50).nullable(),
-      modDate: z.date().nullable(),
-      role: RoleSchema, // Include role details
-    }),
-  ),
 });
 
-// User with Password (for authentication validation)
-export const UserWithPasswordSchema = z.object({
-  id: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  userTypeId: z.number().int().positive(),
-  loginName: z.string().max(50).min(1),
-  firstName: z.string().max(50).nullable(),
-  lastName: z.string().max(50).nullable(),
-  email: z.string().email().max(100).nullable(),
-  status: z.number().int().nullable(),
+// ===================================================================
+// 🎯 CORE ENTITY SCHEMAS (Using Composition)
+// ===================================================================
 
-  // Include password relation
-  password: z.array(
-    z.object({
-      id: z.number().int().positive(),
-      userId: z.number().int().positive(),
-      password: z.string().max(500),
-      salt: z.string().max(100).nullable(),
-      lastChanged: z.date().nullable(),
-      mustChange: z.boolean().default(false),
-      crUser: z.string().max(50),
-      crDate: z.date(),
-      modUser: z.string().max(50).nullable(),
-      modDate: z.date().nullable(),
-    }),
-  ),
-
-  // Include client for organization context
-  client: ClientSchema,
-  userType: UserTypeSchema,
-});
-
-// Client with Relations (for organization management)
-export const ClientWithRelationsSchema = z.object({
-  id: z.number().int().positive(),
+// Base schemas without ID and audit fields
+const baseClientSchema = z.object({
   name: z.string().max(100).min(1),
   description: z.string().nullable(),
   timeZone: z.string().max(100).nullable(),
@@ -332,148 +82,244 @@ export const ClientWithRelationsSchema = z.object({
   language: z.string().max(50).nullable(),
   website: z.string().max(2000).url().nullable(),
   extraInfo: z.any().nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-
-  // Relations
-  clientLocation: z.array(ClientLocationSchema),
-  contact: z.array(ContactSchema),
-  user: z.array(UserSchema).optional(), // Users in this organization
 });
 
-// Refresh Token with Relations (for token management)
-export const RefreshTokenWithRelationsSchema = z.object({
-  id: z.number().int().positive(),
-  userId: z.number().int().positive(),
-  clientId: z.number().int().positive(),
-  jti: z.string().max(36),
-  family: z.string().max(36),
-  token: z.string().max(500),
-  expiresAt: z.date(),
-  isRevoked: z.boolean().default(false),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
+const baseUserSchema = userIdentitySchema.merge(userPersonalSchema);
 
-  // Relations for token context
-  user: z.object({
-    id: z.number().int().positive(),
-    loginName: z.string().max(50).min(1),
-    firstName: z.string().max(50).nullable(),
-    lastName: z.string().max(50).nullable(),
-    email: z.string().email().max(100).nullable(),
+// Full entity schemas = base + ID + audit
+export const ClientSchema = baseClientSchema.merge(idFieldSchema).merge(auditFieldsSchema);
+export const UserTypeSchema = nameDescriptionSchema.merge(idFieldSchema).merge(auditFieldsSchema);
+export const RoleSchema = nameDescriptionSchema.merge(idFieldSchema).merge(auditFieldsSchema);
+
+export const UserSchema = baseUserSchema.merge(idFieldSchema).merge(auditFieldsSchema);
+
+export const PasswordSchema = z
+  .object({
+    userId: z.number().int().positive(),
+    password: z.string().max(500),
+    salt: z.string().max(100).nullable(),
+    lastChanged: z.date().nullable(),
+    mustChange: z.boolean().default(false),
+  })
+  .merge(idFieldSchema)
+  .merge(auditFieldsSchema);
+
+export const UserRoleSchema = z
+  .object({
+    userId: z.number().int().positive(),
+    roleId: z.number().int().positive(),
+    clientId: z.number().int().positive(),
+  })
+  .merge(idFieldSchema)
+  .merge(auditFieldsSchema);
+
+export const ContactSchema = z
+  .object({
+    type: z.string().max(50),
+    value: z.any(), // Json field
+    userId: z.number().int().positive().nullable(),
+    clientId: z.number().int().positive().nullable(),
+    locationId: z.number().int().positive().nullable(),
+  })
+  .merge(idFieldSchema)
+  .merge(auditFieldsSchema);
+
+export const ClientLocationSchema = z
+  .object({
+    clientId: z.number().int().positive(),
+    name: z.string().max(100),
+    description: z.string().nullable(),
     status: z.number().int().nullable(),
-  }),
-  client: z.object({
-    id: z.number().int().positive(),
-    name: z.string().max(100).min(1),
-    timeZone: z.string().max(100).nullable(),
-    status: z.number().int().nullable(),
-  }),
+    logo: z.string().max(2000).nullable(),
+    extraInfo: z.any().nullable(),
+  })
+  .merge(idFieldSchema)
+  .merge(auditFieldsSchema);
+
+export const RefreshTokenSchema = z
+  .object({
+    userId: z.number().int().positive(),
+    clientId: z.number().int().positive(),
+    jti: z.string().max(36), // JWT ID
+    family: z.string().max(36), // Token family for rotation tracking
+    token: z.string().max(500), // Hashed refresh token
+    expiresAt: z.date(),
+    isRevoked: z.boolean().default(false),
+  })
+  .merge(idFieldSchema)
+  .merge(auditFieldsSchema);
+
+// ===================================================================
+// 🔧 INPUT SCHEMAS (Using Schema Transformations)
+// ===================================================================
+
+// Create inputs = base schemas + create audit (no ID, no mod fields)
+export const UserCreateInputSchema = baseUserSchema.merge(createAuditFieldsSchema);
+export const PasswordCreateInputSchema = PasswordSchema.omit({
+  id: true,
+  crDate: true,
+  modUser: true,
+  modDate: true,
+}).merge(createAuditFieldsSchema);
+export const ContactCreateInputSchema = ContactSchema.omit({
+  id: true,
+  crDate: true,
+  modUser: true,
+  modDate: true,
 });
 
-// Role with Relations (for RBAC)
-export const RoleWithRelationsSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string().max(100).min(1),
-  description: z.string().max(100).nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
+// Update inputs = partial base schemas + update audit
+export const UserUpdateInputSchema = userPersonalSchema.partial().merge(updateAuditFieldsSchema);
 
-  // Relations
-  userRole: z.array(
-    z.object({
-      id: z.number().int().positive(),
-      userId: z.number().int().positive(),
-      roleId: z.number().int().positive(),
-      clientId: z.number().int().positive(),
-      crUser: z.string().max(50),
-      crDate: z.date(),
-      modUser: z.string().max(50).nullable(),
-      modDate: z.date().nullable(),
-      user: z.object({
-        id: z.number().int().positive(),
-        loginName: z.string().max(50).min(1),
-        firstName: z.string().max(50).nullable(),
-        lastName: z.string().max(50).nullable(),
-      }),
-    }),
-  ),
-});
+// Role assignment schema (no base needed)
+export const UserRoleAssignmentSchema = z
+  .object({
+    userId: z.number().int().positive(),
+    roleId: z.number().int().positive(),
+    clientId: z.number().int().positive(),
+  })
+  .merge(createAuditFieldsSchema);
 
-// User Type with Relations (for user classification)
-export const UserTypeWithRelationsSchema = z.object({
-  id: z.number().int().positive(),
-  name: z.string().max(100).min(1),
-  description: z.string().max(100).nullable(),
-  crUser: z.string().max(50),
-  crDate: z.date(),
-  modUser: z.string().max(50).nullable(),
-  modDate: z.date().nullable(),
-
-  // Relations
-  user: z.array(
-    z.object({
-      id: z.number().int().positive(),
-      loginName: z.string().max(50).min(1),
-      firstName: z.string().max(50).nullable(),
-      lastName: z.string().max(50).nullable(),
-      clientId: z.number().int().positive(),
-      status: z.number().int().nullable(),
-    }),
-  ),
+export const RefreshTokenCreateInputSchema = RefreshTokenSchema.omit({
+  id: true,
+  crDate: true,
+  modUser: true,
+  modDate: true,
 });
 
 // ===================================================================
-// 🎯 OPTIMIZED SCHEMAS FOR AUTHENTICATION FLOW
+// 🎯 OPTIMIZED USER SCHEMAS (Using Pick/Omit)
 // ===================================================================
 
-// Minimal User for JWT Payload (optimized for token size)
-export const UserSummarySchema = z.object({
+// User variants using transformations instead of redefinition
+export const UserSummarySchema = UserSchema.pick({
+  id: true,
+  loginName: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  clientId: true,
+  userTypeId: true,
+  timeZone: true,
+  profilePicture: true,
+  status: true,
+});
+
+export const PublicUserSchema = UserSummarySchema.omit({ status: true });
+
+// Minimal user for nested objects
+const userBasicSchema = z.object({
   id: z.number().int().positive(),
   loginName: z.string().max(50).min(1),
   firstName: z.string().max(50).nullable(),
   lastName: z.string().max(50).nullable(),
-  email: z.string().email().max(100).nullable(),
-  clientId: z.number().int().positive(),
-  userTypeId: z.number().int().positive(),
+});
+
+// Client basic info for nested objects
+const clientBasicSchema = z.object({
+  id: z.number().int().positive(),
+  name: z.string().max(100).min(1),
   timeZone: z.string().max(100).nullable(),
-  profilePicture: z.string().max(2000).nullable(),
   status: z.number().int().nullable(),
 });
 
-// Public User (safe for API responses - no sensitive data)
-export const PublicUserSchema = z.object({
+// Role basic info for nested objects
+const roleBasicSchema = z.object({
   id: z.number().int().positive(),
-  loginName: z.string().max(50).min(1),
-  firstName: z.string().max(50).nullable(),
-  lastName: z.string().max(50).nullable(),
-  email: z.string().email().max(100).nullable(),
-  timeZone: z.string().max(100).nullable(),
-  profilePicture: z.string().max(2000).nullable(),
-  clientId: z.number().int().positive(),
-  userTypeId: z.number().int().positive(),
+  name: z.string().max(100).min(1),
+  description: z.string().max(100).nullable(),
 });
 
-// User Roles Summary (for JWT payload)
+// ===================================================================
+// 🔄 RELATION SCHEMAS (Using Existing Schemas)
+// ===================================================================
+
+// Enhanced UserRole with role details
+const userRoleWithDetailsSchema = UserRoleSchema.merge(
+  z.object({
+    role: RoleSchema,
+  }),
+);
+
+// User with authentication data (using composition)
+export const UserWithAuthDataSchema = UserSchema.merge(
+  z.object({
+    client: ClientSchema,
+    user_type: UserTypeSchema,
+    user_role: z.array(userRoleWithDetailsSchema),
+  }),
+);
+
+// User with password (selective fields + relations)
+export const UserWithPasswordSchema = UserSchema.pick({
+  id: true,
+  clientId: true,
+  userTypeId: true,
+  loginName: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  status: true,
+}).merge(
+  z.object({
+    password: z.array(PasswordSchema),
+    client: ClientSchema,
+    user_type: UserTypeSchema,
+  }),
+);
+
+// Client with relations
+export const ClientWithRelationsSchema = ClientSchema.merge(
+  z.object({
+    clientLocation: z.array(ClientLocationSchema),
+    contact: z.array(ContactSchema),
+    user: z.array(UserSchema).optional(),
+  }),
+);
+
+// Refresh token with context
+export const RefreshTokenWithRelationsSchema = RefreshTokenSchema.merge(
+  z.object({
+    user: userBasicSchema.extend({
+      email: z.string().email().max(100).nullable(),
+      status: z.number().int().nullable(),
+    }),
+    client: clientBasicSchema,
+  }),
+);
+
+// Role with user assignments
+export const RoleWithRelationsSchema = RoleSchema.merge(
+  z.object({
+    userRole: z.array(
+      UserRoleSchema.merge(
+        z.object({
+          user: userBasicSchema,
+        }),
+      ),
+    ),
+  }),
+);
+
+// User type with users
+export const UserTypeWithRelationsSchema = UserTypeSchema.merge(
+  z.object({
+    user: z.array(
+      userBasicSchema.extend({
+        clientId: z.number().int().positive(),
+        status: z.number().int().nullable(),
+      }),
+    ),
+  }),
+);
+
+// Summary schemas for specific use cases
 export const UserRolesSummarySchema = z.object({
   userId: z.number().int().positive(),
   clientId: z.number().int().positive(),
-  roles: z.array(
-    z.object({
-      id: z.number().int().positive(),
-      name: z.string().max(100).min(1),
-      description: z.string().max(100).nullable(),
-    }),
-  ),
+  roles: z.array(roleBasicSchema),
 });
 
-// Active Refresh Tokens Summary (for security monitoring)
 export const ActiveRefreshTokensSummarySchema = z.object({
   userId: z.number().int().positive(),
   clientId: z.number().int().positive(),
@@ -490,9 +336,29 @@ export const ActiveRefreshTokensSummarySchema = z.object({
 });
 
 // ===================================================================
-// 🎯 RELATION TYPE INFERENCE
+// 🎯 TYPE INFERENCE (All Types)
 // ===================================================================
 
+// Core entity types
+export type Client = z.infer<typeof ClientSchema>;
+export type UserType = z.infer<typeof UserTypeSchema>;
+export type Role = z.infer<typeof RoleSchema>;
+export type User = z.infer<typeof UserSchema>;
+export type Password = z.infer<typeof PasswordSchema>;
+export type UserRole = z.infer<typeof UserRoleSchema>;
+export type Contact = z.infer<typeof ContactSchema>;
+export type ClientLocation = z.infer<typeof ClientLocationSchema>;
+export type RefreshToken = z.infer<typeof RefreshTokenSchema>;
+
+// Input types
+export type UserCreateInput = z.infer<typeof UserCreateInputSchema>;
+export type PasswordCreateInput = z.infer<typeof PasswordCreateInputSchema>;
+export type UserUpdateInput = z.infer<typeof UserUpdateInputSchema>;
+export type ContactCreateInput = z.infer<typeof ContactCreateInputSchema>;
+export type UserRoleAssignment = z.infer<typeof UserRoleAssignmentSchema>;
+export type RefreshTokenCreateInput = z.infer<typeof RefreshTokenCreateInputSchema>;
+
+// Relation types
 export type UserWithAuthData = z.infer<typeof UserWithAuthDataSchema>;
 export type UserWithPassword = z.infer<typeof UserWithPasswordSchema>;
 export type ClientWithRelations = z.infer<typeof ClientWithRelationsSchema>;
@@ -500,7 +366,7 @@ export type RefreshTokenWithRelations = z.infer<typeof RefreshTokenWithRelations
 export type RoleWithRelations = z.infer<typeof RoleWithRelationsSchema>;
 export type UserTypeWithRelations = z.infer<typeof UserTypeWithRelationsSchema>;
 
-// Optimized Types
+// Optimized types
 export type UserSummary = z.infer<typeof UserSummarySchema>;
 export type PublicUser = z.infer<typeof PublicUserSchema>;
 export type UserRolesSummary = z.infer<typeof UserRolesSummarySchema>;
@@ -595,4 +461,176 @@ export function validateUserViewPermissions(
   ) {
     throw new Error(`${currentUserRole} can only view PATIENT accounts`);
   }
+}
+
+// ===================================================================
+// 🎯 USER EXTRA INFO SCHEMA
+// ===================================================================
+
+/**
+ * User extraInfo Zod schema
+ */
+export const userExtraInfoSchema = z
+  .object({
+    preferences: z
+      .object({
+        theme: z.enum(['light', 'dark']).optional(),
+        language: z.string().min(2).max(5).optional(),
+        notifications: z
+          .object({
+            email: z.boolean().optional(),
+            sms: z.boolean().optional(),
+            push: z.boolean().optional(),
+          })
+          .optional(),
+        timezone: z.string().optional(),
+      })
+      .optional(),
+
+    medical: z
+      .object({
+        allergies: z.array(z.string()).optional(),
+        conditions: z.array(z.string()).optional(),
+        emergencyContact: z
+          .object({
+            name: z.string().optional(),
+            phone: z.string().optional(),
+            relationship: z.string().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+
+    profile: z
+      .object({
+        bio: z.string().max(500).optional(),
+        socialLinks: z
+          .object({
+            linkedin: z.string().url().optional(),
+            twitter: z.string().url().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+
+    custom: z.record(z.string(), z.any()).optional(),
+  })
+  .optional();
+
+// ✅ Infer TypeScript types from Zod schemas
+export type UserExtraInfo = z.infer<typeof userExtraInfoSchema>;
+
+/**
+ * Validate and sanitize JSON field using Zod
+ */
+export function validateJsonField<T>(
+  data: any,
+  schema: z.ZodSchema<T>,
+  fieldName: string = 'extraInfo',
+): { success: true; data: T } | { success: false; errors: string[] } {
+  if (data === null || data === undefined) {
+    const result = schema.safeParse(undefined);
+    return result.success
+      ? { success: true, data: result.data }
+      : { success: false, errors: result.error.errors.map(e => `${fieldName}: ${e.message}`) };
+  }
+
+  // Handle string JSON
+  if (typeof data === 'string') {
+    try {
+      data = JSON.parse(data);
+    } catch (error) {
+      return {
+        success: false,
+        errors: [`${fieldName} must be valid JSON`],
+      };
+    }
+  }
+
+  // Validate with Zod
+  const result = schema.safeParse(data);
+
+  if (!result.success) {
+    return {
+      success: false,
+      errors: result.error.errors.map(e => `${fieldName}.${e.path.join('.')}: ${e.message}`),
+    };
+  }
+
+  return {
+    success: true,
+    data: result.data,
+  };
+}
+
+/**
+ * Simplified validation function specifically for user extraInfo
+ * Since we know the schema (userExtraInfoSchema) and field name ('extraInfo'),
+ * we only need the data parameter
+ */
+export function validateUserExtraInfo(
+  extraInfo: any,
+): { success: true; data: UserExtraInfo } | { success: false; errors: string[] } {
+  if (extraInfo === null || extraInfo === undefined) {
+    const result = userExtraInfoSchema.safeParse(undefined);
+    return result.success
+      ? { success: true, data: result.data }
+      : { success: false, errors: result.error.errors.map(e => `extraInfo: ${e.message}`) };
+  }
+
+  // Handle string JSON
+  let parsedData = extraInfo;
+  if (typeof extraInfo === 'string') {
+    try {
+      parsedData = JSON.parse(extraInfo);
+    } catch (error) {
+      return {
+        success: false,
+        errors: ['extraInfo must be valid JSON'],
+      };
+    }
+  }
+
+  // Validate with Zod
+  const result = userExtraInfoSchema.safeParse(parsedData);
+
+  if (!result.success) {
+    return {
+      success: false,
+      errors: result.error.errors.map(e => `extraInfo.${e.path.join('.')}: ${e.message}`),
+    };
+  }
+
+  return {
+    success: true,
+    data: result.data,
+  };
+}
+
+/**
+ * Merge JSON fields safely
+ */
+export function mergeJsonFields<T>(existing: T | null, updates: Partial<T> | null): T | null {
+  if (!existing && !updates) return null;
+  if (!existing) return updates as T;
+  if (!updates) return existing;
+
+  // Deep merge for nested objects
+  const merge = (target: any, source: any): any => {
+    if (!target || !source) return source || target;
+
+    const result = { ...target };
+
+    for (const key in source) {
+      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        result[key] = merge(target[key] || {}, source[key]);
+      } else {
+        result[key] = source[key];
+      }
+    }
+
+    return result;
+  };
+
+  return merge(existing, updates);
 }

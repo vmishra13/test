@@ -8,7 +8,7 @@ export enum CoreRole {
   CLINICAL_STAFF = 'CLINICAL_STAFF',
   OFFICE_STAFF = 'OFFICE_STAFF',
   PATIENT = 'PATIENT',
-  NA = 'NA', // Special role for generic access checks
+  NA = 'NA',
 }
 
 /**

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { CoreRole } from '@shared/constants';
+import { CoreRole } from '../../../shared/constants';
 
 // ===================================================================
 // 🎯 OAUTH 2.0 TOKEN ENDPOINT VALIDATORS

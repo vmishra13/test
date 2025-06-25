@@ -1,3 +1,3 @@
-import useroutes from './routes';
+import router from './routes';
 
-export { useroutes };
+export const userRoutes = router;

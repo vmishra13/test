@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { getCurrentUserId, getCurrentUserRoles, isAdmin, isSuperAdmin } from './auth.middleware';
+import { getCurrentUserId, getCurrentUserRoles } from './auth.middleware';
+import { isAdmin, isSuperAdmin } from './optional-auth.middleware';
 
 /**
  * Role-based access control middleware
