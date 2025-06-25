@@ -36,7 +36,7 @@
     "db:clean": "rimraf src/db/postgres/generated src/db/mongodb/generated",
     "db:sync": "pnpm pull && pnpm generate",
     "db:fresh": "pnpm db:clean && pnpm pull --force && pnpm generate",
-    "db:setup": "cd database/postgres/sql && sh nonprod_postgres_runscript.sh reliacare root biddiaSQL && cd ../../../ && pnpm pull:postgres && pnpm generate:postgres"
+    "setup:postgres": "cd database/postgres/sql && sh nonprod_postgres_runscript.sh reliacare root biddiaSQL && cd ../../../ && pnpm pull:postgres && pnpm generate:postgres"
   },
   "keywords": [
     "healthcare",
