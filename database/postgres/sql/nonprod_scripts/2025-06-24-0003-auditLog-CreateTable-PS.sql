@@ -3,14 +3,9 @@ CREATE OR REPLACE PROCEDURE CreateOrUpdateAuditLogTable()
 LANGUAGE plpgsql
 AS $$
 BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.tables
-        WHERE table_schema = 'reliacare'
-        AND table_name = 'auditLog'
-    )
-    THEN
-        CREATE TABLE "auditLog" (
+    DROP TABLE IF EXISTS "auditLog" CASCADE;
+
+    CREATE TABLE "auditLog" (
             id SERIAL PRIMARY KEY,
             "eventType" varchar(100),
             "entityType" varchar(100),
@@ -20,7 +15,7 @@ BEGIN
             "operationStatus" varchar(100),
             "actionType" varchar(100),
             "actionSubType" varchar(100),
-            "actionSummery" text,
+            "actionSummary" text,
             "sourceSystem" varchar(100),
             "actionUser" integer,
             "actionClient" integer,
@@ -29,7 +24,6 @@ BEGIN
             "comment" text,
             "changeLog" jsonb
         );
-    END IF;
 
 END;
 $$;

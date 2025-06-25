@@ -4,32 +4,24 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
 
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.tables
-        WHERE table_schema = 'reliacare'
-        AND table_name = 'ssi_data'
-    )
-    THEN
+    DROP TABLE IF EXISTS "ssi_data" CASCADE;
 
-        CREATE TABLE "ssi_data" (
-            id SERIAL PRIMARY KEY,
-            "ssiImageUrl" varchar(500),
-            "ssiClassification" varchar(100),
-            "ssiComment" text,
-            "gender" varchar(50),
-            "age" integer,
-            "bmi" double precision,
-            "dateOfSurgery" date,
-            "imgTakenDate" timestamp,
-            "typeOfSurgery" varchar(100),
-            "woundLoction" varchar(100),
-            "diabetesFlag" boolean,
-            "smokingFlag" boolean,
-            "imgCaptueDevice" varchar(255)
-        );
-
-    END IF;
+    CREATE TABLE "ssi_data" (
+        id SERIAL PRIMARY KEY,
+        "ssiImageUrl" varchar(500),
+        "ssiClassification" varchar(100),
+        "ssiComment" text,
+        "gender" varchar(50),
+        "age" integer,
+        "bmi" double precision,
+        "dateOfSurgery" date,
+        "imgTakenDate" timestamp,
+        "typeOfSurgery" varchar(100),
+        "woundLocation" varchar(100),
+        "diabetesFlag" boolean,
+        "smokingFlag" boolean,
+        "imgCaptureDevice" varchar(255)
+    );
 
 END;
 $$;

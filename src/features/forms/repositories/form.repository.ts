@@ -30,7 +30,7 @@ export async function getForms(params: {
   try {
     // Build where clause with multi-tenant isolation
     const where: Prisma.form_masterWhereInput = {
-      clientid: clientId,
+      clientId: clientId,
     };
 
     // Add search filter if provided
@@ -44,9 +44,9 @@ export async function getForms(params: {
     // Build order by clause
     const orderBy: Prisma.form_masterOrderByWithRelationInput = {};
     if (sortBy === 'crDate') {
-      orderBy.crdate = sortOrder as Prisma.SortOrder;
+      orderBy.crDate = sortOrder as Prisma.SortOrder;
     } else if (sortBy === 'modDate') {
-      orderBy.moddate = sortOrder as Prisma.SortOrder;
+      orderBy.modDate = sortOrder as Prisma.SortOrder;
     } else {
       orderBy.name = sortOrder as Prisma.SortOrder;
     }
@@ -89,7 +89,7 @@ export async function getFormById(id: number, clientId: number) {
     const form = await prismaPostgres.form_master.findFirst({
       where: {
         id,
-        clientid: clientId,
+        clientId: clientId,
       },
     });
 
@@ -111,11 +111,11 @@ export async function createForm(
       data: {
         name: data.name,
         description: data.description || null,
-        clientid: data.clientId,
-        cruser: data.modUser,
-        moduser: data.modUser,
-        crdate: new Date(),
-        moddate: new Date(),
+        clientId: data.clientId,
+        crUser: data.modUser,
+        modUser: data.modUser,
+        crDate: new Date(),
+        modDate: new Date(),
       },
     });
 
@@ -155,8 +155,8 @@ export async function updateForm(
       data: {
         ...(data.name && { name: data.name }),
         ...(data.description !== undefined && { description: data.description }),
-        moduser: modUser,
-        moddate: new Date(),
+        modUser: modUser,
+        modDate: new Date(),
       },
     });
 
@@ -208,7 +208,7 @@ export async function checkFormNameExists(
   try {
     const where: Prisma.form_masterWhereInput = {
       name: { equals: name, mode: 'insensitive' },
-      clientid: clientId,
+      clientId: clientId,
     };
 
     if (excludeId) {
@@ -234,21 +234,21 @@ export async function getFormStats(clientId: number) {
     const [totalForms, formsThisMonth, latestForm] = await Promise.all([
       // Total forms count
       prismaPostgres.form_master.count({
-        where: { clientid: clientId },
+        where: { clientId: clientId },
       }),
 
       // Forms created this month
       prismaPostgres.form_master.count({
         where: {
-          clientid: clientId,
-          crdate: { gte: startOfMonth },
+          clientId: clientId,
+          crDate: { gte: startOfMonth },
         },
       }),
 
       // Latest form
       prismaPostgres.form_master.findFirst({
-        where: { clientid: clientId },
-        orderBy: { crdate: 'desc' },
+        where: { clientId: clientId },
+        orderBy: { crDate: 'desc' },
       }),
     ]);
 
@@ -273,7 +273,7 @@ export async function bulkDeleteForms(ids: number[], clientId: number) {
     const existingForms = await prismaPostgres.form_master.findMany({
       where: {
         id: { in: ids },
-        clientid: clientId,
+        clientId: clientId,
       },
       select: { id: true },
     });
@@ -287,7 +287,7 @@ export async function bulkDeleteForms(ids: number[], clientId: number) {
     const result = await prismaPostgres.form_master.deleteMany({
       where: {
         id: { in: existingIds },
-        clientid: clientId,
+        clientId: clientId,
       },
     });
 

@@ -264,7 +264,7 @@ export async function getUserByIdService(
 
     // Extract target user's roles
     const targetUserRoles =
-      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+      targetUser.user_role?.map((userRole: any) => userRole.role.name as CoreRole) || [];
 
     // Create authorization request for viewing specific user with ALL required context
     const oAuthReq: AuthRequest = createAuthRequest(
@@ -296,14 +296,14 @@ export async function getUserByIdService(
         lastName: targetUser.lastName,
         email: targetUser.email,
         status: targetUser.status,
-        roles: targetUser.userRoles.map((userRole: any) => userRole.role.name),
+        roles: targetUser.user_role.map((userRole: any) => userRole.role.name),
         client: {
           id: targetUser.client.id,
           name: targetUser.client.name,
         },
         userType: {
-          id: targetUser.userType.id,
-          name: targetUser.userType.name,
+          id: targetUser.user_type.id,
+          name: targetUser.user_type.name,
         },
         createdAt: targetUser.crDate.toISOString(),
         updatedAt: targetUser.modDate?.toISOString() || targetUser.crDate.toISOString(),
@@ -356,7 +356,7 @@ export async function updateUserService(
 
     // Extract target user's roles for authorization
     const targetUserRoles =
-      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+      targetUser.user_role?.map((userRole: any) => userRole.role.name as CoreRole) || [];
 
     // 4. Build authorization request
     const actionUserId = targetUserId;
@@ -635,7 +635,7 @@ export async function deleteUserService(
 
     // Extract target user's roles for authorization
     const targetUserRoles =
-      targetUser.userRoles?.map((userRole: any) => userRole.role.name as CoreRole) || [];
+      targetUser.user_role?.map((userRole: any) => userRole.role.name as CoreRole) || [];
 
     // 4. Build authorization request
     const actionUserId = targetUserId;
@@ -783,13 +783,13 @@ export async function getUserProfileService(userId: number) {
       status: user.status,
       extraInfo: user.extraInfo,
       // Default values for mobile app
-      profilePicture: user.extraInfo?.profilePicture || null,
-      phoneNumber: user.extraInfo?.phoneNumber || null,
-      address: user.extraInfo?.address || null,
-      emergencyContact: user.extraInfo?.emergencyContact || null,
-      medicalHistory: user.extraInfo?.medicalHistory || null,
-      preferences: user.extraInfo?.preferences || null,
-      onboardingCompleted: user.extraInfo?.onboardingCompleted || false,
+      profilePicture: (user.extraInfo as any)?.profilePicture || null,
+      phoneNumber: (user.extraInfo as any)?.phoneNumber || null,
+      address: (user.extraInfo as any)?.address || null,
+      emergencyContact: (user.extraInfo as any)?.emergencyContact || null,
+      medicalHistory: (user.extraInfo as any)?.medicalHistory || null,
+      preferences: (user.extraInfo as any)?.preferences || null,
+      onboardingCompleted: (user.extraInfo as any)?.onboardingCompleted || false,
     };
   } catch (error) {
     logger.error('Get user profile error:', error);
@@ -823,7 +823,7 @@ export async function updateUserProfileService(userId: number, profileData: any)
     }
 
     // Merge existing extraInfo with new data
-    const currentExtraInfo = currentUser.extraInfo || {};
+    const currentExtraInfo = (currentUser.extraInfo as any) || {};
     const newExtraInfo = {
       ...currentExtraInfo,
       phoneNumber: profileData.phoneNumber ?? currentExtraInfo.phoneNumber,
@@ -894,7 +894,7 @@ export async function updatePersonalInfoService(userId: number, personalInfo: an
     }
 
     // Merge existing extraInfo with new personal info
-    const currentExtraInfo = currentUser.extraInfo || {};
+    const currentExtraInfo = (currentUser.extraInfo as any) || {};
     const newExtraInfo = {
       ...currentExtraInfo,
       phoneNumber: personalInfo.phoneNumber ?? currentExtraInfo.phoneNumber,
@@ -967,7 +967,7 @@ export async function uploadProfilePictureService(userId: number, file: Uploaded
     const profilePictureUrl = `/uploads/profiles/${fileName}`;
 
     // Update extraInfo with profile picture
-    const currentExtraInfo = currentUser.extraInfo || {};
+    const currentExtraInfo = (currentUser.extraInfo as any) || {};
     const newExtraInfo = {
       ...currentExtraInfo,
       profilePicture: profilePictureUrl,
@@ -1033,9 +1033,9 @@ export async function completeOnboardingService(userId: number, onboardingData: 
     }
 
     // Mark onboarding as completed
-    const currentExtraInfo = currentUser.extraInfo || {};
+    const currentExtraInfo = (currentUser.extraInfo as any) || {};
     const newExtraInfo = {
-      ...currentExtraInfo,
+      ...(currentExtraInfo as any),
       onboardingCompleted: true,
       onboardingCompletedAt: new Date().toISOString(),
     };
@@ -1796,8 +1796,8 @@ async function performUserUpdate(
       data: updateData,
       include: {
         client: { select: { id: true, name: true } },
-        userType: { select: { id: true, name: true } },
-        userRoles: {
+        user_type: { select: { id: true, name: true } },
+        user_role: {
           include: {
             role: true,
           },
@@ -1830,8 +1830,8 @@ async function performUserUpdate(
         extraInfo: updatedUser.extraInfo as UserExtraInfo,
         status: updatedUser.status,
         client: updatedUser.client,
-        userType: updatedUser.userType,
-        roles: updatedUser.userRoles.map(ur => ur.role),
+        userType: updatedUser.user_type,
+        roles: updatedUser.user_role.map((ur: any) => ur.role),
         modDate: updatedUser.modDate,
         updatedBy: currentUser.loginName,
       },

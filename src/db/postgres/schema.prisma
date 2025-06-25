@@ -8,7 +8,27 @@ datasource postgresDb {
   url      = env("POSTGRES_DATABASE_URL")
 }
 
-/// Client model with relationships
+model auditLog {
+  id              Int       @id @default(autoincrement())
+  eventType       String?   @postgresDb.VarChar(100)
+  entityType      String?   @postgresDb.VarChar(100)
+  subEntityType   String?   @postgresDb.VarChar(100)
+  entityId        String?   @postgresDb.VarChar(100)
+  operationType   String?   @postgresDb.VarChar(100)
+  operationStatus String?   @postgresDb.VarChar(100)
+  actionType      String?   @postgresDb.VarChar(100)
+  actionSubType   String?   @postgresDb.VarChar(100)
+  actionSummary   String?
+  sourceSystem    String?   @postgresDb.VarChar(100)
+  actionUser      Int?
+  actionClient    Int?
+  actionDate      DateTime? @postgresDb.Timestamp(6)
+  spentTime       BigInt?
+  comment         String?
+  changeLog       Json?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model client {
   id                        Int                         @id @default(autoincrement())
   name                      String                      @postgresDb.VarChar(100)
@@ -24,22 +44,24 @@ model client {
   crDate                    DateTime                    @default(now()) @postgresDb.Timestamp(6)
   modUser                   String                      @postgresDb.VarChar(50)
   modDate                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
-  locations                 client_location[]
-  contacts                  contact[]
+  client_location           client_location[]
+  contact                   contact[]
   form_master               form_master[]
   medication_master         medication_master[]
   msg_group                 msg_group[]
+  msg_reply_template        msg_reply_template[]
   patient_form              patient_form[]
   patient_plan              patient_plan[]
   patient_plan_schedule     patient_plan_schedule[]
   patient_plan_schedule_log patient_plan_schedule_log[]
   plan                      plan[]
   plan_user                 plan_user[]
-  users                     user[]
-  userRoles                 user_role[]
+  user                      user[]
+  user_feedback             user_feedback[]
+  user_role                 user_role[]
 }
 
-/// Client location model with relationships
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model client_location {
   id          Int       @id @default(autoincrement())
   clientId    Int
@@ -57,7 +79,7 @@ model client_location {
   @@unique([clientId, name], map: "uk_client_location_client_name")
 }
 
-/// Contact model with relationships
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model contact {
   id       Int       @id @default(autoincrement())
   type     String    @postgresDb.VarChar(50)
@@ -74,166 +96,29 @@ model contact {
   user     user      @relation(fields: [userId], references: [id], map: "fk_contact_user")
 }
 
-/// Password model with relationships
-model password {
-  id         Int       @id @default(autoincrement())
-  userId     Int
-  password   String    @postgresDb.VarChar(60)
-  expiryDate DateTime? @postgresDb.Date
-  status     Int?
-  crUser     String    @postgresDb.VarChar(50)
-  crDate     DateTime  @default(now()) @postgresDb.Timestamp(6)
-  modUser    String    @postgresDb.VarChar(50)
-  modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
-  user       user      @relation(fields: [userId], references: [id], map: "fk_password_user")
-}
-
-/// Role model with relationships
-model role {
-  id          Int         @id @default(autoincrement())
-  name        String      @postgresDb.VarChar(100)
-  description String?     @postgresDb.VarChar(100)
-  crUser      String      @postgresDb.VarChar(50)
-  crDate      DateTime    @default(now()) @postgresDb.Timestamp(6)
-  modUser     String      @postgresDb.VarChar(50)
-  modDate     DateTime?   @default(now()) @postgresDb.Timestamp(6)
-  userRoles   user_role[]
-}
-
-/// User model with relationships
-model user {
-  id                                        Int                         @id @default(autoincrement())
-  clientId                                  Int
-  userTypeId                                Int
-  loginName                                 String                      @unique(map: "uk_user_login_name") @postgresDb.VarChar(50)
-  firstName                                 String?                     @postgresDb.VarChar(50)
-  middleName                                String?                     @postgresDb.VarChar(50)
-  lastName                                  String?                     @postgresDb.VarChar(50)
-  email                                     String?                     @unique(map: "uk_user_email") @postgresDb.VarChar(100)
-  dob                                       DateTime?                   @postgresDb.Date
-  mrn                                       String?                     @postgresDb.VarChar(50)
-  gender                                    String?                     @postgresDb.VarChar(50)
-  timeZone                                  String?                     @postgresDb.VarChar(100)
-  profilePicture                            String?                     @postgresDb.VarChar(2000)
-  passExpireInDays                          Int?
-  extraInfo                                 Json?                       @postgresDb.Json
-  status                                    Int?
-  crUser                                    String                      @postgresDb.VarChar(50)
-  crDate                                    DateTime                    @default(now()) @postgresDb.Timestamp(6)
-  modUser                                   String                      @postgresDb.VarChar(50)
-  modDate                                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
-  contacts                                  contact[]
-  msg_group                                 msg_group[]
-  msg_group_participant                     msg_group_participant[]
-  msg_group_relation                        msg_group_relation[]
-  passwords                                 password[]
-  patient_form                              patient_form[]
-  patient_plan_patient_plan_surgeonIdTouser patient_plan[]              @relation("patient_plan_surgeonIdTouser")
-  patient_plan_patient_plan_patientIdTouser patient_plan[]              @relation("patient_plan_patientIdTouser")
-  patient_plan_schedule                     patient_plan_schedule[]
-  patient_plan_schedule_log                 patient_plan_schedule_log[]
-  plan_user                                 plan_user[]
-  client                                    client                      @relation(fields: [clientId], references: [id], map: "fk_user_client")
-  userType                                  user_type                   @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
-  userRoles                                 user_role[]
-}
-
-/// User role model with relationships
-model user_role {
-  id       Int       @id @default(autoincrement())
-  userId   Int
-  clientId Int
-  roleId   Int
-  crUser   String    @postgresDb.VarChar(50)
-  crDate   DateTime  @default(now()) @postgresDb.Timestamp(6)
-  modUser  String    @postgresDb.VarChar(50)
-  modDate  DateTime? @default(now()) @postgresDb.Timestamp(6)
-  client   client    @relation(fields: [clientId], references: [id], map: "fk_user_role_client")
-  role     role      @relation(fields: [roleId], references: [id], map: "fk_user_role_role")
-  user     user      @relation(fields: [userId], references: [id], map: "fk_user_role_user")
-}
-
-/// User type model with relationships
-model user_type {
-  id          Int       @id @default(autoincrement())
-  name        String    @postgresDb.VarChar(100)
-  description String?   @postgresDb.VarChar(100)
-  crUser      String    @postgresDb.VarChar(50)
-  crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
-  modUser     String    @postgresDb.VarChar(50)
-  modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
-  users       user[]
-}
-
 model diagnosis_master {
-  id                                                        Int            @id @default(autoincrement())
-  name                                                      String?        @unique @postgresDb.VarChar(100)
-  bodyArea                                                  String         @postgresDb.VarChar(100)
-  groupType                                                 String         @postgresDb.VarChar(100)
-  leftICDCode                                               String?        @postgresDb.VarChar(50)
-  rightICDCode                                              String?        @postgresDb.VarChar(50)
-  bilateralICDCode                                          String?        @postgresDb.VarChar(50)
-  noneICDCode                                               String?        @postgresDb.VarChar(50)
-  crUser                                                    String         @postgresDb.VarChar(50)
-  crDate                                                    DateTime?      @default(now()) @postgresDb.Timestamp(6)
-  modUser                                                   String         @postgresDb.VarChar(50)
-  modDate                                                   DateTime?      @default(now()) @postgresDb.Timestamp(6)
-  patient_plan_patient_plan_diagnosisIdTodiagnosis_master   patient_plan[] @relation("patient_plan_diagnosisIdTodiagnosis_master")
-  patient_plan_patient_plan_diagnosisNameTodiagnosis_master patient_plan[] @relation("patient_plan_diagnosisNameTodiagnosis_master")
-  plan_plan_diagnosisIdTodiagnosis_master                   plan[]         @relation("plan_diagnosisIdTodiagnosis_master")
-  plan_plan_diagnosisNameTodiagnosis_master                 plan[]         @relation("plan_diagnosisNameTodiagnosis_master")
-}
-
-model patient_form {
-  id          Int         @id @default(autoincrement())
-  patientId   Int
-  clientId    Int
-  formId      Int
-  processed   Boolean?    @default(false)
-  crUser      String      @postgresDb.VarChar(50)
-  crDate      DateTime?   @default(now()) @postgresDb.Timestamp(6)
-  modUser     String      @postgresDb.VarChar(50)
-  modDate     DateTime?   @default(now()) @postgresDb.Timestamp(6)
-  client      client      @relation(fields: [clientId], references: [id], map: "fk_patientform_client")
-  form_master form_master @relation(fields: [formId], references: [id], map: "fk_patientform_form_master")
-  user        user        @relation(fields: [patientId], references: [id], map: "fk_patientform_user")
-}
-
-model plan {
-  id                                                    Int              @id @default(autoincrement())
-  clientId                                              Int
-  name                                                  String           @postgresDb.VarChar(100)
-  description                                           String?
-  diagnosisId                                           Int
-  diagnosisName                                         String           @postgresDb.VarChar(100)
-  version                                               Int?             @default(1)
-  model                                                 Json?            @postgresDb.Json
-  crUser                                                String           @postgresDb.VarChar(50)
-  crDate                                                DateTime?        @default(now()) @postgresDb.Timestamp(6)
-  modUser                                               String           @postgresDb.VarChar(50)
-  modDate                                               DateTime?        @default(now()) @postgresDb.Timestamp(6)
-  patient_plan                                          patient_plan[]
-  client                                                client           @relation(fields: [clientId], references: [id], map: "fk_plan_client")
-  diagnosis_master_plan_diagnosisIdTodiagnosis_master   diagnosis_master @relation("plan_diagnosisIdTodiagnosis_master", fields: [diagnosisId], references: [id], map: "fk_plan_diagnosis_master")
-  diagnosis_master_plan_diagnosisNameTodiagnosis_master diagnosis_master @relation("plan_diagnosisNameTodiagnosis_master", fields: [diagnosisName], references: [name], map: "fk_plan_diagnosis_name")
-}
-
-model form_master {
-  id           Int            @id @default(autoincrement())
-  clientid     Int?           @default(1)
-  name         String         @postgresDb.VarChar(255)
-  description  String?
-  cruser       String         @postgresDb.VarChar(50)
-  crdate       DateTime?      @default(now()) @postgresDb.Timestamp(6)
-  moduser      String         @postgresDb.VarChar(50)
-  moddate      DateTime?      @default(now()) @postgresDb.Timestamp(6)
-  client       client?        @relation(fields: [clientid], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_form_master_client")
-  patient_form patient_form[]
+  id                                                        Int                            @id @default(autoincrement())
+  name                                                      String?                        @unique @postgresDb.VarChar(100)
+  bodyArea                                                  String                         @postgresDb.VarChar(100)
+  groupType                                                 String                         @postgresDb.VarChar(100)
+  leftICDCode                                               String?                        @postgresDb.VarChar(50)
+  rightICDCode                                              String?                        @postgresDb.VarChar(50)
+  bilateralICDCode                                          String?                        @postgresDb.VarChar(50)
+  noneICDCode                                               String?                        @postgresDb.VarChar(50)
+  crUser                                                    String                         @postgresDb.VarChar(50)
+  crDate                                                    DateTime?                      @default(now()) @postgresDb.Timestamp(6)
+  modUser                                                   String                         @postgresDb.VarChar(50)
+  modDate                                                   DateTime?                      @default(now()) @postgresDb.Timestamp(6)
+  msg_reply_diagnosis_relation                              msg_reply_diagnosis_relation[]
+  patient_plan_patient_plan_diagnosisIdTodiagnosis_master   patient_plan[]                 @relation("patient_plan_diagnosisIdTodiagnosis_master")
+  patient_plan_patient_plan_diagnosisNameTodiagnosis_master patient_plan[]                 @relation("patient_plan_diagnosisNameTodiagnosis_master")
+  plan_plan_diagnosisIdTodiagnosis_master                   plan[]                         @relation("plan_diagnosisIdTodiagnosis_master")
+  plan_plan_diagnosisNameTodiagnosis_master                 plan[]                         @relation("plan_diagnosisNameTodiagnosis_master")
 }
 
 model exercise_master {
   id              Int                  @id @default(autoincrement())
-  title           String               @postgresDb.VarChar(100)
+  title           String               @unique @postgresDb.VarChar(100)
   description     String?
   purpose         String?              @postgresDb.VarChar(255)
   media_type      media_type_enum?
@@ -250,6 +135,19 @@ model exercise_master {
   crDate          DateTime?            @default(now()) @postgresDb.Timestamp(6)
   modUser         String               @postgresDb.VarChar(50)
   modDate         DateTime?            @default(now()) @postgresDb.Timestamp(6)
+}
+
+model form_master {
+  id           Int            @id @default(autoincrement())
+  clientId     Int?           @default(1)
+  name         String         @postgresDb.VarChar(255)
+  description  String?
+  crUser       String         @postgresDb.VarChar(50)
+  crDate       DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  modUser      String         @postgresDb.VarChar(50)
+  modDate      DateTime?      @default(now()) @postgresDb.Timestamp(6)
+  client       client?        @relation(fields: [clientId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_form_master_client")
+  patient_form patient_form[]
 }
 
 model medication_master {
@@ -311,8 +209,8 @@ model msg_group_participant {
   msgGroupId         Int
   userId             Int
   userType           user_type_enum
-  boxtype            box_type_enum
-  unReadCount        Int?           @default(0)
+  boxType            box_type_enum
+  unreadCount        Int?           @default(0)
   firstUnreadMsgId   Int?
   firstUnreadMsgDate DateTime?      @postgresDb.Timestamp(6)
   validFrom          DateTime?      @postgresDb.Date
@@ -339,6 +237,62 @@ model msg_group_relation {
   message    message   @relation(fields: [msgId], references: [id], map: "fk_msgrelation_message")
   msg_group  msg_group @relation(fields: [msgGroupId], references: [id], map: "fk_msgrelation_msg_group")
   user       user      @relation(fields: [senderId], references: [id], map: "fk_msgrelation_sender")
+}
+
+model msg_reply_diagnosis_relation {
+  id                 Int                @id @default(autoincrement())
+  msgReplyTemplateId Int
+  diagnosisId        Int
+  crUser             String             @postgresDb.VarChar(50)
+  crDate             DateTime?          @default(now()) @postgresDb.Timestamp(6)
+  modUser            String             @postgresDb.VarChar(50)
+  modDate            DateTime?          @default(now()) @postgresDb.Timestamp(6)
+  diagnosis_master   diagnosis_master   @relation(fields: [diagnosisId], references: [id], map: "fk_msgreplydiagnosisrel_diagnosis")
+  msg_reply_template msg_reply_template @relation(fields: [msgReplyTemplateId], references: [id], map: "fk_msgreplydiagnosisrel_template")
+}
+
+model msg_reply_template {
+  id                           Int                            @id @default(autoincrement())
+  userId                       Int
+  clientId                     Int
+  question                     String                         @postgresDb.VarChar(500)
+  answer                       String                         @postgresDb.VarChar(500)
+  crUser                       String                         @postgresDb.VarChar(50)
+  crDate                       DateTime?                      @default(now()) @postgresDb.Timestamp(6)
+  modUser                      String                         @postgresDb.VarChar(50)
+  modDate                      DateTime?                      @default(now()) @postgresDb.Timestamp(6)
+  msg_reply_diagnosis_relation msg_reply_diagnosis_relation[]
+  client                       client                         @relation(fields: [clientId], references: [id], map: "fk_msgreplytemplate_client")
+  user                         user                           @relation(fields: [userId], references: [id], map: "fk_msgreplytemplate_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model password {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  password   String    @postgresDb.VarChar(60)
+  expiryDate DateTime? @postgresDb.Date
+  status     Int?
+  crUser     String    @postgresDb.VarChar(50)
+  crDate     DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser    String    @postgresDb.VarChar(50)
+  modDate    DateTime? @default(now()) @postgresDb.Timestamp(6)
+  user       user      @relation(fields: [userId], references: [id], map: "fk_password_user")
+}
+
+model patient_form {
+  id          Int         @id @default(autoincrement())
+  patientId   Int
+  clientId    Int
+  formId      Int
+  processed   Boolean?    @default(false)
+  crUser      String      @postgresDb.VarChar(50)
+  crDate      DateTime?   @default(now()) @postgresDb.Timestamp(6)
+  modUser     String      @postgresDb.VarChar(50)
+  modDate     DateTime?   @default(now()) @postgresDb.Timestamp(6)
+  client      client      @relation(fields: [clientId], references: [id], map: "fk_patientform_client")
+  form_master form_master @relation(fields: [formId], references: [id], map: "fk_patientform_form_master")
+  user        user        @relation(fields: [patientId], references: [id], map: "fk_patientform_user")
 }
 
 model patient_plan {
@@ -424,6 +378,25 @@ model patient_plan_schedule_log {
   patient_plan_schedule patient_plan_schedule  @relation(fields: [patientPlanScheduleId], references: [id], map: "fk_patient_plan_schedule_log_user_plan_schedule")
 }
 
+model plan {
+  id                                                    Int              @id @default(autoincrement())
+  clientId                                              Int
+  name                                                  String           @postgresDb.VarChar(100)
+  description                                           String?
+  diagnosisId                                           Int
+  diagnosisName                                         String           @postgresDb.VarChar(100)
+  version                                               Int?             @default(1)
+  model                                                 Json?            @postgresDb.Json
+  crUser                                                String           @postgresDb.VarChar(50)
+  crDate                                                DateTime?        @default(now()) @postgresDb.Timestamp(6)
+  modUser                                               String           @postgresDb.VarChar(50)
+  modDate                                               DateTime?        @default(now()) @postgresDb.Timestamp(6)
+  patient_plan                                          patient_plan[]
+  client                                                client           @relation(fields: [clientId], references: [id], map: "fk_plan_client")
+  diagnosis_master_plan_diagnosisIdTodiagnosis_master   diagnosis_master @relation("plan_diagnosisIdTodiagnosis_master", fields: [diagnosisId], references: [id], map: "fk_plan_diagnosis_master")
+  diagnosis_master_plan_diagnosisNameTodiagnosis_master diagnosis_master @relation("plan_diagnosisNameTodiagnosis_master", fields: [diagnosisName], references: [name], map: "fk_plan_diagnosis_name")
+}
+
 model plan_user {
   id            Int            @id @default(autoincrement())
   clientId      Int
@@ -439,6 +412,18 @@ model plan_user {
   user          user           @relation(fields: [userId], references: [id], map: "fk_planuser_user")
 }
 
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model role {
+  id          Int         @id @default(autoincrement())
+  name        String      @postgresDb.VarChar(100)
+  description String?     @postgresDb.VarChar(100)
+  crUser      String      @postgresDb.VarChar(50)
+  crDate      DateTime    @default(now()) @postgresDb.Timestamp(6)
+  modUser     String      @postgresDb.VarChar(50)
+  modDate     DateTime?   @default(now()) @postgresDb.Timestamp(6)
+  user_role   user_role[]
+}
+
 model ssi_data {
   id                Int       @id @default(autoincrement())
   ssiImageUrl       String?   @postgresDb.VarChar(500)
@@ -450,10 +435,90 @@ model ssi_data {
   dateOfSurgery     DateTime? @postgresDb.Date
   imgTakenDate      DateTime? @postgresDb.Timestamp(6)
   typeOfSurgery     String?   @postgresDb.VarChar(100)
-  woundLoction      String?   @postgresDb.VarChar(100)
+  woundLocation     String?   @postgresDb.VarChar(100)
   diabetesFlag      Boolean?
   smokingFlag       Boolean?
-  imgCaptueDevice   String?   @postgresDb.VarChar(255)
+  imgCaptureDevice  String?   @postgresDb.VarChar(255)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user {
+  id                                        Int                         @id @default(autoincrement())
+  clientId                                  Int
+  userTypeId                                Int
+  loginName                                 String                      @unique(map: "uk_user_login_name") @postgresDb.VarChar(50)
+  firstName                                 String?                     @postgresDb.VarChar(50)
+  middleName                                String?                     @postgresDb.VarChar(50)
+  lastName                                  String?                     @postgresDb.VarChar(50)
+  email                                     String?                     @unique(map: "uk_user_email") @postgresDb.VarChar(100)
+  dob                                       DateTime?                   @postgresDb.Date
+  mrn                                       String?                     @postgresDb.VarChar(50)
+  gender                                    String?                     @postgresDb.VarChar(50)
+  timeZone                                  String?                     @postgresDb.VarChar(100)
+  profilePicture                            String?                     @postgresDb.VarChar(2000)
+  passExpireInDays                          Int?
+  extraInfo                                 Json?                       @postgresDb.Json
+  status                                    Int?
+  crUser                                    String                      @postgresDb.VarChar(50)
+  crDate                                    DateTime                    @default(now()) @postgresDb.Timestamp(6)
+  modUser                                   String                      @postgresDb.VarChar(50)
+  modDate                                   DateTime?                   @default(now()) @postgresDb.Timestamp(6)
+  contact                                   contact[]
+  msg_group                                 msg_group[]
+  msg_group_participant                     msg_group_participant[]
+  msg_group_relation                        msg_group_relation[]
+  msg_reply_template                        msg_reply_template[]
+  password                                  password[]
+  patient_form                              patient_form[]
+  patient_plan_patient_plan_surgeonIdTouser patient_plan[]              @relation("patient_plan_surgeonIdTouser")
+  patient_plan_patient_plan_patientIdTouser patient_plan[]              @relation("patient_plan_patientIdTouser")
+  patient_plan_schedule                     patient_plan_schedule[]
+  patient_plan_schedule_log                 patient_plan_schedule_log[]
+  plan_user                                 plan_user[]
+  client                                    client                      @relation(fields: [clientId], references: [id], map: "fk_user_client")
+  user_type                                 user_type                   @relation(fields: [userTypeId], references: [id], map: "fk_user_user_type")
+  user_feedback                             user_feedback[]
+  user_role                                 user_role[]
+}
+
+model user_feedback {
+  id       Int       @id @default(autoincrement())
+  userId   Int
+  clientId Int
+  feedback String?
+  isBug    Boolean?  @default(false)
+  crUser   String    @postgresDb.VarChar(50)
+  crDate   DateTime? @default(now()) @postgresDb.Timestamp(6)
+  modUser  String    @postgresDb.VarChar(50)
+  modDate  DateTime? @default(now()) @postgresDb.Timestamp(6)
+  client   client    @relation(fields: [clientId], references: [id], map: "fk_userfeedback_client")
+  user     user      @relation(fields: [userId], references: [id], map: "fk_userfeedback_user")
+}
+
+model user_role {
+  id       Int       @id @default(autoincrement())
+  userId   Int
+  clientId Int
+  roleId   Int
+  crUser   String    @postgresDb.VarChar(50)
+  crDate   DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser  String    @postgresDb.VarChar(50)
+  modDate  DateTime? @default(now()) @postgresDb.Timestamp(6)
+  client   client    @relation(fields: [clientId], references: [id], map: "fk_user_role_client")
+  role     role      @relation(fields: [roleId], references: [id], map: "fk_user_role_role")
+  user     user      @relation(fields: [userId], references: [id], map: "fk_user_role_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model user_type {
+  id          Int       @id @default(autoincrement())
+  name        String    @postgresDb.VarChar(100)
+  description String?   @postgresDb.VarChar(100)
+  crUser      String    @postgresDb.VarChar(50)
+  crDate      DateTime  @default(now()) @postgresDb.Timestamp(6)
+  modUser     String    @postgresDb.VarChar(50)
+  modDate     DateTime? @default(now()) @postgresDb.Timestamp(6)
+  user        user[]
 }
 
 enum box_type_enum {
@@ -526,7 +591,7 @@ enum unit_type {
 }
 
 enum user_type_enum {
-  Surgen
+  Surgeon
   Clinical_Staff
   Office_Staff
   Patient

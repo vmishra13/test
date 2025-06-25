@@ -33,8 +33,7 @@ export type {
 export type UserWithAuthData = user & {
   client: client;
   user_type: user_type;
-  userType?: user_type; // ✅ ADD THIS LINE - Alias for compatibility
-  userRole: (user_role & {
+  user_role: (user_role & {
     role: role;
   })[];
   password: password[];
@@ -49,7 +48,7 @@ export type UserWithClient = user & {
 export type UserWithRoles = user & {
   client: client;
   user_type: user_type;
-  userRole: (user_role & {
+  user_role: (user_role & {
     role: role;
   })[];
 };
@@ -58,7 +57,7 @@ export type UserWithRoles = user & {
 export type UserWithFullProfile = user & {
   client: client;
   user_type: user_type;
-  userRole: (user_role & {
+  user_role: (user_role & {
     role: role;
   })[];
   contact: contact[];
@@ -73,7 +72,7 @@ export type ClientWithRelations = client & {
 
 // Role with user assignments
 export type RoleWithRelations = role & {
-  userRole: (user_role & {
+  user_role: (user_role & {
     user: {
       id: number;
       loginName: string;
@@ -529,7 +528,7 @@ export const ModelConverters = {
       name: user.user_type.name,
       description: user.user_type.description,
     },
-    roles: user.userRole.map(ur => ur.role.name),
+    roles: user.user_role.map((ur: any) => ur.role.name),
   }),
 
   // Convert user to summary (for JWT)

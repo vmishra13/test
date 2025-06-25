@@ -245,8 +245,8 @@ const userRoleWithDetailsSchema = UserRoleSchema.merge(
 export const UserWithAuthDataSchema = UserSchema.merge(
   z.object({
     client: ClientSchema,
-    userType: UserTypeSchema,
-    userRoles: z.array(userRoleWithDetailsSchema),
+    user_type: UserTypeSchema,
+    user_role: z.array(userRoleWithDetailsSchema),
   }),
 );
 
@@ -264,7 +264,7 @@ export const UserWithPasswordSchema = UserSchema.pick({
   z.object({
     password: z.array(PasswordSchema),
     client: ClientSchema,
-    userType: UserTypeSchema,
+    user_type: UserTypeSchema,
   }),
 );
 
