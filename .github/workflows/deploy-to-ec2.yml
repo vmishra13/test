@@ -2,7 +2,7 @@ name: Build and Deploy to EC2
 
 on:
   push:
-    branches: [ dev ]
+    branches: [ dev-new ]
   workflow_dispatch:
 
 jobs:
@@ -32,8 +32,26 @@ jobs:
           echo "Buildtools version node: $(node -v)"
           echo "Buildtools version npm : $(npm -v)"
 
-      # - name: Install dependencies
-      #   run: pnpm install
+      - name: Install dependencies
+        run:  | 
+            echo "Creating production environment variables..."
+            cat << EOF > .env.production
+            NODE_ENV=production
+            PORT=3000
+            POSTGRES_DATABASE_URL=${{ secrets.POSTGRES_DATABASE_URL }}
+            JWT_REFRESH_TOKEN_SECRET=${{ secrets.JWT_REFRESH_TOKEN_SECRET }}  
+            JWT_REFRESH_TOKEN_EXPIRES_IN=${{ secrets.JWT_REFRESH_TOKEN_EXPIRES_IN }}
+            JWT_ACCESS_TOKEN_SECRET=${{ secrets.JWT_ACCESS_TOKEN_SECRET }}
+            JWT_ACCESS_TOKEN_EXPIRES_IN=${{ secrets.JWT_ACCESS_TOKEN_EXPIRES_IN }}
+            JWT_AUDIENCE=${{ secrets.JWT_AUDIENCE }}
+            JWT_ISSUER=${{ secrets.JWT_ISSUER }}
+            MONGODB_DATABASE_URL=${{ secrets.MONGODB_DATABASE_URL }}
+            EOF
+            pnpm install
+            sed -i '/^generator postgresClient {/,/^}/s/^\( *output *=.*\)$/\1\n  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]/' src/db/postgres/schema.prisma
+            sed -i '/^generator mongodbClient {/,/^}/s/^\( *output *=.*\)$/\1\n  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]/' src/db/mongodb/schema.prisma
+            pnpm generate           
+            pnpm build 
 
       # - name: Generate Prisma Clients
       #   run: pnpm generate
@@ -42,7 +60,7 @@ jobs:
         run: touch app.tar.gz
 
       - name: Archive application
-        run: tar --exclude=app.tar.gz -czf app.tar.gz .
+        run: tar --exclude=app.tar.gz -czf app.tar.gz .  && ls -lart app.tar.gz
 
       - name: Upload to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -61,17 +79,8 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd ${{ secrets.EC2_PATH }}
-            echo "Creating production environment variables..."
-            cat << EOF > .env
-            NODE_ENV=production
-            PORT=3000
-            DATABASE_URL=${{ secrets.DATABASE_URL }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}  
-            EOF
             tar -xzf app.tar.gz
-            pnpm install
-            pnpm generate
-            pnpm start
+            
 
 
       # - name: create empty tar
