@@ -23,7 +23,8 @@ import { UploadedFile } from 'express-fileupload';
 import { ApiResponse } from '@shared/utils/api-response';
 import { getCurrentUserId } from '@features/auth/middlewares';
 import logger from '@config/logger';
-import type { ExtendedRequest, UserQuery } from '../types/extended-request';
+import type { ExtendedRequest } from '@shared/types';
+import type { UserQuery } from '../types/extended-request';
 import type {
   RegisterUserRequest,
   MobileRegistrationRequest,

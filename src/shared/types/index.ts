@@ -13,3 +13,6 @@ export type StringValue =
 // Export plan model types and validation
 export * from './plan-model.types';
 export { samplePlanModel, validateSamplePlan, safeParseSamplePlan } from './plan-model.sample';
+
+// Export shared request types
+export * from './request.types';
