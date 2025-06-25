@@ -299,7 +299,7 @@ pnpm install
 cp .env.example .env  # Configure your database URLs and secrets
 
 # 4. Setup database and generate clients (one command!)
-pnpm db:setup
+pnpm setup:postgres
 
 # 5. Start development server
 pnpm dev
@@ -615,7 +615,7 @@ pnpm start        # Run production build
 
 | **Script**            | **Command**              | **Description**                                                    |
 | --------------------- | ------------------------ | ------------------------------------------------------------------ |
-| **🚀 Complete Setup** | `pnpm db:setup`          | **One-command database setup** (runs SQL script + pull + generate) |
+| **🚀 Complete Setup** | `pnpm setup:postgres`    | **One-command database setup** (runs SQL script + pull + generate) |
 | **Generate All**      | `pnpm generate`          | Generate Prisma clients for all databases                          |
 | **PostgreSQL**        | `pnpm generate:postgres` | Generate PostgreSQL Prisma client only                             |
 | **MongoDB**           | `pnpm generate:mongodb`  | Generate MongoDB Prisma client only                                |
@@ -627,7 +627,7 @@ pnpm start        # Run production build
 
 ```bash
 # Example database workflow
-pnpm db:setup               # 🚀 Complete database setup (recommended)
+pnpm setup:postgres               # 🚀 Complete database setup (recommended)
 pnpm pull:postgres          # Pull latest PostgreSQL schema
 pnpm generate:postgres      # Generate TypeScript client
 pnpm db:sync               # Full sync (pull + generate)
