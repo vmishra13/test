@@ -135,11 +135,11 @@ export async function authenticateUser(
         timeZone: user.client.timeZone || undefined,
       },
       userType: {
-        id: user.userType.id,
-        name: user.userType.name,
-        description: user.userType.description || undefined,
+        id: user.user_type.id,
+        name: user.user_type.name,
+        description: user.user_type.description || undefined,
       },
-      roles: user.userRoles?.map(ur => ur.role.name as CoreRole) || [],
+      roles: user.user_role?.map(ur => ur.role.name as CoreRole) || [],
     };
 
     // Extract permissions (if available)
@@ -191,11 +191,11 @@ export async function refreshToken(
             timeZone: user.client.timeZone || undefined,
           },
           userType: {
-            id: user.userType.id,
-            name: user.userType.name,
-            description: user.userType.description || undefined,
+            id: user.user_type.id,
+            name: user.user_type.name,
+            description: user.user_type.description || undefined,
           },
-          roles: user.userRoles?.map(ur => ur.role.name as CoreRole) || [],
+          roles: user.user_role?.map((ur: any) => ur.role.name as CoreRole) || [],
         };
       }
     }

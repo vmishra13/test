@@ -44,7 +44,7 @@ export async function getClientsWithFilters(filters: ClientFilters) {
   const include: any = {};
   
   if (filters.includeLocations) {
-    include.locations = {
+    include.client_location = {
       select: {
         id: true,
         name: true,
@@ -57,7 +57,7 @@ export async function getClientsWithFilters(filters: ClientFilters) {
   }
   
   if (filters.includeContacts) {
-    include.contacts = {
+    include.contact = {
       select: {
         id: true,
         firstName: true,
@@ -73,8 +73,8 @@ export async function getClientsWithFilters(filters: ClientFilters) {
   if (filters.includeCounts) {
     include._count = {
       select: {
-        users: true,
-        locations: true,
+        user: true,
+        client_location: true,
       },
     };
   }
@@ -115,18 +115,18 @@ export async function findClientById(
   const include: any = {};
   
   if (options.includeLocations) {
-    include.locations = true;
+    include.client_location = true;
   }
   
   if (options.includeContacts) {
-    include.contacts = true;
+    include.contact = true;
   }
   
   if (options.includeCounts) {
     include._count = {
       select: {
-        users: true,
-        locations: true,
+        user: true,
+        client_location: true,
       },
     };
   }
@@ -188,8 +188,8 @@ export async function createClient(data: CreateClientRequest, createdBy: string)
     include: {
       _count: {
         select: {
-          users: true,
-          locations: true,
+          user: true,
+          client_location: true,
         },
       },
     },
@@ -222,8 +222,8 @@ export async function updateClient(
     include: {
       _count: {
         select: {
-          users: true,
-          locations: true,
+          user: true,
+          client_location: true,
         },
       },
     },
@@ -286,7 +286,7 @@ export async function getClientUserCounts() {
       name: true,
       _count: {
         select: {
-          users: true,
+          user: true,
         },
       },
     },

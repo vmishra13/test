@@ -288,10 +288,10 @@ export async function exportForms(clientId: number) {
     ID: form.id,
     Name: form.name,
     Description: form.description || '',
-    CreatedBy: form.cruser,
-    CreatedDate: form.crdate ? form.crdate.toISOString().split('T')[0] : '',
-    ModifiedBy: form.moduser,
-    ModifiedDate: form.moddate ? form.moddate.toISOString().split('T')[0] : '',
+    CreatedBy: form.crUser,
+    CreatedDate: form.crDate ? form.crDate.toISOString().split('T')[0] : '',
+    ModifiedBy: form.modUser,
+    ModifiedDate: form.modDate ? form.modDate.toISOString().split('T')[0] : '',
   }));
 
   return {

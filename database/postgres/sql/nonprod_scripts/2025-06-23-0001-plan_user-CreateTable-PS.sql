@@ -5,16 +5,13 @@ AS $$
 BEGIN
     -- Create ENUM type for user type if it doesn't exist
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_type_enum') THEN
-        CREATE TYPE user_type_enum AS ENUM ('Surgen', 'Clinical_Staff', 'Office_Staff', 'Patient');
+        CREATE TYPE user_type_enum AS ENUM ('Surgeon', 'Clinical_Staff', 'Office_Staff', 'Patient');
     END IF;
 
-    IF NOT EXISTS (
-        SELECT 1
-        FROM information_schema.tables
-        WHERE table_schema = 'reliacare'
-        AND table_name = 'plan_user'
-    )
-    THEN        CREATE TABLE "plan_user" (
+    
+    DROP TABLE IF EXISTS "plan_user" CASCADE;
+
+        CREATE TABLE "plan_user" (
             id SERIAL PRIMARY KEY,
             "clientId" integer NOT NULL,
             "patientPlanId" integer NOT NULL,
@@ -35,7 +32,6 @@ BEGIN
                 ON DELETE RESTRICT ON UPDATE CASCADE
         );
  
-    END IF;
 
 END;
 $$;
