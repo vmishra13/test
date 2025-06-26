@@ -48,11 +48,11 @@ jobs:
             MONGODB_DATABASE_URL=${{ secrets.MONGODB_DATABASE_URL }}
             EOF
             cat .env.production
-            pnpm install
+            #pnpm install
             sed -i '/^generator postgresClient {/,/^}/s/^\( *output *=.*\)$/\1\n  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]/' src/db/postgres/schema.prisma
             sed -i '/^generator mongodbClient {/,/^}/s/^\( *output *=.*\)$/\1\n  binaryTargets = ["native", "rhel-openssl-3.0.x", "debian-openssl-3.0.x"]/' src/db/mongodb/schema.prisma
-            pnpm generate           
-            pnpm build 
+            #pnpm generate           
+            #pnpm build 
 
       # - name: Generate Prisma Clients
       #   run: pnpm generate
